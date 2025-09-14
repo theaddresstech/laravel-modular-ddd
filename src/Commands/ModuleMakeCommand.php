@@ -115,7 +115,7 @@ class ModuleMakeCommand extends Command
 
         $manifest = [
             'name' => $moduleName,
-            'display_name' => Str::title(Str::snake($moduleName, ' ')),
+            'display_name' => Str::title($moduleName),
             'description' => $description,
             'version' => '1.0.0',
             'author' => $author,
@@ -229,6 +229,7 @@ class ModuleMakeCommand extends Command
             '{{MODULE_LOWER}}' => Str::lower($moduleName),
             '{{AGGREGATE}}' => Str::studly($aggregate),
             '{{AGGREGATE_SNAKE}}' => Str::snake($aggregate),
+            '{{AGGREGATE_KEBAB}}' => Str::kebab($aggregate),
             '{{AGGREGATE_LOWER}}' => Str::lower($aggregate),
             '{{NAMESPACE}}' => "Modules\\{$moduleName}",
         ];

@@ -11,7 +11,7 @@ use Illuminate\Console\Command;
 
 class ModuleHealthCommand extends Command
 {
-    protected $signature = 'module:health {module? : Check specific module} {--all : Check all enabled modules} {--verbose : Show detailed output}';
+    protected $signature = 'module:health {module? : Check specific module} {--all : Check all enabled modules} {--detailed : Show detailed output}';
 
     protected $description = 'Check module health status';
 
@@ -101,9 +101,9 @@ class ModuleHealthCommand extends Command
         $icon = $report->status->getIcon();
         $color = $report->status->getColor();
 
-        $this->line("{$icon} <fg={$color}>{$report->moduleName}</fg> ({$report->status->value})");
+        $this->line("{$icon} <fg>={$color}>{$report->moduleName}</fg> ({$report->status->value})");
 
-        if ($this->option('verbose') || !$report->isHealthy()) {
+        if ($this->option('detailed') || !$report->isHealthy()) {
             $this->displayDetailedChecks($report);
         }
 
@@ -119,7 +119,7 @@ class ModuleHealthCommand extends Command
 
             $this->line("  {$icon} <fg={$color}>{$check['name']}</fg>: {$check['message']}");
 
-            if ($this->option('verbose') && !empty($check['details'])) {
+            if ($this->option('detailed') && !empty($check['details'])) {
                 foreach ($check['details'] as $key => $value) {
                     if (is_array($value)) {
                         $this->line("      {$key}: " . implode(', ', $value));
