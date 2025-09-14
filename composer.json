@@ -1,6 +1,6 @@
 {
     "name": "mghrby/laravel-modular-ddd",
-    "version": "1.1.3",
+    "version": "1.1.4",
     "description": "A comprehensive Laravel package for building modular applications using Domain-Driven Design principles",
     "keywords": [
         "laravel",
