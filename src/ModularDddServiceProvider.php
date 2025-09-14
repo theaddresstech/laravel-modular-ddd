@@ -30,7 +30,7 @@ class ModularDddServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->mergeConfigFrom(__DIR__ . '/../../config/modular-ddd.php', 'modular-ddd');
+        $this->mergeConfigFrom(__DIR__ . '/../config/modular-ddd.php', 'modular-ddd');
 
         $this->registerCoreServices();
         $this->registerMonitoringServices();
@@ -164,7 +164,7 @@ class ModularDddServiceProvider extends ServiceProvider
 
     private function registerCommands(): void
     {
-        if ($this->app->runningInConsole()) {
+        if ($this->app->runningInConsole() && !$this->app->environment('testing')) {
             $this->commands([
                 ModuleListCommand::class,
                 ModuleInstallCommand::class,
@@ -194,15 +194,15 @@ class ModularDddServiceProvider extends ServiceProvider
 
             $this->app->when(ModuleMakeCommand::class)
                 ->needs('$stubPath')
-                ->give(__DIR__ . '/../../stubs');
+                ->give(__DIR__ . '/../stubs');
 
             $this->app->when(\TaiCrm\LaravelModularDdd\Commands\ModuleStubCommand::class)
                 ->needs('$stubPath')
-                ->give(__DIR__ . '/../../stubs');
+                ->give(__DIR__ . '/../stubs');
 
             $this->app->when(\TaiCrm\LaravelModularDdd\Commands\ModuleDevCommand::class)
                 ->needs('$stubPath')
-                ->give(__DIR__ . '/../../stubs');
+                ->give(__DIR__ . '/../stubs');
         }
     }
 
@@ -210,11 +210,11 @@ class ModularDddServiceProvider extends ServiceProvider
     {
         if ($this->app->runningInConsole()) {
             $this->publishes([
-                __DIR__ . '/../../config/modular-ddd.php' => config_path('modular-ddd.php'),
+                __DIR__ . '/../config/modular-ddd.php' => config_path('modular-ddd.php'),
             ], 'config');
 
             $this->publishes([
-                __DIR__ . '/../../stubs' => resource_path('stubs/modular-ddd'),
+                __DIR__ . '/../stubs' => resource_path('stubs/modular-ddd'),
             ], 'stubs');
         }
     }
