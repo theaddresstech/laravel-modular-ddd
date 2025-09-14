@@ -1,5 +1,5 @@
 {
-    "name": "tai-crm/laravel-modular-ddd",
+    "name": "theaddresstech/laravel-modular-ddd",
     "version": "1.0.0",
     "description": "A comprehensive Laravel package for building modular applications using Domain-Driven Design principles",
     "keywords": [
@@ -128,8 +128,6 @@
     "support": {
         "issues": "https://github.com/theaddresstech/laravel-modular-ddd/issues",
         "source": "https://github.com/theaddresstech/laravel-modular-ddd",
-        "docs": "https://docs.tai-crm.com/laravel-modular-ddd",
-        "chat": "https://discord.gg/laravel-modular-ddd",
-        "email": "support@tai-crm.com"
+        "email": "abdelrahman.elmaghraby@theaddressholding.com"
     }
 }

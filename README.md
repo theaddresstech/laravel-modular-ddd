@@ -15,7 +15,7 @@ A comprehensive Laravel package for implementing modular Domain-Driven Design ar
 ## Installation
 
 ```bash
-composer require tai-crm/laravel-modular-ddd
+composer require theaddresstech/laravel-modular-ddd
 ```
 
 Publish the configuration:
