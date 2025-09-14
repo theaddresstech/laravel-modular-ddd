@@ -134,6 +134,6 @@ class DependencyResolver implements DependencyResolverInterface
 
         unset($visiting[$module->name]);
         $visited[$module->name] = true;
-        $sorted->prepend($module);
+        $sorted->push($module);
     }
 }
