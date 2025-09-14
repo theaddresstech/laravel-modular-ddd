@@ -20,8 +20,8 @@ class {{AGGREGATE}} extends AggregateRoot
     {
         $instance = new self($id, $name);
 
-        // TODO: Uncomment when {{AGGREGATE}}Created event is implemented
-        // $instance->recordEvent(new {{AGGREGATE}}Created($id, $name));
+        // TODO: Create the event using: php artisan module:make-event {{MODULE}} {{AGGREGATE}}Created --aggregate={{AGGREGATE}}
+        // $instance->apply({{AGGREGATE}}Created::raise($id->value(), $name));
 
         return $instance;
     }
@@ -44,7 +44,7 @@ class {{AGGREGATE}} extends AggregateRoot
 
         $this->name = $name;
 
-        // TODO: Uncomment when {{AGGREGATE}}NameChanged event is implemented
-        // $this->recordEvent(new {{AGGREGATE}}NameChanged($this->id, $name));
+        // TODO: Create the event using: php artisan module:make-event {{MODULE}} {{AGGREGATE}}NameChanged --aggregate={{AGGREGATE}}
+        // $this->apply({{AGGREGATE}}NameChanged::raise($this->id->value(), $name));
     }
 }

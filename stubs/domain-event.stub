@@ -1,0 +1,44 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{NAMESPACE}}\Domain\Events;
+
+use TaiCrm\LaravelModularDdd\Foundation\DomainEvent;
+
+final readonly class {{EVENT}} extends DomainEvent
+{
+    public function __construct(
+        private string ${{AGGREGATE_VARIABLE}}Id,
+        // Add your event-specific properties here
+    ) {
+        parent::__construct();
+    }
+
+    public function get{{AGGREGATE}}Id(): string
+    {
+        return $this->{{AGGREGATE_VARIABLE}}Id;
+    }
+
+    public function getEventType(): string
+    {
+        return '{{EVENT}}';
+    }
+
+    public function getPayload(): array
+    {
+        return [
+            '{{AGGREGATE_VARIABLE}}_id' => $this->{{AGGREGATE_VARIABLE}}Id,
+            // Add your event data here
+        ];
+    }
+
+    public static function raise(
+        string ${{AGGREGATE_VARIABLE}}Id
+        // Add parameters as needed
+    ): self {
+        return new self(
+            ${{AGGREGATE_VARIABLE}}Id
+        );
+    }
+}

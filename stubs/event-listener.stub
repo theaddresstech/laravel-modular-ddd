@@ -1,0 +1,43 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{NAMESPACE}}\Application\Listeners;
+
+use {{NAMESPACE}}\Domain\Events\{{EVENT}};
+use Psr\Log\LoggerInterface;
+
+final class {{LISTENER}}
+{
+    public function __construct(
+        private LoggerInterface $logger
+    ) {}
+
+    public function handle({{EVENT}} ${{EVENT_VARIABLE}}): void
+    {
+        $this->logger->info('{{LISTENER}} handling event', [
+            'event_id' => ${{EVENT_VARIABLE}}->getEventId(),
+            'event_type' => ${{EVENT_VARIABLE}}->getEventType(),
+        ]);
+
+        try {
+            // TODO: Implement your event handling logic here
+            $this->process{{EVENT}}(${{EVENT_VARIABLE}});
+
+        } catch (\Exception $e) {
+            $this->logger->error('Error in {{LISTENER}}', [
+                'event_id' => ${{EVENT_VARIABLE}}->getEventId(),
+                'error' => $e->getMessage(),
+                'exception' => $e,
+            ]);
+
+            throw $e;
+        }
+    }
+
+    private function process{{EVENT}}({{EVENT}} ${{EVENT_VARIABLE}}): void
+    {
+        // Implement your business logic here
+        // Example: Send email, update database, call external API, etc.
+    }
+}
