@@ -187,6 +187,8 @@ class ModularDddServiceProvider extends ServiceProvider
                 \TaiCrm\LaravelModularDdd\Commands\ModuleSecurityCommand::class,
                 \TaiCrm\LaravelModularDdd\Commands\ModuleMakeEventCommand::class,
                 \TaiCrm\LaravelModularDdd\Commands\ModuleMakeListenerCommand::class,
+                \TaiCrm\LaravelModularDdd\Commands\ModuleMakeTestCommand::class,
+                \TaiCrm\LaravelModularDdd\Commands\ModuleMakeFactoryCommand::class,
             ]);
 
             // Register command dependencies
@@ -219,6 +221,22 @@ class ModularDddServiceProvider extends ServiceProvider
                 ->give(config('modular-ddd.modules_path', base_path('modules')));
 
             $this->app->when(\TaiCrm\LaravelModularDdd\Commands\ModuleMakeListenerCommand::class)
+                ->needs('$stubPath')
+                ->give(__DIR__ . '/../stubs');
+
+            $this->app->when(\TaiCrm\LaravelModularDdd\Commands\ModuleMakeTestCommand::class)
+                ->needs('$modulesPath')
+                ->give(config('modular-ddd.modules_path', base_path('modules')));
+
+            $this->app->when(\TaiCrm\LaravelModularDdd\Commands\ModuleMakeTestCommand::class)
+                ->needs('$stubPath')
+                ->give(__DIR__ . '/../stubs');
+
+            $this->app->when(\TaiCrm\LaravelModularDdd\Commands\ModuleMakeFactoryCommand::class)
+                ->needs('$modulesPath')
+                ->give(config('modular-ddd.modules_path', base_path('modules')));
+
+            $this->app->when(\TaiCrm\LaravelModularDdd\Commands\ModuleMakeFactoryCommand::class)
                 ->needs('$stubPath')
                 ->give(__DIR__ . '/../stubs');
         }

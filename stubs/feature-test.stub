@@ -1,0 +1,71 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{NAMESPACE}}\Tests\Feature;
+
+use Tests\TestCase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
+class {{TEST}} extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_{{CLASS_VARIABLE}}_feature_example(): void
+    {
+        // Test a complete user journey or feature
+        $response = $this->get('/');
+
+        $response->assertStatus(200);
+    }
+
+    public function test_authenticated_user_can_access_{{CLASS_VARIABLE}}_feature(): void
+    {
+        // $user = User::factory()->create();
+        // $this->actingAs($user);
+
+        // Test authenticated behavior
+        $this->assertTrue(true);
+    }
+
+    public function test_can_create_{{CLASS_VARIABLE}}_via_api(): void
+    {
+        // Arrange
+        $data = [
+            'name' => 'Test {{CLASS}}',
+            // Add required fields
+        ];
+
+        // Act
+        $response = $this->postJson('/api/{{CLASS_VARIABLE}}', $data);
+
+        // Assert
+        $response->assertStatus(201)
+                 ->assertJson([
+                     'data' => [
+                         'name' => 'Test {{CLASS}}',
+                     ],
+                 ]);
+
+        $this->assertDatabaseHas('{{CLASS_VARIABLE}}s', [
+            'name' => 'Test {{CLASS}}',
+        ]);
+    }
+
+    public function test_can_retrieve_{{CLASS_VARIABLE}}_list(): void
+    {
+        // Arrange
+        // {{CLASS}}::factory()->count(3)->create();
+
+        // Act
+        $response = $this->getJson('/api/{{CLASS_VARIABLE}}');
+
+        // Assert
+        $response->assertStatus(200)
+                 ->assertJsonStructure([
+                     'data' => [
+                         '*' => ['id', 'name', 'created_at', 'updated_at']
+                     ]
+                 ]);
+    }
+}

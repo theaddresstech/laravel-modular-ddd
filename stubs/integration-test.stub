@@ -1,0 +1,57 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{NAMESPACE}}\Tests\Integration;
+
+use Tests\TestCase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
+class {{TEST}} extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_{{CLASS_VARIABLE}}_integration_with_external_service(): void
+    {
+        // Test integration with external services
+        // Mock external service calls if needed
+        $this->assertTrue(true);
+    }
+
+    public function test_{{CLASS_VARIABLE}}_domain_service_integration(): void
+    {
+        // Test integration between domain services
+        $this->assertTrue(true);
+    }
+
+    public function test_{{CLASS_VARIABLE}}_event_handling_integration(): void
+    {
+        // Test that events are properly dispatched and handled
+
+        // Arrange
+        Event::fake();
+
+        // Act
+        // Trigger action that should dispatch events
+
+        // Assert
+        // Event::assertDispatched({{CLASS}}Created::class);
+        $this->assertTrue(true);
+    }
+
+    public function test_{{CLASS_VARIABLE}}_repository_integration(): void
+    {
+        // Test repository implementation with real database
+        $this->assertTrue(true);
+    }
+
+    public function test_{{CLASS_VARIABLE}}_cache_integration(): void
+    {
+        // Test caching behavior
+        Cache::shouldReceive('remember')
+             ->once()
+             ->andReturn('cached_result');
+
+        $this->assertTrue(true);
+    }
+}

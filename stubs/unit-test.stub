@@ -1,0 +1,59 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{NAMESPACE}}\Tests\Unit;
+
+use PHPUnit\Framework\TestCase;
+use {{NAMESPACE}}\Domain\Models\{{CLASS}};
+use {{NAMESPACE}}\Domain\ValueObjects\{{CLASS}}Id;
+
+class {{TEST}} extends TestCase
+{
+    public function test_can_create_{{CLASS_VARIABLE}}(): void
+    {
+        // Arrange
+        $id = {{CLASS}}Id::generate();
+        $name = 'Test Name';
+
+        // Act
+        ${{CLASS_VARIABLE}} = {{CLASS}}::create($id, $name);
+
+        // Assert
+        $this->assertInstanceOf({{CLASS}}::class, ${{CLASS_VARIABLE}});
+        $this->assertEquals($id, ${{CLASS_VARIABLE}}->getId());
+        $this->assertEquals($name, ${{CLASS_VARIABLE}}->getName());
+    }
+
+    public function test_can_change_{{CLASS_VARIABLE}}_name(): void
+    {
+        // Arrange
+        ${{CLASS_VARIABLE}} = {{CLASS}}::create(
+            {{CLASS}}Id::generate(),
+            'Original Name'
+        );
+        $newName = 'New Name';
+
+        // Act
+        ${{CLASS_VARIABLE}}->changeName($newName);
+
+        // Assert
+        $this->assertEquals($newName, ${{CLASS_VARIABLE}}->getName());
+    }
+
+    public function test_does_not_change_name_if_same(): void
+    {
+        // Arrange
+        $name = 'Same Name';
+        ${{CLASS_VARIABLE}} = {{CLASS}}::create(
+            {{CLASS}}Id::generate(),
+            $name
+        );
+
+        // Act
+        ${{CLASS_VARIABLE}}->changeName($name);
+
+        // Assert
+        $this->assertEquals($name, ${{CLASS_VARIABLE}}->getName());
+    }
+}

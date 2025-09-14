@@ -1,0 +1,65 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{NAMESPACE}}\Database\Factories;
+
+use Illuminate\Database\Eloquent\Factories\Factory;
+use {{NAMESPACE}}\Domain\Models\{{MODEL}};
+use {{NAMESPACE}}\Domain\ValueObjects\{{MODEL}}Id;
+
+/**
+ * @extends Factory<{{MODEL}}>
+ */
+class {{FACTORY}} extends Factory
+{
+    /**
+     * The name of the factory's corresponding model.
+     */
+    protected $model = {{MODEL}}::class;
+
+    /**
+     * Define the model's default state.
+     */
+    public function definition(): array
+    {
+        return [
+            'id' => {{MODEL}}Id::generate(),
+            'name' => fake()->name(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ];
+    }
+
+    /**
+     * Configure the factory.
+     */
+    public function configure(): static
+    {
+        return $this->afterMaking(function ({{MODEL}} ${{MODEL_VARIABLE}}) {
+            // Customize model after making
+        })->afterCreating(function ({{MODEL}} ${{MODEL_VARIABLE}}) {
+            // Customize model after creating
+        });
+    }
+
+    /**
+     * Indicate that the model should be active.
+     */
+    public function active(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => 'active',
+        ]);
+    }
+
+    /**
+     * Indicate that the model should be inactive.
+     */
+    public function inactive(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => 'inactive',
+        ]);
+    }
+}
