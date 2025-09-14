@@ -280,6 +280,11 @@ class ModuleManager implements ModuleManagerInterface
         $this->list();
     }
 
+    public function get(string $moduleName): ?ModuleInfo
+    {
+        return $this->getInfo($moduleName);
+    }
+
     public function getActiveModules(): array
     {
         $modules = $this->list();

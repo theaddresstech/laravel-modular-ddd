@@ -41,4 +41,6 @@ interface ModuleManagerInterface
     public function rebuildCache(): void;
 
     public function getActiveModules(): array;
+
+    public function get(string $moduleName): ?ModuleInfo;
 }
