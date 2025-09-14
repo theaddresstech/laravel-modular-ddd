@@ -1,5 +1,5 @@
 {
-    "name": "theaddresstech/laravel-modular-ddd",
+    "name": "mghrby/laravel-modular-ddd",
     "version": "1.0.0",
     "description": "A comprehensive Laravel package for building modular applications using Domain-Driven Design principles",
     "keywords": [
