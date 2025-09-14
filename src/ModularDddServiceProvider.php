@@ -351,7 +351,7 @@ class ModularDddServiceProvider extends ServiceProvider
     {
         $routesPath = $module->path . '/Routes';
 
-        // Load API routes
+        // Load API routes with versioning support
         if (file_exists($routesPath . '/api.php')) {
             $this->loadRoutesFrom($routesPath . '/api.php');
         }

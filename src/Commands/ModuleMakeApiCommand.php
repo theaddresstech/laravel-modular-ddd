@@ -145,6 +145,7 @@ class ModuleMakeApiCommand extends Command
             '{{RESOURCE_NAME}}' => $resourceName,
             '{{RESOURCE_KEBAB}}' => Str::kebab($resourceName),
             '{{AUTH_MIDDLEWARE}}' => $withAuth ? "->middleware('auth:api')" : '',
+            '{{AUTH_MIDDLEWARE_ARRAY}}' => $withAuth ? ", 'auth:api'" : '',
         ];
 
         $routeContent = str_replace(array_keys($replacements), array_values($replacements), $routeTemplate);
@@ -152,10 +153,15 @@ class ModuleMakeApiCommand extends Command
         if (file_exists($routesFile)) {
             $existingContent = file_get_contents($routesFile);
             if (!str_contains($existingContent, "Route::apiResource('" . Str::kebab($resourceName))) {
+                // Add controller import if not exists
+                if (!str_contains($existingContent, "use Modules\\{$moduleName}\Http\Controllers\\{$resourceName}Controller;")) {
+                    $importLine = "use Modules\\{$moduleName}\Http\Controllers\\{$resourceName}Controller;";
+                    $existingContent = str_replace("use Illuminate\Support\Facades\Route;", "use Illuminate\Support\Facades\Route;\n{$importLine}", $existingContent);
+                }
                 file_put_contents($routesFile, $existingContent . "\n" . $routeContent);
             }
         } else {
-            $fullRouteFile = "<?php\n\nuse Illuminate\Support\Facades\Route;\nuse Modules\\{$moduleName}\Http\Controllers\\{$resourceName}Controller;\n\n" . $routeContent;
+            $fullRouteFile = "<?php\n\n/*\n|--------------------------------------------------------------------------\n| {$moduleName} API Routes (v1)\n|--------------------------------------------------------------------------\n*/\n\nuse Illuminate\Support\Facades\Route;\nuse Modules\\{$moduleName}\Http\Controllers\\{$resourceName}Controller;\n\n" . $routeContent;
             file_put_contents($routesFile, $fullRouteFile);
         }
     }
@@ -502,7 +508,11 @@ PHP;
     private function getRouteTemplate(): string
     {
         return <<<'PHP'
-Route::apiResource('{{RESOURCE_KEBAB}}', {{RESOURCE_NAME}}Controller::class){{AUTH_MIDDLEWARE}};
+Route::prefix('api/v1')
+    ->middleware(['api'{{AUTH_MIDDLEWARE_ARRAY}}])
+    ->group(function () {
+        Route::apiResource('{{RESOURCE_KEBAB}}', {{RESOURCE_NAME}}Controller::class);
+    });
 PHP;
     }
 
