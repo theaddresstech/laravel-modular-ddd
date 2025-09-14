@@ -71,8 +71,8 @@ class PackageValidationCommand extends Command
             'docs',
             'scripts',
             'tests',
-            '.github',
-            '.github/workflows',
+            '._github',
+            '._github/workflows',
             'docker',
         ];
 
@@ -84,7 +84,7 @@ class PackageValidationCommand extends Command
             'LICENSE.md',
             'src/ModularDddServiceProvider.php',
             'examples/ProductCatalog/manifest.json',
-            '.github/workflows/ci.yml',
+            '._github/workflows/ci.yml',
             'docker/Dockerfile',
             'docker/docker-compose.yml',
             'scripts/release.sh',

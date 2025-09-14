@@ -1,6 +1,6 @@
 {
     "name": "mghrby/laravel-modular-ddd",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "A comprehensive Laravel package for building modular applications using Domain-Driven Design principles",
     "keywords": [
         "laravel",
@@ -26,15 +26,15 @@
         }
     ],
     "require": {
-        "php": "^8.2",
-        "illuminate/support": "^11.0|^12.0",
-        "illuminate/console": "^11.0|^12.0",
-        "illuminate/filesystem": "^11.0|^12.0",
-        "illuminate/validation": "^11.0|^12.0",
-        "illuminate/database": "^11.0|^12.0",
-        "illuminate/events": "^11.0|^12.0",
-        "illuminate/cache": "^11.0|^12.0",
-        "illuminate/queue": "^11.0|^12.0",
+        "php": "^8.1|^8.2|^8.3",
+        "illuminate/support": "^10.0|^11.0|^12.0",
+        "illuminate/console": "^10.0|^11.0|^12.0",
+        "illuminate/filesystem": "^10.0|^11.0|^12.0",
+        "illuminate/validation": "^10.0|^11.0|^12.0",
+        "illuminate/database": "^10.0|^11.0|^12.0",
+        "illuminate/events": "^10.0|^11.0|^12.0",
+        "illuminate/cache": "^10.0|^11.0|^12.0",
+        "illuminate/queue": "^10.0|^11.0|^12.0",
         "symfony/console": "^7.0",
         "symfony/process": "^7.0",
         "symfony/finder": "^7.0",
@@ -44,7 +44,7 @@
     },
     "require-dev": {
         "phpunit/phpunit": "^10.0",
-        "orchestra/testbench": "^9.0|^10.0",
+        "orchestra/testbench": "^8.0|^9.0|^10.0",
         "mockery/mockery": "^1.6",
         "vimeo/psalm": "^5.0",
         "friendsofphp/php-cs-fixer": "^3.0",

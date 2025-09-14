@@ -700,7 +700,7 @@ echo "Application restoration completed"
 ### 1. GitHub Actions Workflow
 
 ```yaml
-# .github/workflows/deploy.yml
+# ._github/workflows/deploy.yml
 name: Deploy to Production
 
 on:
