@@ -27,7 +27,6 @@
         <directory name="examples"/>
         <ignoreFiles>
             <directory name="vendor"/>
-            <directory name="src/stubs"/>
             <directory name="coverage-report"/>
             <directory name=".phpunit.cache"/>
             <file name="src/ModularDddServiceProvider.php"/>
@@ -91,8 +90,7 @@
         <UnusedVariable>
             <errorLevel type="suppress">
                 <directory name="examples"/>
-                <directory name="src/stubs"/>
-            </errorLevel>
+                </errorLevel>
         </UnusedVariable>
 
         <!-- Allow deprecated methods for backward compatibility -->
@@ -124,30 +122,9 @@
         </UnusedMethodCall>
     </issueHandlers>
 
-    <!-- PHP version compatibility -->
-    <phpVersion>8.2</phpVersion>
-
     <!-- Plugin configuration -->
     <plugins>
         <pluginClass class="Psalm\LaravelPlugin\Plugin"/>
     </plugins>
 
-    <!-- Mock classes for testing -->
-    <mockClasses>
-        <class name="Illuminate\Foundation\Application"/>
-        <class name="Illuminate\Container\Container"/>
-        <class name="Illuminate\Support\ServiceProvider"/>
-        <class name="Illuminate\Console\Command"/>
-        <class name="Illuminate\Http\Request"/>
-        <class name="Illuminate\Http\Response"/>
-    </mockClasses>
-
-    <!-- Baseline file for existing issues -->
-    <baseline>psalm-baseline.xml</baseline>
-
-    <!-- Custom stubs directory -->
-    <stubs>
-        <file name="stubs/laravel.php"/>
-        <file name="stubs/phpunit.php"/>
-    </stubs>
 </psalm>
