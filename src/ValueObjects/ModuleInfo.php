@@ -20,6 +20,7 @@ readonly class ModuleInfo implements JsonSerializable
         public array $provides,
         public string $path,
         public ModuleState $state,
+        public string $namespace = '',
         public array $config = []
     ) {}
 
@@ -37,6 +38,7 @@ readonly class ModuleInfo implements JsonSerializable
             provides: $data['provides'] ?? [],
             path: $data['path'],
             state: $data['state'] instanceof ModuleState ? $data['state'] : ModuleState::from($data['state'] ?? 'installed'),
+            namespace: $data['namespace'] ?? ('Modules\\' . $data['name']),
             config: $data['config'] ?? []
         );
     }
@@ -55,6 +57,7 @@ readonly class ModuleInfo implements JsonSerializable
             'provides' => $this->provides,
             'path' => $this->path,
             'state' => $this->state->value,
+            'namespace' => $this->namespace,
             'config' => $this->config,
         ];
     }
@@ -108,6 +111,7 @@ readonly class ModuleInfo implements JsonSerializable
             provides: $this->provides,
             path: $this->path,
             state: $state,
+            namespace: $this->namespace,
             config: $this->config
         );
     }
