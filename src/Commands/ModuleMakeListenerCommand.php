@@ -161,6 +161,7 @@ final class {$listenerName}{$implements}
             '{{MODULE}}' => $moduleName,
             '{{LISTENER}}' => $listenerName,
             '{{EVENT}}' => $eventName ?: 'DomainEvent',
+            '{{EVENT_VARIABLE}}' => $eventName ? Str::camel($eventName) : 'event',
             '{{NAMESPACE}}' => "Modules\\{$moduleName}",
             '{{QUEUED}}' => $isQueued ? 'true' : 'false',
         ];
