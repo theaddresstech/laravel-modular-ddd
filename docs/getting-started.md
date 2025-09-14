@@ -7,7 +7,7 @@ This guide will help you get started with Laravel Modular DDD package and create
 Install the package via Composer:
 
 ```bash
-composer require tai-crm/laravel-modular-ddd
+composer require mghrby/laravel-modular-ddd
 ```
 
 ### Publish Configuration

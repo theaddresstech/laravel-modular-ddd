@@ -21,8 +21,16 @@ use TaiCrm\LaravelModularDdd\Health\ModuleHealthChecker;
 use TaiCrm\LaravelModularDdd\Monitoring\ModulePerformanceMonitor;
 use TaiCrm\LaravelModularDdd\Monitoring\MetricsCollector;
 use TaiCrm\LaravelModularDdd\Monitoring\PerformanceMiddleware;
+use TaiCrm\LaravelModularDdd\Monitoring\QueryPerformanceAnalyzer;
+use TaiCrm\LaravelModularDdd\Monitoring\CachePerformanceMonitor;
+use TaiCrm\LaravelModularDdd\Monitoring\ModuleResourceMonitor;
+use TaiCrm\LaravelModularDdd\Monitoring\EnhancedPerformanceMiddleware;
 use TaiCrm\LaravelModularDdd\Visualization\DependencyGraphGenerator;
 use TaiCrm\LaravelModularDdd\Security\ModuleSecurityScanner;
+use TaiCrm\LaravelModularDdd\Foundation\CqrsServiceProvider;
+use TaiCrm\LaravelModularDdd\Authorization\ModuleAuthorizationManager;
+use TaiCrm\LaravelModularDdd\Authorization\Middleware\ModulePermissionMiddleware;
+use TaiCrm\LaravelModularDdd\Authorization\Middleware\ModuleRoleMiddleware;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Contracts\Container\Container;
 
@@ -33,6 +41,8 @@ class ModularDddServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__ . '/../config/modular-ddd.php', 'modular-ddd');
 
         $this->registerCoreServices();
+        $this->registerCqrsServices();
+        $this->registerAuthorizationServices();
         $this->registerMonitoringServices();
         $this->registerVisualizationServices();
         $this->registerSecurityServices();
@@ -106,6 +116,25 @@ class ModularDddServiceProvider extends ServiceProvider
         });
     }
 
+    private function registerCqrsServices(): void
+    {
+        $this->app->register(CqrsServiceProvider::class);
+    }
+
+    private function registerAuthorizationServices(): void
+    {
+        // Module Authorization Manager
+        $this->app->singleton(ModuleAuthorizationManager::class, function (Container $app) {
+            return new ModuleAuthorizationManager(
+                $app[ModuleManagerInterface::class]
+            );
+        });
+
+        // Authorization Middleware
+        $this->app->singleton(ModulePermissionMiddleware::class);
+        $this->app->singleton(ModuleRoleMiddleware::class);
+    }
+
     private function registerMonitoringServices(): void
     {
         if (!config('modular-ddd.monitoring.enabled', true)) {
@@ -132,10 +161,24 @@ class ModularDddServiceProvider extends ServiceProvider
             );
         });
 
+        // Enhanced Performance Monitoring Components
+        $this->app->singleton(QueryPerformanceAnalyzer::class);
+        $this->app->singleton(CachePerformanceMonitor::class);
+        $this->app->singleton(ModuleResourceMonitor::class);
+
         // Performance Middleware
         $this->app->singleton(PerformanceMiddleware::class, function (Container $app) {
             return new PerformanceMiddleware(
                 $app[ModulePerformanceMonitor::class]
+            );
+        });
+
+        // Enhanced Performance Middleware
+        $this->app->singleton(EnhancedPerformanceMiddleware::class, function (Container $app) {
+            return new EnhancedPerformanceMiddleware(
+                $app[QueryPerformanceAnalyzer::class],
+                $app[CachePerformanceMonitor::class],
+                $app[ModuleResourceMonitor::class]
             );
         });
     }
@@ -189,6 +232,16 @@ class ModularDddServiceProvider extends ServiceProvider
                 \TaiCrm\LaravelModularDdd\Commands\ModuleMakeListenerCommand::class,
                 \TaiCrm\LaravelModularDdd\Commands\ModuleMakeTestCommand::class,
                 \TaiCrm\LaravelModularDdd\Commands\ModuleMakeFactoryCommand::class,
+                \TaiCrm\LaravelModularDdd\Commands\ModuleMakeCommandCommand::class,
+                \TaiCrm\LaravelModularDdd\Commands\ModuleMakeQueryCommand::class,
+                \TaiCrm\LaravelModularDdd\Commands\ModuleMakeApiCommand::class,
+                \TaiCrm\LaravelModularDdd\Commands\ModuleMakeControllerCommand::class,
+                \TaiCrm\LaravelModularDdd\Commands\ModuleMakeMiddlewareCommand::class,
+                \TaiCrm\LaravelModularDdd\Commands\ModuleMakeRequestCommand::class,
+                \TaiCrm\LaravelModularDdd\Commands\ModuleMakeResourceCommand::class,
+                \TaiCrm\LaravelModularDdd\Commands\ModulePerformanceAnalyzeCommand::class,
+                \TaiCrm\LaravelModularDdd\Commands\ModuleMakePolicyCommand::class,
+                \TaiCrm\LaravelModularDdd\Commands\ModulePermissionCommand::class,
             ]);
 
             // Register command dependencies
