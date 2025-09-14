@@ -63,14 +63,17 @@ class ModuleMakeApiCommand extends Command
 
     private function generateController(string $moduleName, string $resourceName, bool $withAuth, bool $withValidation, bool $withSwagger): void
     {
-        $controllersDir = base_path("modules/{$moduleName}/Http/Controllers");
+        $apiVersion = config('modular-ddd.api.version', 'v1');
+        $controllersDir = base_path("modules/{$moduleName}/Http/Controllers/Api/{$apiVersion}");
         $this->ensureDirectoryExists($controllersDir);
 
         $controllerFile = "{$controllersDir}/{$resourceName}Controller.php";
         $template = $this->getControllerTemplate();
 
+        $apiVersion = config('modular-ddd.api.version', 'v1');
         $replacements = [
             '{{MODULE_NAMESPACE}}' => "Modules\\{$moduleName}",
+            '{{API_VERSION}}' => $apiVersion,
             '{{RESOURCE_NAME}}' => $resourceName,
             '{{RESOURCE_VARIABLE}}' => Str::camel($resourceName),
             '{{RESOURCE_SNAKE}}' => Str::snake($resourceName),
@@ -150,18 +153,21 @@ class ModuleMakeApiCommand extends Command
 
         $routeContent = str_replace(array_keys($replacements), array_values($replacements), $routeTemplate);
 
+        $apiVersion = config('modular-ddd.api.version', 'v1');
+        $controllerNamespace = "Modules\\{$moduleName}\Http\Controllers\Api\\{$apiVersion}\\{$resourceName}Controller";
+
         if (file_exists($routesFile)) {
             $existingContent = file_get_contents($routesFile);
             if (!str_contains($existingContent, "Route::apiResource('" . Str::kebab($resourceName))) {
                 // Add controller import if not exists
-                if (!str_contains($existingContent, "use Modules\\{$moduleName}\Http\Controllers\\{$resourceName}Controller;")) {
-                    $importLine = "use Modules\\{$moduleName}\Http\Controllers\\{$resourceName}Controller;";
+                if (!str_contains($existingContent, "use {$controllerNamespace};")) {
+                    $importLine = "use {$controllerNamespace};";
                     $existingContent = str_replace("use Illuminate\Support\Facades\Route;", "use Illuminate\Support\Facades\Route;\n{$importLine}", $existingContent);
                 }
                 file_put_contents($routesFile, $existingContent . "\n" . $routeContent);
             }
         } else {
-            $fullRouteFile = "<?php\n\n/*\n|--------------------------------------------------------------------------\n| {$moduleName} API Routes (v1)\n|--------------------------------------------------------------------------\n*/\n\nuse Illuminate\Support\Facades\Route;\nuse Modules\\{$moduleName}\Http\Controllers\\{$resourceName}Controller;\n\n" . $routeContent;
+            $fullRouteFile = "<?php\n\n/*\n|--------------------------------------------------------------------------\n| {$moduleName} API Routes ({$apiVersion})\n|--------------------------------------------------------------------------\n*/\n\nuse Illuminate\Support\Facades\Route;\nuse {$controllerNamespace};\n\n" . $routeContent;
             file_put_contents($routesFile, $fullRouteFile);
         }
     }
@@ -308,7 +314,7 @@ class ModuleMakeApiCommand extends Command
 
 declare(strict_types=1);
 
-namespace {{MODULE_NAMESPACE}}\Http\Controllers;
+namespace {{MODULE_NAMESPACE}}\Http\Controllers\Api\{{API_VERSION}};
 
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
