@@ -40,9 +40,9 @@ class ModuleHealthChecker
                 $result = $check->check($module);
                 $checks->push($result);
 
-                if ($result->status === HealthStatus::Critical) {
+                if ($result['status'] === HealthStatus::Critical) {
                     $overallStatus = HealthStatus::Critical;
-                } elseif ($result->status === HealthStatus::Warning && $overallStatus === HealthStatus::Healthy) {
+                } elseif ($result['status'] === HealthStatus::Warning && $overallStatus === HealthStatus::Healthy) {
                     $overallStatus = HealthStatus::Warning;
                 }
 
