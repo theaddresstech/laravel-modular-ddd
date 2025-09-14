@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 
 class ModuleMakeApiCommand extends Command
 {
-    protected $signature = 'module:make-api {module} {resource} {--auth} {--validation} {--swagger}';
+    protected $signature = 'module:make-api {module} {resource} {--auth} {--validation} {--swagger} {--version=} {--all-versions}';
     protected $description = 'Generate complete REST API scaffolding for a module resource';
 
     public function handle(): int
@@ -19,39 +19,45 @@ class ModuleMakeApiCommand extends Command
         $withAuth = $this->option('auth');
         $withValidation = $this->option('validation');
         $withSwagger = $this->option('swagger');
+        $specificVersion = $this->option('version');
+        $allVersions = $this->option('all-versions');
 
         if (!$this->moduleExists($moduleName)) {
             $this->error("Module '{$moduleName}' does not exist.");
             return 1;
         }
 
-        $this->info("Generating API scaffolding for {$resourceName} in {$moduleName} module...");
+        // Determine which versions to generate
+        $versions = $this->getTargetVersions($specificVersion, $allVersions);
 
-        // Generate all API components
-        $this->generateController($moduleName, $resourceName, $withAuth, $withValidation, $withSwagger);
+        if (empty($versions)) {
+            $this->error("No valid API versions found to generate.");
+            return 1;
+        }
+
+        $this->info("Generating API scaffolding for {$resourceName} in {$moduleName} module...");
+        $this->info("Target versions: " . implode(', ', $versions));
+
+        // Generate for each version
+        foreach ($versions as $version) {
+            $this->generateVersionedApi($moduleName, $resourceName, $version, $withAuth, $withValidation, $withSwagger);
+        }
+
+        // Generate shared components (not version-specific)
         $this->generateRequests($moduleName, $resourceName, $withValidation);
         $this->generateResource($moduleName, $resourceName);
-        $this->generateRoutes($moduleName, $resourceName, $withAuth);
         $this->generateCommands($moduleName, $resourceName);
         $this->generateQueries($moduleName, $resourceName);
         $this->generateHandlers($moduleName, $resourceName);
 
         if ($withSwagger) {
-            $this->generateSwaggerDocs($moduleName, $resourceName);
+            foreach ($versions as $version) {
+                $this->generateSwaggerDocs($moduleName, $resourceName, $version);
+            }
         }
 
         $this->info("✅ API scaffolding generated successfully!");
-        $this->line("📝 Generated files:");
-        $this->line("   - Controller: Http/Controllers/{$resourceName}Controller.php");
-        $this->line("   - Requests: Http/Requests/{$resourceName}/");
-        $this->line("   - Resource: Http/Resources/{$resourceName}Resource.php");
-        $this->line("   - Routes: Routes/api.php (updated)");
-        $this->line("   - Commands & Queries: Application/");
-        $this->line("   - Handlers: Application/Handlers/");
-
-        if ($withSwagger) {
-            $this->line("   - Swagger: Docs/{$resourceName}Api.php");
-        }
+        $this->displayGeneratedFiles($resourceName, $versions, $withSwagger);
 
         return 0;
     }
@@ -61,16 +67,61 @@ class ModuleMakeApiCommand extends Command
         return is_dir(base_path("modules/{$moduleName}"));
     }
 
-    private function generateController(string $moduleName, string $resourceName, bool $withAuth, bool $withValidation, bool $withSwagger): void
+    private function getTargetVersions(?string $specificVersion, bool $allVersions): array
     {
-        $apiVersion = config('modular-ddd.api.version', 'v1');
+        if ($allVersions) {
+            return config('modular-ddd.api.versions.supported', ['v1']);
+        }
+
+        if ($specificVersion) {
+            $supportedVersions = config('modular-ddd.api.versions.supported', ['v1']);
+            if (!in_array($specificVersion, $supportedVersions)) {
+                $this->warn("Version '{$specificVersion}' is not in supported versions. Generating anyway.");
+            }
+            return [$specificVersion];
+        }
+
+        // Default to latest version
+        $defaultVersion = config('modular-ddd.api.versions.latest', config('modular-ddd.api.version', 'v1'));
+        return [$defaultVersion];
+    }
+
+    private function generateVersionedApi(string $moduleName, string $resourceName, string $version, bool $withAuth, bool $withValidation, bool $withSwagger): void
+    {
+        $this->info("Generating API for version {$version}...");
+
+        $this->generateController($moduleName, $resourceName, $version, $withAuth, $withValidation, $withSwagger);
+        $this->generateRoutes($moduleName, $resourceName, $version, $withAuth);
+    }
+
+    private function displayGeneratedFiles(string $resourceName, array $versions, bool $withSwagger): void
+    {
+        $this->line("📝 Generated files:");
+
+        foreach ($versions as $version) {
+            $this->line("   📁 Version {$version}:");
+            $this->line("     - Controller: Http/Controllers/Api/{$version}/{$resourceName}Controller.php");
+            $this->line("     - Routes: Routes/api.php (updated with {$version} routes)");
+            if ($withSwagger) {
+                $this->line("     - Swagger: Docs/{$version}/{$resourceName}Api.php");
+            }
+        }
+
+        $this->line("   📁 Shared Components:");
+        $this->line("     - Requests: Http/Requests/{$resourceName}/");
+        $this->line("     - Resource: Http/Resources/{$resourceName}Resource.php");
+        $this->line("     - Commands & Queries: Application/");
+        $this->line("     - Handlers: Application/Handlers/");
+    }
+
+    private function generateController(string $moduleName, string $resourceName, string $apiVersion, bool $withAuth, bool $withValidation, bool $withSwagger): void
+    {
         $controllersDir = base_path("modules/{$moduleName}/Http/Controllers/Api/{$apiVersion}");
         $this->ensureDirectoryExists($controllersDir);
 
         $controllerFile = "{$controllersDir}/{$resourceName}Controller.php";
         $template = $this->getControllerTemplate();
 
-        $apiVersion = config('modular-ddd.api.version', 'v1');
         $replacements = [
             '{{MODULE_NAMESPACE}}' => "Modules\\{$moduleName}",
             '{{API_VERSION}}' => $apiVersion,
@@ -81,7 +132,7 @@ class ModuleMakeApiCommand extends Command
             '{{AUTH_MIDDLEWARE}}' => $withAuth ? "->middleware('auth:api')" : '',
             '{{VALIDATION_IMPORTS}}' => $withValidation ? $this->getValidationImports($moduleName, $resourceName) : '',
             '{{REQUEST_CLASSES}}' => $withValidation ? $this->getRequestClasses($resourceName) : 'Request',
-            '{{SWAGGER_ANNOTATIONS}}' => $withSwagger ? $this->getSwaggerAnnotations($resourceName) : '',
+            '{{SWAGGER_ANNOTATIONS}}' => $withSwagger ? $this->getSwaggerAnnotations($resourceName, $apiVersion) : '',
         ];
 
         $content = str_replace(array_keys($replacements), array_values($replacements), $template);
@@ -138,7 +189,7 @@ class ModuleMakeApiCommand extends Command
         file_put_contents($resourceFile, $content);
     }
 
-    private function generateRoutes(string $moduleName, string $resourceName, bool $withAuth): void
+    private function generateRoutes(string $moduleName, string $resourceName, string $apiVersion, bool $withAuth): void
     {
         $routesFile = base_path("modules/{$moduleName}/Routes/api.php");
         $this->ensureDirectoryExists(dirname($routesFile));
@@ -147,13 +198,13 @@ class ModuleMakeApiCommand extends Command
         $replacements = [
             '{{RESOURCE_NAME}}' => $resourceName,
             '{{RESOURCE_KEBAB}}' => Str::kebab($resourceName),
+            '{{API_VERSION}}' => $apiVersion,
             '{{AUTH_MIDDLEWARE}}' => $withAuth ? "->middleware('auth:api')" : '',
             '{{AUTH_MIDDLEWARE_ARRAY}}' => $withAuth ? ", 'auth:api'" : '',
         ];
 
         $routeContent = str_replace(array_keys($replacements), array_values($replacements), $routeTemplate);
 
-        $apiVersion = config('modular-ddd.api.version', 'v1');
         $controllerNamespace = "Modules\\{$moduleName}\Http\Controllers\Api\\{$apiVersion}\\{$resourceName}Controller";
 
         if (file_exists($routesFile)) {
@@ -283,9 +334,9 @@ class ModuleMakeApiCommand extends Command
         }
     }
 
-    private function generateSwaggerDocs(string $moduleName, string $resourceName): void
+    private function generateSwaggerDocs(string $moduleName, string $resourceName, string $apiVersion): void
     {
-        $docsDir = base_path("modules/{$moduleName}/Docs");
+        $docsDir = base_path("modules/{$moduleName}/Docs/{$apiVersion}");
         $this->ensureDirectoryExists($docsDir);
 
         $swaggerFile = "{$docsDir}/{$resourceName}Api.php";
@@ -295,6 +346,7 @@ class ModuleMakeApiCommand extends Command
             '{{RESOURCE_NAME}}' => $resourceName,
             '{{RESOURCE_KEBAB}}' => Str::kebab($resourceName),
             '{{RESOURCE_VARIABLE}}' => Str::camel($resourceName),
+            '{{API_VERSION}}' => $apiVersion,
         ];
         $content = str_replace(array_keys($replacements), array_values($replacements), $template);
         file_put_contents($swaggerFile, $content);
@@ -514,8 +566,8 @@ PHP;
     private function getRouteTemplate(): string
     {
         return <<<'PHP'
-Route::prefix('api/v1')
-    ->middleware(['api'{{AUTH_MIDDLEWARE_ARRAY}}])
+Route::prefix('api/{{API_VERSION}}')
+    ->middleware(['api', 'api.version'{{AUTH_MIDDLEWARE_ARRAY}}])
     ->group(function () {
         Route::apiResource('{{RESOURCE_KEBAB}}', {{RESOURCE_NAME}}Controller::class);
     });
@@ -840,9 +892,9 @@ PHP;
         return "Create{$resourceName}Request|Update{$resourceName}Request";
     }
 
-    private function getSwaggerAnnotations(string $resourceName): string
+    private function getSwaggerAnnotations(string $resourceName, string $apiVersion): string
     {
-        return "\n\n/**\n * @OA\Info(title=\"{$resourceName} API\", version=\"1.0.0\")\n */";
+        return "\n\n/**\n * @OA\Info(title=\"{$resourceName} API\", version=\"{$apiVersion}\")\n */";
     }
 
     private function getCreateValidationRules(string $resourceName): string

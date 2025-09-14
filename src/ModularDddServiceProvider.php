@@ -43,6 +43,7 @@ class ModularDddServiceProvider extends ServiceProvider
         $this->registerCoreServices();
         $this->registerCqrsServices();
         $this->registerAuthorizationServices();
+        $this->registerVersioningServices();
         $this->registerMonitoringServices();
         $this->registerVisualizationServices();
         $this->registerSecurityServices();
@@ -53,6 +54,7 @@ class ModularDddServiceProvider extends ServiceProvider
     {
         $this->publishConfiguration();
         $this->bootModuleAutoDiscovery();
+        $this->bootVersioningServices();
     }
 
     private function registerCoreServices(): void
@@ -133,6 +135,31 @@ class ModularDddServiceProvider extends ServiceProvider
         // Authorization Middleware
         $this->app->singleton(ModulePermissionMiddleware::class);
         $this->app->singleton(ModuleRoleMiddleware::class);
+    }
+
+    private function registerVersioningServices(): void
+    {
+        // Version Negotiator
+        $this->app->singleton(\TaiCrm\LaravelModularDdd\Http\VersionNegotiator::class);
+
+        // Version Transformer and Registry
+        $this->app->singleton(\TaiCrm\LaravelModularDdd\Http\Compatibility\TransformationRegistry::class);
+        $this->app->singleton(\TaiCrm\LaravelModularDdd\Http\Compatibility\VersionTransformer::class);
+
+        // Version-aware Router
+        $this->app->singleton(\TaiCrm\LaravelModularDdd\Http\VersionAwareRouter::class, function (Container $app) {
+            return new \TaiCrm\LaravelModularDdd\Http\VersionAwareRouter(
+                $app['router'],
+                $app[\TaiCrm\LaravelModularDdd\Http\VersionNegotiator::class]
+            );
+        });
+
+        // API Version Middleware
+        $this->app->singleton(\TaiCrm\LaravelModularDdd\Http\Middleware\ApiVersionMiddleware::class, function (Container $app) {
+            return new \TaiCrm\LaravelModularDdd\Http\Middleware\ApiVersionMiddleware(
+                $app[\TaiCrm\LaravelModularDdd\Http\VersionNegotiator::class]
+            );
+        });
     }
 
     private function registerMonitoringServices(): void
@@ -360,6 +387,22 @@ class ModularDddServiceProvider extends ServiceProvider
         if (file_exists($routesPath . '/web.php')) {
             $this->loadRoutesFrom($routesPath . '/web.php');
         }
+    }
+
+    private function bootVersioningServices(): void
+    {
+        // Register API version middleware
+        $router = $this->app['router'];
+        $router->aliasMiddleware('api.version', \TaiCrm\LaravelModularDdd\Http\Middleware\ApiVersionMiddleware::class);
+
+        // Register version discovery routes
+        if ($this->app->routesAreCached()) {
+            return;
+        }
+
+        $versionAwareRouter = $this->app[\TaiCrm\LaravelModularDdd\Http\VersionAwareRouter::class];
+        $versionAwareRouter->registerVersionDiscoveryRoutes();
+        $versionAwareRouter->registerVersionConstraints();
     }
 
     public function provides(): array
