@@ -52,7 +52,7 @@ This project adheres to a [Code of Conduct](CODE_OF_CONDUCT.md). By participatin
 1. **Fork the repository**
    ```bash
    # Fork on GitHub, then clone your fork
-   git clone https://github.com/YOUR_USERNAME/laravel-modular-ddd.git
+   git clone https://github.com/theaddresstech/laravel-modular-ddd.git
    cd laravel-modular-ddd
    ```
 

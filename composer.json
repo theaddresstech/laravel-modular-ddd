@@ -14,7 +14,7 @@
         "event-driven",
         "microservices"
     ],
-    "homepage": "https://github.com/tai-crm/laravel-modular-ddd",
+    "homepage": "https://github.com/theaddresstech/laravel-modular-ddd",
     "license": "MIT",
     "type": "library",
     "authors": [
@@ -126,8 +126,8 @@
         }
     ],
     "support": {
-        "issues": "https://github.com/tai-crm/laravel-modular-ddd/issues",
-        "source": "https://github.com/tai-crm/laravel-modular-ddd",
+        "issues": "https://github.com/theaddresstech/laravel-modular-ddd/issues",
+        "source": "https://github.com/theaddresstech/laravel-modular-ddd",
         "docs": "https://docs.tai-crm.com/laravel-modular-ddd",
         "chat": "https://discord.gg/laravel-modular-ddd",
         "email": "support@tai-crm.com"
