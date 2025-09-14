@@ -1,0 +1,320 @@
+{
+    "version": "1.0.0",
+    "description": "Registry of all available DDD component stubs",
+    "categories": {
+        "domain": {
+            "name": "Domain Layer",
+            "description": "Pure business logic components",
+            "stubs": {
+                "aggregate-root": {
+                    "file": "domain/aggregate-root.stub",
+                    "description": "Creates a DDD Aggregate Root with event recording capabilities",
+                    "variables": ["module", "name", "nameSnake"],
+                    "dependencies": ["value-object-id", "event"]
+                },
+                "entity": {
+                    "file": "domain/entity.stub",
+                    "description": "Creates a DDD Entity with identity comparison",
+                    "variables": ["module", "name", "nameSnake"],
+                    "dependencies": ["value-object-id"]
+                },
+                "value-object": {
+                    "file": "domain/value-object.stub",
+                    "description": "Creates an immutable value object with validation",
+                    "variables": ["module", "name"],
+                    "dependencies": []
+                },
+                "value-object-id": {
+                    "file": "domain/value-object-id.stub",
+                    "description": "Creates a UUID-based identity value object",
+                    "variables": ["module", "name"],
+                    "dependencies": []
+                },
+                "event": {
+                    "file": "domain/event.stub",
+                    "description": "Creates a domain event with payload serialization",
+                    "variables": ["module", "name", "aggregate", "aggregateSnake", "eventType"],
+                    "dependencies": []
+                }
+            }
+        },
+        "application": {
+            "name": "Application Layer",
+            "description": "Use case orchestration components",
+            "stubs": {
+                "command": {
+                    "file": "application/command.stub",
+                    "description": "Creates a CQRS Command (write operation)",
+                    "variables": ["module", "name"],
+                    "dependencies": []
+                },
+                "command-handler": {
+                    "file": "application/command-handler.stub",
+                    "description": "Creates a Command Handler with event dispatching",
+                    "variables": ["module", "name", "aggregate", "aggregateSnake"],
+                    "dependencies": ["command", "aggregate-root", "repository-interface"]
+                },
+                "query": {
+                    "file": "application/query.stub",
+                    "description": "Creates a CQRS Query (read operation)",
+                    "variables": ["module", "name"],
+                    "dependencies": []
+                },
+                "query-handler": {
+                    "file": "application/query-handler.stub",
+                    "description": "Creates a Query Handler with DTO mapping",
+                    "variables": ["module", "name", "aggregate", "aggregateSnake"],
+                    "dependencies": ["query", "dto", "repository-interface"]
+                },
+                "dto": {
+                    "file": "application/dto.stub",
+                    "description": "Creates a Data Transfer Object for layer communication",
+                    "variables": ["module", "name", "aggregate", "aggregateSnake"],
+                    "dependencies": []
+                }
+            }
+        },
+        "infrastructure": {
+            "name": "Infrastructure Layer",
+            "description": "External concerns and persistence implementations",
+            "stubs": {
+                "repository-interface": {
+                    "file": "infrastructure/repository-interface.stub",
+                    "description": "Creates a repository contract interface",
+                    "variables": ["module", "name", "nameSnake"],
+                    "dependencies": []
+                },
+                "eloquent-repository": {
+                    "file": "infrastructure/eloquent-repository.stub",
+                    "description": "Creates an Eloquent repository implementation",
+                    "variables": ["module", "name", "nameSnake"],
+                    "dependencies": ["repository-interface", "eloquent-model"]
+                },
+                "eloquent-model": {
+                    "file": "infrastructure/eloquent-model.stub",
+                    "description": "Creates an Eloquent model for database persistence",
+                    "variables": ["module", "name", "nameSnake", "module_snake"],
+                    "dependencies": []
+                }
+            }
+        },
+        "presentation": {
+            "name": "Presentation Layer",
+            "description": "User interface and API endpoints",
+            "stubs": {
+                "controller": {
+                    "file": "presentation/controller.stub",
+                    "description": "Creates a REST API controller with CRUD operations",
+                    "variables": ["module", "name", "nameSnake"],
+                    "dependencies": ["command", "command-handler", "query", "query-handler", "request", "resource"]
+                },
+                "request": {
+                    "file": "presentation/request.stub",
+                    "description": "Creates a Form Request with validation rules",
+                    "variables": ["module", "name"],
+                    "dependencies": []
+                },
+                "resource": {
+                    "file": "presentation/resource.stub",
+                    "description": "Creates an API Resource for JSON transformation",
+                    "variables": ["module", "name", "nameSnake", "module_snake"],
+                    "dependencies": ["dto"]
+                }
+            }
+        },
+        "database": {
+            "name": "Database Layer",
+            "description": "Database migrations, factories, and seeders",
+            "stubs": {
+                "migration": {
+                    "file": "database/migration.stub",
+                    "description": "Creates a database migration file",
+                    "variables": ["table"],
+                    "dependencies": []
+                },
+                "factory": {
+                    "file": "database/factory.stub",
+                    "description": "Creates an Eloquent model factory for testing",
+                    "variables": ["module", "name"],
+                    "dependencies": ["eloquent-model"]
+                },
+                "seeder": {
+                    "file": "database/seeder.stub",
+                    "description": "Creates a database seeder with sample data",
+                    "variables": ["module", "name", "nameSnake"],
+                    "dependencies": ["eloquent-model", "factory"]
+                }
+            }
+        },
+        "testing": {
+            "name": "Testing Layer",
+            "description": "Unit, integration, and feature tests",
+            "stubs": {
+                "unit-test": {
+                    "file": "tests/unit-test.stub",
+                    "description": "Creates unit tests for domain logic",
+                    "variables": ["module", "name", "nameSnake"],
+                    "dependencies": ["aggregate-root", "value-object-id"]
+                },
+                "integration-test": {
+                    "file": "tests/integration-test.stub",
+                    "description": "Creates integration tests for handlers and repositories",
+                    "variables": ["module", "name", "nameSnake", "module_snake"],
+                    "dependencies": ["command", "command-handler", "query", "query-handler", "repository-interface"]
+                },
+                "feature-test": {
+                    "file": "tests/feature-test.stub",
+                    "description": "Creates feature tests for HTTP endpoints",
+                    "variables": ["module", "name", "nameSnake", "module_snake"],
+                    "dependencies": ["controller", "eloquent-model", "factory"]
+                }
+            }
+        },
+        "configuration": {
+            "name": "Configuration",
+            "description": "Module configuration and service providers",
+            "stubs": {
+                "module-config": {
+                    "file": "config/module-config.stub",
+                    "description": "Creates module-specific configuration file",
+                    "variables": ["module", "moduleUpper", "module_snake"],
+                    "dependencies": []
+                },
+                "service-provider": {
+                    "file": "providers/service-provider.stub",
+                    "description": "Creates module service provider with dependency bindings",
+                    "variables": ["module", "aggregate", "module_snake"],
+                    "dependencies": ["repository-interface", "eloquent-repository"]
+                }
+            }
+        },
+        "routes": {
+            "name": "Routes",
+            "description": "API and web route definitions",
+            "stubs": {
+                "api-routes": {
+                    "file": "routes/api-routes.stub",
+                    "description": "Creates RESTful API routes",
+                    "variables": ["module", "aggregate", "aggregateSnake", "module_snake"],
+                    "dependencies": ["controller"]
+                },
+                "web-routes": {
+                    "file": "routes/web-routes.stub",
+                    "description": "Creates web routes for browser interfaces",
+                    "variables": ["module", "aggregate", "aggregateSnake", "module_snake"],
+                    "dependencies": []
+                }
+            }
+        }
+    },
+    "presets": {
+        "full-module": {
+            "name": "Complete DDD Module",
+            "description": "Creates a full DDD module with all layers",
+            "stubs": [
+                "aggregate-root",
+                "value-object-id",
+                "event",
+                "command",
+                "command-handler",
+                "query",
+                "query-handler",
+                "dto",
+                "repository-interface",
+                "eloquent-repository",
+                "eloquent-model",
+                "controller",
+                "request",
+                "resource",
+                "migration",
+                "factory",
+                "seeder",
+                "unit-test",
+                "integration-test",
+                "feature-test",
+                "module-config",
+                "service-provider",
+                "api-routes",
+                "web-routes"
+            ]
+        },
+        "domain-only": {
+            "name": "Domain Layer Only",
+            "description": "Creates only domain layer components",
+            "stubs": [
+                "aggregate-root",
+                "value-object-id",
+                "event",
+                "unit-test"
+            ]
+        },
+        "api-module": {
+            "name": "API Module",
+            "description": "Creates a module focused on API endpoints",
+            "stubs": [
+                "aggregate-root",
+                "value-object-id",
+                "command",
+                "command-handler",
+                "query",
+                "query-handler",
+                "dto",
+                "repository-interface",
+                "eloquent-repository",
+                "eloquent-model",
+                "controller",
+                "request",
+                "resource",
+                "api-routes",
+                "feature-test"
+            ]
+        }
+    },
+    "variable_patterns": {
+        "module": {
+            "description": "Module name in PascalCase",
+            "example": "ProductCatalog",
+            "pattern": "^[A-Z][a-zA-Z0-9]*$"
+        },
+        "name": {
+            "description": "Component name in PascalCase",
+            "example": "Product",
+            "pattern": "^[A-Z][a-zA-Z0-9]*$"
+        },
+        "nameSnake": {
+            "description": "Component name in snake_case",
+            "example": "product",
+            "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "module_snake": {
+            "description": "Module name in snake_case",
+            "example": "product_catalog",
+            "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "moduleUpper": {
+            "description": "Module name in UPPER_SNAKE_CASE",
+            "example": "PRODUCT_CATALOG",
+            "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "aggregate": {
+            "description": "Aggregate root name in PascalCase",
+            "example": "Product",
+            "pattern": "^[A-Z][a-zA-Z0-9]*$"
+        },
+        "aggregateSnake": {
+            "description": "Aggregate root name in snake_case",
+            "example": "product",
+            "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "eventType": {
+            "description": "Event type description",
+            "example": "created",
+            "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "table": {
+            "description": "Database table name in snake_case",
+            "example": "product_catalog_products",
+            "pattern": "^[a-z][a-z0-9_]*$"
+        }
+    }
+}

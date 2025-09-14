@@ -1,0 +1,133 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\{{ module }}\Tests\Integration;
+
+use Modules\{{ module }}\Application\Commands\Create{{ name }}\Create{{ name }}Command;
+use Modules\{{ module }}\Application\Commands\Create{{ name }}\Create{{ name }}Handler;
+use Modules\{{ module }}\Application\Queries\Get{{ name }}\Get{{ name }}Query;
+use Modules\{{ module }}\Application\Queries\Get{{ name }}\Get{{ name }}Handler;
+use Modules\{{ module }}\Domain\Repositories\{{ name }}RepositoryInterface;
+use Modules\{{ module }}\Infrastructure\Persistence\Eloquent\Models\{{ name }}Model;
+use TaiCrm\LaravelModularDdd\Tests\TestCase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
+class {{ name }}HandlerTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private Create{{ name }}Handler $createHandler;
+    private Get{{ name }}Handler $getHandler;
+    private {{ name }}RepositoryInterface $repository;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->createHandler = $this->app->make(Create{{ name }}Handler::class);
+        $this->getHandler = $this->app->make(Get{{ name }}Handler::class);
+        $this->repository = $this->app->make({{ name }}RepositoryInterface::class);
+    }
+
+    public function test_can_create_{{ nameSnake }}(): void
+    {
+        // Arrange
+        $command = new Create{{ name }}Command(
+            name: 'Test {{ name }}',
+            description: 'Test description'
+        );
+
+        // Act
+        ${{ nameSnake }}Id = $this->createHandler->handle($command);
+
+        // Assert
+        $this->assertNotEmpty(${{ nameSnake }}Id);
+        $this->assertDatabaseHas('{{ module_snake }}_{{ nameSnake }}s', [
+            'id' => ${{ nameSnake }}Id,
+            'name' => 'Test {{ name }}'
+        ]);
+    }
+
+    public function test_can_retrieve_{{ nameSnake }}(): void
+    {
+        // Arrange
+        $createCommand = new Create{{ name }}Command(
+            name: 'Test {{ name }}',
+            description: 'Test description'
+        );
+        ${{ nameSnake }}Id = $this->createHandler->handle($createCommand);
+
+        $getQuery = new Get{{ name }}Query(${{ nameSnake }}Id);
+
+        // Act
+        ${{ nameSnake }}DTO = $this->getHandler->handle($getQuery);
+
+        // Assert
+        $this->assertNotNull(${{ nameSnake }}DTO);
+        $this->assertEquals(${{ nameSnake }}Id, ${{ nameSnake }}DTO->id);
+        $this->assertEquals('Test {{ name }}', ${{ nameSnake }}DTO->name);
+        $this->assertNotNull(${{ nameSnake }}DTO->createdAt);
+    }
+
+    public function test_returns_null_when_{{ nameSnake }}_not_found(): void
+    {
+        // Arrange
+        $query = new Get{{ name }}Query('non-existent-id');
+
+        // Act
+        ${{ nameSnake }}DTO = $this->getHandler->handle($query);
+
+        // Assert
+        $this->assertNull(${{ nameSnake }}DTO);
+    }
+
+    public function test_repository_can_save_and_find_{{ nameSnake }}(): void
+    {
+        // Arrange
+        ${{ nameSnake }} = $this->create{{ name }}();
+
+        // Act
+        $this->repository->save(${{ nameSnake }});
+        $found{{ name }} = $this->repository->findById(${{ nameSnake }}->getId());
+
+        // Assert
+        $this->assertNotNull($found{{ name }});
+        $this->assertEquals(${{ nameSnake }}->getId(), $found{{ name }}->getId());
+        $this->assertEquals(${{ nameSnake }}->getName(), $found{{ name }}->getName());
+    }
+
+    public function test_repository_can_check_existence(): void
+    {
+        // Arrange
+        ${{ nameSnake }} = $this->create{{ name }}();
+        $this->repository->save(${{ nameSnake }});
+
+        // Act & Assert
+        $this->assertTrue($this->repository->exists(${{ nameSnake }}->getId()));
+    }
+
+    public function test_repository_can_remove_{{ nameSnake }}(): void
+    {
+        // Arrange
+        ${{ nameSnake }} = $this->create{{ name }}();
+        $this->repository->save(${{ nameSnake }});
+
+        // Act
+        $this->repository->remove(${{ nameSnake }}->getId());
+
+        // Assert
+        $this->assertFalse($this->repository->exists(${{ nameSnake }}->getId()));
+        $this->assertDatabaseMissing('{{ module_snake }}_{{ nameSnake }}s', [
+            'id' => ${{ nameSnake }}->getId()->toString()
+        ]);
+    }
+
+    private function create{{ name }}(): \Modules\{{ module }}\Domain\Models\{{ name }}
+    {
+        return \Modules\{{ module }}\Domain\Models\{{ name }}::create(
+            \Modules\{{ module }}\Domain\ValueObjects\{{ name }}Id::generate(),
+            'Test {{ name }}'
+        );
+    }
+}

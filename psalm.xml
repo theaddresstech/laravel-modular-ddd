@@ -1,0 +1,153 @@
+<?xml version="1.0"?>
+<psalm
+    errorLevel="1"
+    resolveFromConfigFile="true"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="https://getpsalm.org/schema/config"
+    xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
+    findUnusedBaselineEntry="true"
+    findUnusedCode="true"
+    findUnusedVariablesAndParams="true"
+    checkForThrowsDocblock="true"
+    checkForThrowsInGlobalScope="true"
+    ensureArrayStringOffsetsExist="true"
+    ensureArrayIntOffsetsExist="true"
+    reportMixedIssues="true"
+    strictBinaryOperands="true"
+    rememberPropertyAssignmentsAfterCall="true"
+    memoizeMethodCallResults="true"
+    hoistConstants="true"
+    addParamTypehints="true"
+    addReturnTypehints="true"
+    addVoidReturnType="true"
+    disableSuppression="false">
+
+    <projectFiles>
+        <directory name="src"/>
+        <directory name="examples"/>
+        <ignoreFiles>
+            <directory name="vendor"/>
+            <directory name="src/stubs"/>
+            <directory name="coverage-report"/>
+            <directory name=".phpunit.cache"/>
+            <file name="src/ModularDddServiceProvider.php"/>
+        </ignoreFiles>
+    </projectFiles>
+
+    <issueHandlers>
+        <!-- Allow mixed types in specific contexts -->
+        <MixedArgument>
+            <errorLevel type="suppress">
+                <directory name="src/Commands"/>
+                <directory name="examples"/>
+            </errorLevel>
+        </MixedArgument>
+
+        <MixedAssignment>
+            <errorLevel type="suppress">
+                <directory name="src/Commands"/>
+                <directory name="examples"/>
+            </errorLevel>
+        </MixedAssignment>
+
+        <MixedArrayAccess>
+            <errorLevel type="suppress">
+                <directory name="src/Commands"/>
+                <directory name="examples"/>
+            </errorLevel>
+        </MixedArrayAccess>
+
+        <MixedMethodCall>
+            <errorLevel type="suppress">
+                <directory name="src/Commands"/>
+                <directory name="examples"/>
+            </errorLevel>
+        </MixedMethodCall>
+
+        <!-- Allow property access for dynamic module loading -->
+        <MixedPropertyFetch>
+            <errorLevel type="suppress">
+                <directory name="src/ModuleManager"/>
+                <file name="src/Foundation/ServiceRegistry.php"/>
+                <file name="src/Foundation/EventBus.php"/>
+            </errorLevel>
+        </MixedPropertyFetch>
+
+        <!-- Suppress for Laravel facades and helpers -->
+        <UndefinedMagicMethod>
+            <errorLevel type="suppress">
+                <referencedMethod name="Illuminate\Support\Facades\*"/>
+            </errorLevel>
+        </UndefinedMagicMethod>
+
+        <UndefinedClass>
+            <errorLevel type="suppress">
+                <referencedClass name="Illuminate\Foundation\Application"/>
+                <referencedClass name="Laravel\*"/>
+            </errorLevel>
+        </UndefinedClass>
+
+        <!-- Allow unused variables in example code -->
+        <UnusedVariable>
+            <errorLevel type="suppress">
+                <directory name="examples"/>
+                <directory name="src/stubs"/>
+            </errorLevel>
+        </UnusedVariable>
+
+        <!-- Allow deprecated methods for backward compatibility -->
+        <DeprecatedMethod>
+            <errorLevel type="info"/>
+        </DeprecatedMethod>
+
+
+        <!-- Allow string concatenation in command output -->
+        <ImplicitToStringCast>
+            <errorLevel type="suppress">
+                <directory name="src/Commands"/>
+            </errorLevel>
+        </ImplicitToStringCast>
+
+        <!-- Suppress false positives in testing -->
+        <PropertyNotSetInConstructor>
+            <errorLevel type="suppress">
+                <directory name="tests"/>
+                <directory name="examples/*/Tests"/>
+            </errorLevel>
+        </PropertyNotSetInConstructor>
+
+        <UnusedMethodCall>
+            <errorLevel type="suppress">
+                <directory name="tests"/>
+                <directory name="examples/*/Tests"/>
+            </errorLevel>
+        </UnusedMethodCall>
+    </issueHandlers>
+
+    <!-- PHP version compatibility -->
+    <phpVersion>8.2</phpVersion>
+
+    <!-- Plugin configuration -->
+    <plugins>
+        <pluginClass class="Psalm\LaravelPlugin\Plugin"/>
+    </plugins>
+
+    <!-- Mock classes for testing -->
+    <mockClasses>
+        <class name="Illuminate\Foundation\Application"/>
+        <class name="Illuminate\Container\Container"/>
+        <class name="Illuminate\Support\ServiceProvider"/>
+        <class name="Illuminate\Console\Command"/>
+        <class name="Illuminate\Http\Request"/>
+        <class name="Illuminate\Http\Response"/>
+    </mockClasses>
+
+    <!-- Baseline file for existing issues -->
+    <baseline>psalm-baseline.xml</baseline>
+
+    <!-- Custom stubs directory -->
+    <stubs>
+        <file name="stubs/laravel.php"/>
+        <file name="stubs/phpunit.php"/>
+    </stubs>
+</psalm>

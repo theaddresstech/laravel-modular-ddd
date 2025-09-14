@@ -1,0 +1,104 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\{{ module }}\Presentation\Http\Controllers;
+
+use Modules\{{ module }}\Application\Commands\Create{{ name }}\Create{{ name }}Command;
+use Modules\{{ module }}\Application\Commands\Create{{ name }}\Create{{ name }}Handler;
+use Modules\{{ module }}\Application\Commands\Update{{ name }}\Update{{ name }}Command;
+use Modules\{{ module }}\Application\Commands\Update{{ name }}\Update{{ name }}Handler;
+use Modules\{{ module }}\Application\Queries\Get{{ name }}\Get{{ name }}Query;
+use Modules\{{ module }}\Application\Queries\Get{{ name }}\Get{{ name }}Handler;
+use Modules\{{ module }}\Application\Queries\List{{ name }}s\List{{ name }}sQuery;
+use Modules\{{ module }}\Application\Queries\List{{ name }}s\List{{ name }}sHandler;
+use Modules\{{ module }}\Presentation\Http\Requests\Create{{ name }}Request;
+use Modules\{{ module }}\Presentation\Http\Requests\Update{{ name }}Request;
+use Modules\{{ module }}\Presentation\Http\Resources\{{ name }}Resource;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use App\Http\Controllers\Controller;
+
+class {{ name }}Controller extends Controller
+{
+    public function __construct(
+        private Create{{ name }}Handler $create{{ name }}Handler,
+        private Update{{ name }}Handler $update{{ name }}Handler,
+        private Get{{ name }}Handler $get{{ name }}Handler,
+        private List{{ name }}sHandler $list{{ name }}sHandler
+    ) {}
+
+    public function index(Request $request): JsonResponse
+    {
+        $query = new List{{ name }}sQuery(
+            filters: $request->get('filters', []),
+            sorting: $request->get('sorting', []),
+            limit: $request->integer('limit'),
+            offset: $request->integer('offset')
+        );
+
+        ${{ nameSnake }}s = $this->list{{ name }}sHandler->handle($query);
+
+        return {{ name }}Resource::collection(${{ nameSnake }}s)
+            ->response()
+            ->setStatusCode(Response::HTTP_OK);
+    }
+
+    public function show(string $id): JsonResponse
+    {
+        $query = new Get{{ name }}Query($id);
+        ${{ nameSnake }} = $this->get{{ name }}Handler->handle($query);
+
+        if (!${{ nameSnake }}) {
+            return response()->json([
+                'message' => '{{ name }} not found'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        return (new {{ name }}Resource(${{ nameSnake }}))
+            ->response()
+            ->setStatusCode(Response::HTTP_OK);
+    }
+
+    public function store(Create{{ name }}Request $request): JsonResponse
+    {
+        $command = new Create{{ name }}Command(
+            name: $request->validated('name'),
+            description: $request->validated('description')
+        );
+
+        ${{ nameSnake }}Id = $this->create{{ name }}Handler->handle($command);
+
+        return response()->json([
+            'message' => '{{ name }} created successfully',
+            'id' => ${{ nameSnake }}Id
+        ], Response::HTTP_CREATED);
+    }
+
+    public function update(Update{{ name }}Request $request, string $id): JsonResponse
+    {
+        $command = new Update{{ name }}Command(
+            id: $id,
+            name: $request->validated('name'),
+            description: $request->validated('description')
+        );
+
+        $this->update{{ name }}Handler->handle($command);
+
+        return response()->json([
+            'message' => '{{ name }} updated successfully'
+        ], Response::HTTP_OK);
+    }
+
+    public function destroy(string $id): JsonResponse
+    {
+        // Implement delete logic here
+        // $command = new Delete{{ name }}Command($id);
+        // $this->delete{{ name }}Handler->handle($command);
+
+        return response()->json([
+            'message' => '{{ name }} deleted successfully'
+        ], Response::HTTP_OK);
+    }
+}

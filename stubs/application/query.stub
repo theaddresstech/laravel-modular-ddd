@@ -1,0 +1,27 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\{{ module }}\Application\Queries\{{ name }};
+
+readonly class {{ name }}Query
+{
+    public function __construct(
+        public string $id,
+        public ?array $filters = null,
+        public ?array $sorting = null,
+        public ?int $limit = null,
+        public ?int $offset = null
+    ) {}
+
+    public function toArray(): array
+    {
+        return array_filter([
+            'id' => $this->id,
+            'filters' => $this->filters,
+            'sorting' => $this->sorting,
+            'limit' => $this->limit,
+            'offset' => $this->offset,
+        ]);
+    }
+}

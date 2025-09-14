@@ -1,0 +1,99 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\{{ module }}\Domain\Models;
+
+use Modules\{{ module }}\Domain\ValueObjects\{{ name }}Id;
+use Modules\{{ module }}\Domain\Events\{{ name }}Created;
+use Modules\{{ module }}\Domain\Events\{{ name }}Updated;
+use TaiCrm\LaravelModularDdd\Foundation\AggregateRoot;
+
+class {{ name }} extends AggregateRoot
+{
+    private function __construct(
+        private {{ name }}Id $id,
+        private string $name,
+        private \DateTimeImmutable $createdAt,
+        private ?\DateTimeImmutable $updatedAt = null
+    ) {
+        parent::__construct();
+    }
+
+    public static function create(
+        {{ name }}Id $id,
+        string $name
+    ): self {
+        ${{ nameSnake }} = new self(
+            $id,
+            $name,
+            new \DateTimeImmutable()
+        );
+
+        ${{ nameSnake }}->recordEvent(new {{ name }}Created(
+            $id,
+            $name,
+            ${{ nameSnake }}->createdAt
+        ));
+
+        return ${{ nameSnake }};
+    }
+
+    public static function reconstitute(
+        {{ name }}Id $id,
+        string $name,
+        \DateTimeImmutable $createdAt,
+        ?\DateTimeImmutable $updatedAt = null
+    ): self {
+        return new self($id, $name, $createdAt, $updatedAt);
+    }
+
+    public function changeName(string $newName): void
+    {
+        if ($this->name === $newName) {
+            return;
+        }
+
+        $oldName = $this->name;
+        $this->name = $newName;
+        $this->updatedAt = new \DateTimeImmutable();
+
+        $this->recordEvent(new {{ name }}Updated(
+            $this->id,
+            $oldName,
+            $newName,
+            $this->updatedAt
+        ));
+    }
+
+    // Getters
+    public function getId(): {{ name }}Id
+    {
+        return $this->id;
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function getCreatedAt(): \DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
+    public function getUpdatedAt(): ?\DateTimeImmutable
+    {
+        return $this->updatedAt;
+    }
+
+    public function toArray(): array
+    {
+        return [
+            'id' => $this->id->toString(),
+            'name' => $this->name,
+            'created_at' => $this->createdAt->format('Y-m-d H:i:s'),
+            'updated_at' => $this->updatedAt?->format('Y-m-d H:i:s'),
+        ];
+    }
+}

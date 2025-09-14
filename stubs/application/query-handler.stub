@@ -1,0 +1,49 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\{{ module }}\Application\Queries\{{ name }};
+
+use Modules\{{ module }}\Application\DTOs\{{ aggregate }}DTO;
+use Modules\{{ module }}\Domain\ValueObjects\{{ aggregate }}Id;
+use Modules\{{ module }}\Domain\Repositories\{{ aggregate }}RepositoryInterface;
+use Psr\Log\LoggerInterface;
+
+readonly class {{ name }}Handler
+{
+    public function __construct(
+        private {{ aggregate }}RepositoryInterface ${{ aggregateSnake }}Repository,
+        private LoggerInterface $logger
+    ) {}
+
+    public function handle({{ name }}Query $query): ?{{ aggregate }}DTO
+    {
+        try {
+            $this->logger->debug('Handling {{ name }}Query', $query->toArray());
+
+            ${{ aggregateSnake }}Id = {{ aggregate }}Id::fromString($query->id);
+            ${{ aggregateSnake }} = $this->{{ aggregateSnake }}Repository->findById(${{ aggregateSnake }}Id);
+
+            if (!${{ aggregateSnake }}) {
+                $this->logger->info('{{ aggregate }} not found', ['id' => $query->id]);
+                return null;
+            }
+
+            $dto = {{ aggregate }}DTO::fromAggregate(${{ aggregateSnake }});
+
+            $this->logger->debug('{{ name }}Query handled successfully', [
+                '{{ aggregateSnake }}_id' => ${{ aggregateSnake }}Id->toString(),
+            ]);
+
+            return $dto;
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to handle {{ name }}Query', [
+                'query' => $query->toArray(),
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
+    }
+}

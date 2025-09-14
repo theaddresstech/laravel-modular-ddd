@@ -1,0 +1,39 @@
+<?php
+
+declare(strict_types=1);
+
+use Modules\{{ module }}\Presentation\Http\Controllers\{{ aggregate }}Controller;
+use Illuminate\Support\Facades\Route;
+
+/*
+|--------------------------------------------------------------------------
+| {{ module }} API Routes
+|--------------------------------------------------------------------------
+|
+| Here are the API routes for the {{ module }} module. These routes are loaded
+| by the ModuleServiceProvider within the "api" middleware group.
+|
+*/
+
+Route::prefix('api/{{ module_snake }}')
+    ->middleware(['api'])
+    ->name('api.{{ module_snake }}.')
+    ->group(function () {
+
+        // {{ aggregate }} Routes
+        Route::apiResource('{{ aggregateSnake }}s', {{ aggregate }}Controller::class)
+            ->parameters(['{{ aggregateSnake }}s' => '{{ aggregateSnake }}']);
+
+        // Additional custom routes
+        Route::prefix('{{ aggregateSnake }}s')
+            ->name('{{ aggregateSnake }}s.')
+            ->group(function () {
+
+                // Route::get('search', [{{ aggregate }}Controller::class, 'search'])->name('search');
+                // Route::get('export', [{{ aggregate }}Controller::class, 'export'])->name('export');
+                // Route::post('bulk-import', [{{ aggregate }}Controller::class, 'bulkImport'])->name('bulk-import');
+                // Route::patch('bulk-update', [{{ aggregate }}Controller::class, 'bulkUpdate'])->name('bulk-update');
+                // Route::delete('bulk-delete', [{{ aggregate }}Controller::class, 'bulkDelete'])->name('bulk-delete');
+
+            });
+    });

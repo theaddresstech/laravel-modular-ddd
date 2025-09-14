@@ -1,0 +1,145 @@
+# Packagist Configuration
+# This file configures Packagist integration for automated package updates
+
+# Repository Information
+name: tai-crm/laravel-modular-ddd
+description: A comprehensive Laravel package for building modular applications using Domain-Driven Design principles
+type: library
+license: MIT
+
+# Keywords for better discovery
+keywords:
+  - laravel
+  - modular
+  - ddd
+  - domain-driven-design
+  - architecture
+  - modules
+  - enterprise
+  - cqrs
+  - event-driven
+  - microservices
+
+# GitHub Integration
+repository: https://github.com/tai-crm/laravel-modular-ddd
+
+# Documentation Links
+homepage: https://github.com/tai-crm/laravel-modular-ddd
+documentation: https://docs.tai-crm.com/laravel-modular-ddd
+
+# Support Links
+support:
+  issues: https://github.com/tai-crm/laravel-modular-ddd/issues
+  source: https://github.com/tai-crm/laravel-modular-ddd
+  docs: https://docs.tai-crm.com/laravel-modular-ddd
+  chat: https://discord.gg/laravel-modular-ddd
+
+# Authors
+authors:
+  - name: TAI CRM Team
+    email: support@tai-crm.com
+    homepage: https://tai-crm.com
+    role: Developer
+
+# Funding
+funding:
+  - type: github
+    url: https://github.com/sponsors/tai-crm
+  - type: opencollective
+    url: https://opencollective.com/tai-crm
+
+# Requirements
+require:
+  php: ">=8.2"
+  laravel/framework: "^11.0"
+
+# Suggests additional packages that work well with this package
+suggest:
+  doctrine/dbal: "For advanced database schema operations"
+  pusher/pusher-php-server: "For real-time event broadcasting"
+  predis/predis: "For Redis-based caching and queues"
+  league/fractal: "For API response transformations"
+  spatie/laravel-permission: "For role and permission management"
+
+# Package auto-discovery
+extra:
+  laravel:
+    providers:
+      - TaiCrm\LaravelModularDdd\ModularDddServiceProvider
+    aliases:
+      ModuleManager: TaiCrm\LaravelModularDdd\Facades\ModuleManager
+      EventBus: TaiCrm\LaravelModularDdd\Facades\EventBus
+      ServiceRegistry: TaiCrm\LaravelModularDdd\Facades\ServiceRegistry
+
+# Packagist-specific settings
+packagist:
+  # Auto-update from VCS
+  auto-update: true
+
+  # Stability preference
+  minimum-stability: stable
+  prefer-stable: true
+
+  # Security advisories
+  abandon: false
+
+  # Package replacement (if applicable)
+  replace: []
+
+  # Package conflicts
+  conflict: []
+
+# GitHub webhook configuration
+webhook:
+  url: https://packagist.org/api/github
+  events:
+    - push
+    - release
+
+# Version constraints for automated updates
+version-constraints:
+  # Only stable releases
+  stability: stable
+
+  # Semantic versioning pattern
+  pattern: "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+
+  # Exclude pre-release versions from auto-update
+  exclude-dev: true
+
+# Statistics tracking
+stats:
+  downloads: true
+  stars: true
+  forks: true
+  issues: true
+
+# Package badges configuration
+badges:
+  - type: version
+    url: https://img.shields.io/packagist/v/tai-crm/laravel-modular-ddd
+  - type: downloads
+    url: https://img.shields.io/packagist/dt/tai-crm/laravel-modular-ddd
+  - type: license
+    url: https://img.shields.io/packagist/l/tai-crm/laravel-modular-ddd
+  - type: php
+    url: https://img.shields.io/packagist/php-v/tai-crm/laravel-modular-ddd
+
+# Quality metrics
+quality:
+  # Code coverage
+  coverage:
+    enabled: true
+    min: 80
+
+  # Static analysis
+  analysis:
+    enabled: true
+    tools:
+      - psalm
+      - phpstan
+
+  # Code style
+  style:
+    enabled: true
+    standard: PSR-12

@@ -1,0 +1,48 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    /*
+    |--------------------------------------------------------------------------
+    | {{ module }} Module Configuration
+    |--------------------------------------------------------------------------
+    |
+    | This configuration file contains settings specific to the {{ module }} module.
+    | You can customize these values based on your application's requirements.
+    |
+    */
+
+    'enabled' => env('{{ moduleUpper }}_ENABLED', true),
+
+    'cache' => [
+        'ttl' => env('{{ moduleUpper }}_CACHE_TTL', 3600), // 1 hour
+        'prefix' => '{{ module_snake }}',
+        'tags' => ['{{ module_snake }}'],
+    ],
+
+    'pagination' => [
+        'default_limit' => env('{{ moduleUpper }}_DEFAULT_LIMIT', 15),
+        'max_limit' => env('{{ moduleUpper }}_MAX_LIMIT', 100),
+    ],
+
+    'validation' => [
+        'name' => [
+            'max_length' => 255,
+            'min_length' => 3,
+        ],
+        'description' => [
+            'max_length' => 1000,
+        ],
+    ],
+
+    'features' => [
+        'soft_delete' => env('{{ moduleUpper }}_SOFT_DELETE', true),
+        'audit_log' => env('{{ moduleUpper }}_AUDIT_LOG', false),
+        'search_indexing' => env('{{ moduleUpper }}_SEARCH_INDEXING', false),
+    ],
+
+    'external_services' => [
+        // Add any external service configurations here
+    ],
+];

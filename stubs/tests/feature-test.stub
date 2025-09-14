@@ -1,0 +1,177 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\{{ module }}\Tests\Feature;
+
+use Modules\{{ module }}\Infrastructure\Persistence\Eloquent\Models\{{ name }}Model;
+use TaiCrm\LaravelModularDdd\Tests\TestCase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Response;
+
+class {{ name }}ControllerTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Add any additional setup here
+        // e.g., authentication, permissions, etc.
+    }
+
+    public function test_can_list_{{ nameSnake }}s(): void
+    {
+        // Arrange
+        {{ name }}Model::factory()->count(3)->create();
+
+        // Act
+        $response = $this->getJson('/api/{{ module_snake }}/{{ nameSnake }}s');
+
+        // Assert
+        $response->assertStatus(Response::HTTP_OK)
+                ->assertJsonStructure([
+                    'data' => [
+                        '*' => [
+                            'id',
+                            'name',
+                            'created_at',
+                            'updated_at',
+                            'links' => [
+                                'self',
+                                'edit',
+                                'delete',
+                            ],
+                        ],
+                    ],
+                    'meta' => [
+                        'version',
+                        'timestamp',
+                    ],
+                ]);
+
+        $this->assertCount(3, $response->json('data'));
+    }
+
+    public function test_can_show_{{ nameSnake }}(): void
+    {
+        // Arrange
+        ${{ nameSnake }} = {{ name }}Model::factory()->create();
+
+        // Act
+        $response = $this->getJson("/api/{{ module_snake }}/{{ nameSnake }}s/{${{ nameSnake }}->id}");
+
+        // Assert
+        $response->assertStatus(Response::HTTP_OK)
+                ->assertJsonStructure([
+                    'data' => [
+                        'id',
+                        'name',
+                        'created_at',
+                        'updated_at',
+                        'links',
+                    ],
+                    'meta',
+                ])
+                ->assertJson([
+                    'data' => [
+                        'id' => ${{ nameSnake }}->id,
+                        'name' => ${{ nameSnake }}->name,
+                    ],
+                ]);
+    }
+
+    public function test_returns_404_when_{{ nameSnake }}_not_found(): void
+    {
+        // Act
+        $response = $this->getJson('/api/{{ module_snake }}/{{ nameSnake }}s/non-existent-id');
+
+        // Assert
+        $response->assertStatus(Response::HTTP_NOT_FOUND)
+                ->assertJson([
+                    'message' => '{{ name }} not found'
+                ]);
+    }
+
+    public function test_can_create_{{ nameSnake }}(): void
+    {
+        // Arrange
+        $data = [
+            'name' => 'Test {{ name }}',
+            'description' => 'Test description',
+        ];
+
+        // Act
+        $response = $this->postJson('/api/{{ module_snake }}/{{ nameSnake }}s', $data);
+
+        // Assert
+        $response->assertStatus(Response::HTTP_CREATED)
+                ->assertJsonStructure([
+                    'message',
+                    'id',
+                ])
+                ->assertJson([
+                    'message' => '{{ name }} created successfully',
+                ]);
+
+        $this->assertDatabaseHas('{{ module_snake }}_{{ nameSnake }}s', [
+            'name' => 'Test {{ name }}',
+        ]);
+    }
+
+    public function test_validates_required_fields_when_creating(): void
+    {
+        // Arrange
+        $data = [];
+
+        // Act
+        $response = $this->postJson('/api/{{ module_snake }}/{{ nameSnake }}s', $data);
+
+        // Assert
+        $response->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY)
+                ->assertJsonValidationErrors(['name']);
+    }
+
+    public function test_can_update_{{ nameSnake }}(): void
+    {
+        // Arrange
+        ${{ nameSnake }} = {{ name }}Model::factory()->create();
+        $data = [
+            'name' => 'Updated {{ name }}',
+            'description' => 'Updated description',
+        ];
+
+        // Act
+        $response = $this->putJson("/api/{{ module_snake }}/{{ nameSnake }}s/{${{ nameSnake }}->id}", $data);
+
+        // Assert
+        $response->assertStatus(Response::HTTP_OK)
+                ->assertJson([
+                    'message' => '{{ name }} updated successfully',
+                ]);
+
+        $this->assertDatabaseHas('{{ module_snake }}_{{ nameSnake }}s', [
+            'id' => ${{ nameSnake }}->id,
+            'name' => 'Updated {{ name }}',
+        ]);
+    }
+
+    public function test_can_delete_{{ nameSnake }}(): void
+    {
+        // Arrange
+        ${{ nameSnake }} = {{ name }}Model::factory()->create();
+
+        // Act
+        $response = $this->deleteJson("/api/{{ module_snake }}/{{ nameSnake }}s/{${{ nameSnake }}->id}");
+
+        // Assert
+        $response->assertStatus(Response::HTTP_OK)
+                ->assertJson([
+                    'message' => '{{ name }} deleted successfully',
+                ]);
+
+        // Note: This test assumes soft delete or that delete is implemented
+        // Adjust based on your actual delete implementation
+    }
+}

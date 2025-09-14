@@ -1,0 +1,135 @@
+{
+    "name": "tai-crm/laravel-modular-ddd",
+    "version": "1.0.0",
+    "description": "A comprehensive Laravel package for building modular applications using Domain-Driven Design principles",
+    "keywords": [
+        "laravel",
+        "modular",
+        "ddd",
+        "domain-driven-design",
+        "architecture",
+        "modules",
+        "enterprise",
+        "cqrs",
+        "event-driven",
+        "microservices"
+    ],
+    "homepage": "https://github.com/tai-crm/laravel-modular-ddd",
+    "license": "MIT",
+    "type": "library",
+    "authors": [
+        {
+            "name": "TAI CRM Team",
+            "email": "support@tai-crm.com",
+            "homepage": "https://tai-crm.com",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "illuminate/support": "^11.0",
+        "illuminate/console": "^11.0",
+        "illuminate/filesystem": "^11.0",
+        "illuminate/validation": "^11.0",
+        "illuminate/database": "^11.0",
+        "illuminate/events": "^11.0",
+        "illuminate/cache": "^11.0",
+        "illuminate/queue": "^11.0",
+        "symfony/console": "^7.0",
+        "symfony/process": "^7.0",
+        "symfony/finder": "^7.0",
+        "ramsey/uuid": "^4.7",
+        "league/flysystem": "^3.0",
+        "nesbot/carbon": "^3.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.0",
+        "orchestra/testbench": "^9.0",
+        "mockery/mockery": "^1.6",
+        "vimeo/psalm": "^5.0",
+        "friendsofphp/php-cs-fixer": "^3.0",
+        "nunomaduro/collision": "^8.0",
+        "spatie/laravel-ray": "^1.32"
+    },
+    "suggest": {
+        "doctrine/dbal": "For advanced database schema operations and migrations",
+        "pusher/pusher-php-server": "For real-time event broadcasting across modules",
+        "predis/predis": "For Redis-based caching and queue management",
+        "league/fractal": "For API response transformations in presentation layer",
+        "spatie/laravel-permission": "For role and permission management integration",
+        "barryvdh/laravel-debugbar": "For enhanced debugging during development",
+        "spatie/laravel-activitylog": "For comprehensive audit logging capabilities"
+    },
+    "autoload": {
+        "psr-4": {
+            "TaiCrm\\LaravelModularDdd\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "TaiCrm\\LaravelModularDdd\\Tests\\": "tests/",
+            "Modules\\": "examples/"
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit",
+        "test-unit": "vendor/bin/phpunit --testsuite=Unit",
+        "test-integration": "vendor/bin/phpunit --testsuite=Integration",
+        "test-feature": "vendor/bin/phpunit --testsuite=Feature",
+        "test-coverage": "vendor/bin/phpunit --coverage-html coverage-report",
+        "analyse": "vendor/bin/psalm",
+        "analyse-taint": "vendor/bin/psalm --taint-analysis",
+        "style": "vendor/bin/php-cs-fixer fix --dry-run --diff",
+        "style:fix": "vendor/bin/php-cs-fixer fix",
+        "validate-package": "php scripts/validate-package.php",
+        "security": "composer audit",
+        "pre-release": [
+            "@validate-package",
+            "@test",
+            "@analyse",
+            "@security"
+        ]
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "TaiCrm\\LaravelModularDdd\\ModularDddServiceProvider"
+            ],
+            "aliases": {
+                "ModuleManager": "TaiCrm\\LaravelModularDdd\\Facades\\ModuleManager",
+                "EventBus": "TaiCrm\\LaravelModularDdd\\Facades\\EventBus",
+                "ServiceRegistry": "TaiCrm\\LaravelModularDdd\\Facades\\ServiceRegistry"
+            }
+        },
+        "branch-alias": {
+            "dev-main": "1.0-dev"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "allow-plugins": {
+            "composer/package-versions-deprecated": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "funding": [
+        {
+            "type": "github",
+            "url": "https://github.com/sponsors/tai-crm"
+        },
+        {
+            "type": "opencollective",
+            "url": "https://opencollective.com/tai-crm"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/tai-crm/laravel-modular-ddd/issues",
+        "source": "https://github.com/tai-crm/laravel-modular-ddd",
+        "docs": "https://docs.tai-crm.com/laravel-modular-ddd",
+        "chat": "https://discord.gg/laravel-modular-ddd",
+        "email": "support@tai-crm.com"
+    }
+}

@@ -1,0 +1,50 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{NAMESPACE}}\Domain\Models;
+
+use {{NAMESPACE}}\Domain\ValueObjects\{{AGGREGATE}}Id;
+use TaiCrm\LaravelModularDdd\Foundation\AggregateRoot;
+
+class {{AGGREGATE}} extends AggregateRoot
+{
+    public function __construct(
+        private {{AGGREGATE}}Id $id,
+        private string $name
+    ) {
+        parent::__construct();
+    }
+
+    public static function create({{AGGREGATE}}Id $id, string $name): self
+    {
+        $instance = new self($id, $name);
+        
+        // Record domain event
+        // $instance->recordEvent(new {{AGGREGATE}}Created($id, $name));
+        
+        return $instance;
+    }
+
+    public function getId(): {{AGGREGATE}}Id
+    {
+        return $this->id;
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function changeName(string $name): void
+    {
+        if ($this->name === $name) {
+            return;
+        }
+
+        $this->name = $name;
+        
+        // Record domain event
+        // $this->recordEvent(new {{AGGREGATE}}NameChanged($this->id, $name));
+    }
+}

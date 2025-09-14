@@ -1,0 +1,57 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\{{ module }}\Domain\Events;
+
+use Modules\{{ module }}\Domain\ValueObjects\{{ aggregate }}Id;
+use TaiCrm\LaravelModularDdd\Foundation\DomainEvent;
+
+readonly class {{ name }} extends DomainEvent
+{
+    public function __construct(
+        public {{ aggregate }}Id ${{ aggregateSnake }}Id,
+        public string $name,
+        public \DateTimeImmutable $occurredAt
+    ) {
+        parent::__construct();
+    }
+
+    public function getAggregateId(): {{ aggregate }}Id
+    {
+        return $this->{{ aggregateSnake }}Id;
+    }
+
+    public function getAggregateType(): string
+    {
+        return '{{ module }}.{{ aggregate }}';
+    }
+
+    public function getEventType(): string
+    {
+        return '{{ module }}.{{ aggregate }}.{{ eventType }}';
+    }
+
+    public function getPayload(): array
+    {
+        return [
+            '{{ aggregateSnake }}_id' => $this->{{ aggregateSnake }}Id->toString(),
+            'name' => $this->name,
+            'occurred_at' => $this->occurredAt->format(\DateTimeInterface::ATOM),
+        ];
+    }
+
+    public function getVersion(): int
+    {
+        return 1;
+    }
+
+    public static function fromPayload(array $payload): self
+    {
+        return new self(
+            {{ aggregate }}Id::fromString($payload['{{ aggregateSnake }}_id']),
+            $payload['name'],
+            new \DateTimeImmutable($payload['occurred_at'])
+        );
+    }
+}

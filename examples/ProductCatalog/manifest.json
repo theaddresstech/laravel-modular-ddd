@@ -1,0 +1,123 @@
+{
+    "name": "ProductCatalog",
+    "version": "1.0.0",
+    "description": "Product catalog management module demonstrating DDD principles",
+    "author": "Laravel Modular DDD Team",
+    "license": "MIT",
+    "type": "business",
+    "keywords": ["product", "catalog", "inventory", "ddd"],
+    "homepage": "https://github.com/tai-crm/laravel-modular-ddd",
+    "support": {
+        "email": "support@tai-crm.com",
+        "documentation": "https://docs.tai-crm.com/modules/product-catalog"
+    },
+    "require": {
+        "php": "^8.2",
+        "laravel/framework": "^11.0",
+        "tai-crm/laravel-modular-ddd": "^1.0"
+    },
+    "dependencies": [
+        {
+            "name": "UserManagement",
+            "constraint": "^1.0",
+            "type": "required",
+            "description": "Required for user authentication and authorization"
+        }
+    ],
+    "provides": [
+        {
+            "service": "ProductCatalog\\Contracts\\ProductServiceInterface",
+            "description": "Product management service"
+        },
+        {
+            "service": "ProductCatalog\\Contracts\\CategoryServiceInterface",
+            "description": "Category management service"
+        }
+    ],
+    "configuration": {
+        "config_files": [
+            "Config/product-catalog.php"
+        ],
+        "env_variables": [
+            {
+                "name": "PRODUCT_CATALOG_CACHE_TTL",
+                "default": "3600",
+                "description": "Cache TTL for product data in seconds"
+            },
+            {
+                "name": "PRODUCT_CATALOG_IMAGE_STORAGE",
+                "default": "local",
+                "description": "Storage driver for product images"
+            }
+        ]
+    },
+    "database": {
+        "migrations": [
+            "Database/Migrations/2024_01_01_000001_create_product_catalog_categories_table.php",
+            "Database/Migrations/2024_01_01_000002_create_product_catalog_products_table.php",
+            "Database/Migrations/2024_01_01_000003_create_product_catalog_product_images_table.php"
+        ],
+        "seeders": [
+            "Database/Seeders/ProductCatalogSeeder.php",
+            "Database/Seeders/CategorySeeder.php",
+            "Database/Seeders/ProductSeeder.php"
+        ]
+    },
+    "routes": {
+        "api": "Routes/api.php",
+        "web": "Routes/web.php"
+    },
+    "views": {
+        "path": "Resources/views",
+        "namespace": "product-catalog"
+    },
+    "assets": {
+        "css": [
+            "Resources/assets/css/product-catalog.css"
+        ],
+        "js": [
+            "Resources/assets/js/product-catalog.js"
+        ]
+    },
+    "permissions": [
+        "product-catalog.products.view",
+        "product-catalog.products.create",
+        "product-catalog.products.edit",
+        "product-catalog.products.delete",
+        "product-catalog.categories.manage"
+    ],
+    "events": [
+        "ProductCatalog\\Domain\\Events\\ProductCreated",
+        "ProductCatalog\\Domain\\Events\\ProductUpdated",
+        "ProductCatalog\\Domain\\Events\\ProductDeleted",
+        "ProductCatalog\\Domain\\Events\\CategoryCreated"
+    ],
+    "commands": [
+        "ProductCatalog\\Console\\Commands\\ImportProductsCommand",
+        "ProductCatalog\\Console\\Commands\\GenerateSitemapCommand"
+    ],
+    "security": {
+        "signature_required": true,
+        "sandbox_compatible": true,
+        "trusted_sources": [
+            "tai-crm.com",
+            "github.com/tai-crm"
+        ]
+    },
+    "performance": {
+        "cache_enabled": true,
+        "queue_jobs": [
+            "ProcessProductImages",
+            "UpdateProductIndex"
+        ],
+        "memory_limit": "128M"
+    },
+    "testing": {
+        "test_suites": [
+            "Unit",
+            "Feature",
+            "Integration"
+        ],
+        "coverage_threshold": 80
+    }
+}

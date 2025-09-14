@@ -1,0 +1,53 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\{{ module }}\Domain\ValueObjects;
+
+use TaiCrm\LaravelModularDdd\Foundation\ValueObject;
+use Ramsey\Uuid\Uuid;
+use Ramsey\Uuid\UuidInterface;
+
+readonly class {{ name }}Id extends ValueObject
+{
+    public function __construct(
+        private UuidInterface $value
+    ) {}
+
+    public static function generate(): self
+    {
+        return new self(Uuid::uuid4());
+    }
+
+    public static function fromString(string $id): self
+    {
+        if (!Uuid::isValid($id)) {
+            throw new \InvalidArgumentException(
+                "Invalid UUID format for {{ name }}Id: {$id}"
+            );
+        }
+
+        return new self(Uuid::fromString($id));
+    }
+
+    public function toString(): string
+    {
+        return $this->value->toString();
+    }
+
+    public function equals(object $other): bool
+    {
+        return $other instanceof self &&
+               $this->value->equals($other->value);
+    }
+
+    public function __toString(): string
+    {
+        return $this->toString();
+    }
+
+    public function jsonSerialize(): string
+    {
+        return $this->toString();
+    }
+}

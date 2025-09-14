@@ -1,0 +1,31 @@
+<?php
+
+declare(strict_types=1);
+
+use Modules\{{ module }}\Presentation\Http\Controllers\Web\{{ aggregate }}WebController;
+use Illuminate\Support\Facades\Route;
+
+/*
+|--------------------------------------------------------------------------
+| {{ module }} Web Routes
+|--------------------------------------------------------------------------
+|
+| Here are the web routes for the {{ module }} module. These routes are loaded
+| by the ModuleServiceProvider within the "web" middleware group.
+|
+*/
+
+Route::prefix('{{ module_snake }}')
+    ->middleware(['web'])
+    ->name('{{ module_snake }}.')
+    ->group(function () {
+
+        // {{ aggregate }} Web Routes
+        Route::resource('{{ aggregateSnake }}s', {{ aggregate }}WebController::class)
+            ->parameters(['{{ aggregateSnake }}s' => '{{ aggregateSnake }}']);
+
+        // Additional web routes
+        // Route::get('dashboard', [{{ aggregate }}WebController::class, 'dashboard'])->name('dashboard');
+        // Route::get('reports', [{{ aggregate }}WebController::class, 'reports'])->name('reports');
+
+    });

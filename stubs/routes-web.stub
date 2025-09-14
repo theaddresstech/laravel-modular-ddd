@@ -1,0 +1,12 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+
+Route::prefix('{{MODULE_KEBAB}}')
+    ->middleware('web')
+    ->group(function () {
+        // Add your web routes here
+        Route::get('/', function () {
+            return view('{{MODULE_KEBAB}}::index');
+        })->name('{{MODULE_KEBAB}}.index');
+    });

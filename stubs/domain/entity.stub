@@ -1,0 +1,84 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\{{ module }}\Domain\Entities;
+
+use Modules\{{ module }}\Domain\ValueObjects\{{ name }}Id;
+use TaiCrm\LaravelModularDdd\Foundation\Entity;
+
+class {{ name }} extends Entity
+{
+    public function __construct(
+        private {{ name }}Id $id,
+        private string $name,
+        private \DateTimeImmutable $createdAt,
+        private ?\DateTimeImmutable $updatedAt = null
+    ) {}
+
+    public static function create(
+        {{ name }}Id $id,
+        string $name
+    ): self {
+        return new self(
+            $id,
+            $name,
+            new \DateTimeImmutable()
+        );
+    }
+
+    public static function reconstitute(
+        {{ name }}Id $id,
+        string $name,
+        \DateTimeImmutable $createdAt,
+        ?\DateTimeImmutable $updatedAt = null
+    ): self {
+        return new self($id, $name, $createdAt, $updatedAt);
+    }
+
+    public function changeName(string $newName): void
+    {
+        if ($this->name === $newName) {
+            return;
+        }
+
+        $this->name = $newName;
+        $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    public function getId(): {{ name }}Id
+    {
+        return $this->id;
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function getCreatedAt(): \DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
+    public function getUpdatedAt(): ?\DateTimeImmutable
+    {
+        return $this->updatedAt;
+    }
+
+    public function equals(Entity $other): bool
+    {
+        return $other instanceof self &&
+               $this->id->equals($other->id);
+    }
+
+    public function toArray(): array
+    {
+        return [
+            'id' => $this->id->toString(),
+            'name' => $this->name,
+            'created_at' => $this->createdAt->format('Y-m-d H:i:s'),
+            'updated_at' => $this->updatedAt?->format('Y-m-d H:i:s'),
+        ];
+    }
+}

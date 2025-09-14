@@ -1,0 +1,105 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\{{ module }}\Providers;
+
+use Modules\{{ module }}\Domain\Repositories\{{ aggregate }}RepositoryInterface;
+use Modules\{{ module }}\Infrastructure\Persistence\Eloquent\Repositories\Eloquent{{ aggregate }}Repository;
+use Modules\{{ module }}\Application\Commands\Create{{ aggregate }}\Create{{ aggregate }}Handler;
+use Modules\{{ module }}\Application\Commands\Update{{ aggregate }}\Update{{ aggregate }}Handler;
+use Modules\{{ module }}\Application\Queries\Get{{ aggregate }}\Get{{ aggregate }}Handler;
+use Modules\{{ module }}\Application\Queries\List{{ aggregate }}s\List{{ aggregate }}sHandler;
+use TaiCrm\LaravelModularDdd\Communication\ModuleServiceProvider;
+
+class {{ module }}ServiceProvider extends ModuleServiceProvider
+{
+    protected string $moduleName = '{{ module }}';
+
+    public function register(): void
+    {
+        parent::register();
+
+        $this->mergeConfigFrom(
+            __DIR__ . '/../Config/{{ module_snake }}.php',
+            '{{ module_snake }}'
+        );
+
+        $this->registerRepositories();
+        $this->registerHandlers();
+        $this->registerServices();
+    }
+
+    public function boot(): void
+    {
+        parent::boot();
+
+        $this->loadMigrations();
+        $this->loadFactories();
+        $this->publishAssets();
+    }
+
+    private function registerRepositories(): void
+    {
+        $this->app->bind(
+            {{ aggregate }}RepositoryInterface::class,
+            Eloquent{{ aggregate }}Repository::class
+        );
+    }
+
+    private function registerHandlers(): void
+    {
+        $this->app->bind(Create{{ aggregate }}Handler::class);
+        $this->app->bind(Update{{ aggregate }}Handler::class);
+        $this->app->bind(Get{{ aggregate }}Handler::class);
+        $this->app->bind(List{{ aggregate }}sHandler::class);
+    }
+
+    private function registerServices(): void
+    {
+        // Register any additional services here
+    }
+
+    private function loadMigrations(): void
+    {
+        if ($this->app->runningInConsole()) {
+            $this->loadMigrationsFrom(__DIR__ . '/../Database/Migrations');
+        }
+    }
+
+    private function loadFactories(): void
+    {
+        if ($this->app->environment(['local', 'testing'])) {
+            $this->app->make('Illuminate\Database\Eloquent\Factory')
+                ->load(__DIR__ . '/../Database/Factories');
+        }
+    }
+
+    private function publishAssets(): void
+    {
+        if ($this->app->runningInConsole()) {
+            $this->publishes([
+                __DIR__ . '/../Config/{{ module_snake }}.php' => config_path('modules/{{ module_snake }}.php'),
+            ], '{{ module_snake }}-config');
+
+            $this->publishes([
+                __DIR__ . '/../Resources/assets' => public_path('modules/{{ module_snake }}'),
+            ], '{{ module_snake }}-assets');
+
+            $this->publishes([
+                __DIR__ . '/../Resources/views' => resource_path('views/modules/{{ module_snake }}'),
+            ], '{{ module_snake }}-views');
+        }
+    }
+
+    public function provides(): array
+    {
+        return [
+            {{ aggregate }}RepositoryInterface::class,
+            Create{{ aggregate }}Handler::class,
+            Update{{ aggregate }}Handler::class,
+            Get{{ aggregate }}Handler::class,
+            List{{ aggregate }}sHandler::class,
+        ];
+    }
+}

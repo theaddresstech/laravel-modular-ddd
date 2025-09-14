@@ -1,0 +1,28 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\{{ module }}\Domain\Repositories;
+
+use Modules\{{ module }}\Domain\Models\{{ name }};
+use Modules\{{ module }}\Domain\ValueObjects\{{ name }}Id;
+use Illuminate\Support\Collection;
+
+interface {{ name }}RepositoryInterface
+{
+    public function save({{ name }} ${{ nameSnake }}): void;
+
+    public function findById({{ name }}Id $id): ?{{ name }};
+
+    public function findAll(): Collection;
+
+    public function findByName(string $name): Collection;
+
+    public function remove({{ name }}Id $id): void;
+
+    public function exists({{ name }}Id $id): bool;
+
+    public function count(): int;
+
+    public function findWithFilters(array $filters, ?array $sorting = null, ?int $limit = null, ?int $offset = null): Collection;
+}

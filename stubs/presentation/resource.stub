@@ -1,0 +1,45 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\{{ module }}\Presentation\Http\Resources;
+
+use Modules\{{ module }}\Application\DTOs\{{ name }}DTO;
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+class {{ name }}Resource extends JsonResource
+{
+    public function __construct({{ name }}DTO ${{ nameSnake }})
+    {
+        parent::__construct(${{ nameSnake }});
+    }
+
+    public function toArray(Request $request): array
+    {
+        /** @var {{ name }}DTO ${{ nameSnake }} */
+        ${{ nameSnake }} = $this->resource;
+
+        return [
+            'id' => ${{ nameSnake }}->id,
+            'name' => ${{ nameSnake }}->name,
+            'created_at' => ${{ nameSnake }}->createdAt,
+            'updated_at' => ${{ nameSnake }}->updatedAt,
+            'links' => [
+                'self' => route('api.{{ module_snake }}.{{ nameSnake }}s.show', ['{{ nameSnake }}' => ${{ nameSnake }}->id]),
+                'edit' => route('api.{{ module_snake }}.{{ nameSnake }}s.update', ['{{ nameSnake }}' => ${{ nameSnake }}->id]),
+                'delete' => route('api.{{ module_snake }}.{{ nameSnake }}s.destroy', ['{{ nameSnake }}' => ${{ nameSnake }}->id]),
+            ],
+        ];
+    }
+
+    public function with(Request $request): array
+    {
+        return [
+            'meta' => [
+                'version' => '1.0',
+                'timestamp' => now()->toISOString(),
+            ],
+        ];
+    }
+}

@@ -1,0 +1,132 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\{{ module }}\Infrastructure\Persistence\Eloquent\Repositories;
+
+use Modules\{{ module }}\Domain\Models\{{ name }};
+use Modules\{{ module }}\Domain\ValueObjects\{{ name }}Id;
+use Modules\{{ module }}\Domain\Repositories\{{ name }}RepositoryInterface;
+use Modules\{{ module }}\Infrastructure\Persistence\Eloquent\Models\{{ name }}Model;
+use Illuminate\Support\Collection;
+use Psr\Log\LoggerInterface;
+
+class Eloquent{{ name }}Repository implements {{ name }}RepositoryInterface
+{
+    public function __construct(
+        private LoggerInterface $logger
+    ) {}
+
+    public function save({{ name }} ${{ nameSnake }}): void
+    {
+        $model = {{ name }}Model::firstOrNew([
+            'id' => ${{ nameSnake }}->getId()->toString()
+        ]);
+
+        $model->fill([
+            'name' => ${{ nameSnake }}->getName(),
+            'created_at' => ${{ nameSnake }}->getCreatedAt(),
+            'updated_at' => ${{ nameSnake }}->getUpdatedAt(),
+        ]);
+
+        $model->save();
+
+        $this->logger->debug('{{ name }} saved', [
+            'id' => ${{ nameSnake }}->getId()->toString(),
+            'name' => ${{ nameSnake }}->getName(),
+        ]);
+    }
+
+    public function findById({{ name }}Id $id): ?{{ name }}
+    {
+        $model = {{ name }}Model::find($id->toString());
+
+        if (!$model) {
+            return null;
+        }
+
+        return $this->modelToDomain($model);
+    }
+
+    public function findAll(): Collection
+    {
+        return {{ name }}Model::all()
+            ->map(fn($model) => $this->modelToDomain($model))
+            ->collect();
+    }
+
+    public function findByName(string $name): Collection
+    {
+        return {{ name }}Model::where('name', $name)
+            ->get()
+            ->map(fn($model) => $this->modelToDomain($model))
+            ->collect();
+    }
+
+    public function remove({{ name }}Id $id): void
+    {
+        {{ name }}Model::where('id', $id->toString())->delete();
+
+        $this->logger->debug('{{ name }} removed', [
+            'id' => $id->toString(),
+        ]);
+    }
+
+    public function exists({{ name }}Id $id): bool
+    {
+        return {{ name }}Model::where('id', $id->toString())->exists();
+    }
+
+    public function count(): int
+    {
+        return {{ name }}Model::count();
+    }
+
+    public function findWithFilters(
+        array $filters,
+        ?array $sorting = null,
+        ?int $limit = null,
+        ?int $offset = null
+    ): Collection {
+        $query = {{ name }}Model::query();
+
+        // Apply filters
+        foreach ($filters as $field => $value) {
+            if (is_array($value)) {
+                $query->whereIn($field, $value);
+            } else {
+                $query->where($field, $value);
+            }
+        }
+
+        // Apply sorting
+        if ($sorting) {
+            foreach ($sorting as $field => $direction) {
+                $query->orderBy($field, $direction);
+            }
+        }
+
+        // Apply pagination
+        if ($offset) {
+            $query->offset($offset);
+        }
+
+        if ($limit) {
+            $query->limit($limit);
+        }
+
+        return $query->get()
+            ->map(fn($model) => $this->modelToDomain($model))
+            ->collect();
+    }
+
+    private function modelToDomain({{ name }}Model $model): {{ name }}
+    {
+        return {{ name }}::reconstitute(
+            {{ name }}Id::fromString($model->id),
+            $model->name,
+            $model->created_at->toDateTimeImmutable(),
+            $model->updated_at?->toDateTimeImmutable()
+        );
+    }
+}

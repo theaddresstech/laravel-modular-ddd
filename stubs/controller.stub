@@ -1,0 +1,111 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{NAMESPACE}}\Presentation\Http\Controllers;
+
+use {{NAMESPACE}}\Domain\Models\{{AGGREGATE}};
+use {{NAMESPACE}}\Domain\ValueObjects\{{AGGREGATE}}Id;
+use {{NAMESPACE}}\Domain\Repositories\{{AGGREGATE}}RepositoryInterface;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Routing\Controller;
+
+class {{AGGREGATE}}Controller extends Controller
+{
+    public function __construct(
+        private {{AGGREGATE}}RepositoryInterface $repository
+    ) {}
+
+    public function index(): JsonResponse
+    {
+        ${{AGGREGATE_LOWER}}s = $this->repository->findAll();
+
+        return response()->json([
+            'data' => ${{AGGREGATE_LOWER}}s->toArray(),
+        ]);
+    }
+
+    public function show(string $id): JsonResponse
+    {
+        ${{AGGREGATE_LOWER}}Id = {{AGGREGATE}}Id::fromString($id);
+        ${{AGGREGATE_LOWER}} = $this->repository->findById(${{AGGREGATE_LOWER}}Id);
+
+        if (!${{AGGREGATE_LOWER}}) {
+            return response()->json([
+                'error' => '{{AGGREGATE}} not found'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        return response()->json([
+            'data' => ${{AGGREGATE_LOWER}}->toArray(),
+        ]);
+    }
+
+    public function store(Request $request): JsonResponse
+    {
+        // Validate request
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            // Add other validation rules
+        ]);
+
+        // Create {{AGGREGATE_LOWER}}
+        ${{AGGREGATE_LOWER}}Id = {{AGGREGATE}}Id::generate();
+        ${{AGGREGATE_LOWER}} = {{AGGREGATE}}::create(
+            ${{AGGREGATE_LOWER}}Id,
+            $validated['name']
+        );
+
+        $this->repository->save(${{AGGREGATE_LOWER}});
+
+        return response()->json([
+            'data' => ${{AGGREGATE_LOWER}}->toArray(),
+        ], Response::HTTP_CREATED);
+    }
+
+    public function update(Request $request, string $id): JsonResponse
+    {
+        ${{AGGREGATE_LOWER}}Id = {{AGGREGATE}}Id::fromString($id);
+        ${{AGGREGATE_LOWER}} = $this->repository->findById(${{AGGREGATE_LOWER}}Id);
+
+        if (!${{AGGREGATE_LOWER}}) {
+            return response()->json([
+                'error' => '{{AGGREGATE}} not found'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        // Validate request
+        $validated = $request->validate([
+            'name' => 'sometimes|string|max:255',
+            // Add other validation rules
+        ]);
+
+        // Update {{AGGREGATE_LOWER}}
+        if (isset($validated['name'])) {
+            ${{AGGREGATE_LOWER}}->changeName($validated['name']);
+        }
+
+        $this->repository->save(${{AGGREGATE_LOWER}});
+
+        return response()->json([
+            'data' => ${{AGGREGATE_LOWER}}->toArray(),
+        ]);
+    }
+
+    public function destroy(string $id): JsonResponse
+    {
+        ${{AGGREGATE_LOWER}}Id = {{AGGREGATE}}Id::fromString($id);
+        
+        if (!$this->repository->exists(${{AGGREGATE_LOWER}}Id)) {
+            return response()->json([
+                'error' => '{{AGGREGATE}} not found'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        $this->repository->remove(${{AGGREGATE_LOWER}}Id);
+
+        return response()->json(null, Response::HTTP_NO_CONTENT);
+    }
+}

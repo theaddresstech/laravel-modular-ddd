@@ -1,0 +1,52 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\{{ module }}\Application\DTOs;
+
+use Modules\{{ module }}\Domain\Models\{{ aggregate }};
+
+readonly class {{ name }}DTO
+{
+    public function __construct(
+        public string $id,
+        public string $name,
+        public string $createdAt,
+        public ?string $updatedAt = null
+    ) {}
+
+    public static function fromAggregate({{ aggregate }} ${{ aggregateSnake }}): self
+    {
+        return new self(
+            ${{ aggregateSnake }}->getId()->toString(),
+            ${{ aggregateSnake }}->getName(),
+            ${{ aggregateSnake }}->getCreatedAt()->format('Y-m-d H:i:s'),
+            ${{ aggregateSnake }}->getUpdatedAt()?->format('Y-m-d H:i:s')
+        );
+    }
+
+    public static function fromArray(array $data): self
+    {
+        return new self(
+            $data['id'],
+            $data['name'],
+            $data['created_at'],
+            $data['updated_at'] ?? null
+        );
+    }
+
+    public function toArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'created_at' => $this->createdAt,
+            'updated_at' => $this->updatedAt,
+        ];
+    }
+
+    public function jsonSerialize(): array
+    {
+        return $this->toArray();
+    }
+}

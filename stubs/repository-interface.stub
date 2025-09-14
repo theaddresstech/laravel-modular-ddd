@@ -1,0 +1,22 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{NAMESPACE}}\Domain\Repositories;
+
+use {{NAMESPACE}}\Domain\Models\{{AGGREGATE}};
+use {{NAMESPACE}}\Domain\ValueObjects\{{AGGREGATE}}Id;
+use Illuminate\Support\Collection;
+
+interface {{AGGREGATE}}RepositoryInterface
+{
+    public function save({{AGGREGATE}} ${{AGGREGATE_LOWER}}): void;
+
+    public function findById({{AGGREGATE}}Id $id): ?{{AGGREGATE}};
+
+    public function findAll(): Collection;
+
+    public function remove({{AGGREGATE}}Id $id): void;
+
+    public function exists({{AGGREGATE}}Id $id): bool;
+}

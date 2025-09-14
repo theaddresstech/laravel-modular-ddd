@@ -1,0 +1,42 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\{{ module }}\Database\Seeders;
+
+use Modules\{{ module }}\Infrastructure\Persistence\Eloquent\Models\{{ name }}Model;
+use Illuminate\Database\Seeder;
+use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+
+class {{ name }}Seeder extends Seeder
+{
+    use WithoutModelEvents;
+
+    public function run(): void
+    {
+        // Create some sample {{ nameSnake }}s
+        ${{ nameSnake }}s = [
+            [
+                'name' => 'Sample {{ name }} 1',
+                'description' => 'This is a sample {{ nameSnake }} for demonstration purposes.',
+            ],
+            [
+                'name' => 'Sample {{ name }} 2',
+                'description' => 'Another sample {{ nameSnake }} with different content.',
+            ],
+            [
+                'name' => 'Sample {{ name }} 3',
+                'description' => null, // Optional description
+            ],
+        ];
+
+        foreach (${{ nameSnake }}s as ${{ nameSnake }}Data) {
+            {{ name }}Model::factory()->create(${{ nameSnake }}Data);
+        }
+
+        // Or create random {{ nameSnake }}s
+        {{ name }}Model::factory()
+            ->count(10)
+            ->create();
+    }
+}

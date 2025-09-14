@@ -1,0 +1,109 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\{{ module }}\Tests\Unit;
+
+use Modules\{{ module }}\Domain\Models\{{ name }};
+use Modules\{{ module }}\Domain\ValueObjects\{{ name }}Id;
+use Modules\{{ module }}\Domain\Events\{{ name }}Created;
+use PHPUnit\Framework\TestCase;
+
+class {{ name }}Test extends TestCase
+{
+    public function test_can_create_{{ nameSnake }}(): void
+    {
+        // Arrange
+        $id = {{ name }}Id::generate();
+        $name = 'Test {{ name }}';
+
+        // Act
+        ${{ nameSnake }} = {{ name }}::create($id, $name);
+
+        // Assert
+        $this->assertEquals($id, ${{ nameSnake }}->getId());
+        $this->assertEquals($name, ${{ nameSnake }}->getName());
+        $this->assertInstanceOf(\DateTimeImmutable::class, ${{ nameSnake }}->getCreatedAt());
+        $this->assertNull(${{ nameSnake }}->getUpdatedAt());
+        $this->assertTrue(${{ nameSnake }}->hasUncommittedEvents());
+
+        $events = ${{ nameSnake }}->getUncommittedEvents();
+        $this->assertCount(1, $events);
+        $this->assertInstanceOf({{ name }}Created::class, $events[0]);
+    }
+
+    public function test_can_change_name(): void
+    {
+        // Arrange
+        ${{ nameSnake }} = $this->create{{ name }}();
+        $newName = 'Updated {{ name }}';
+
+        // Act
+        ${{ nameSnake }}->changeName($newName);
+
+        // Assert
+        $this->assertEquals($newName, ${{ nameSnake }}->getName());
+        $this->assertInstanceOf(\DateTimeImmutable::class, ${{ nameSnake }}->getUpdatedAt());
+        $this->assertCount(2, ${{ nameSnake }}->getUncommittedEvents()); // Created + Updated
+    }
+
+    public function test_does_not_change_name_when_same(): void
+    {
+        // Arrange
+        ${{ nameSnake }} = $this->create{{ name }}();
+        $originalName = ${{ nameSnake }}->getName();
+        $originalEventsCount = count(${{ nameSnake }}->getUncommittedEvents());
+
+        // Act
+        ${{ nameSnake }}->changeName($originalName);
+
+        // Assert
+        $this->assertEquals($originalName, ${{ nameSnake }}->getName());
+        $this->assertCount($originalEventsCount, ${{ nameSnake }}->getUncommittedEvents());
+    }
+
+    public function test_can_reconstitute_{{ nameSnake }}(): void
+    {
+        // Arrange
+        $id = {{ name }}Id::generate();
+        $name = 'Test {{ name }}';
+        $createdAt = new \DateTimeImmutable();
+        $updatedAt = new \DateTimeImmutable();
+
+        // Act
+        ${{ nameSnake }} = {{ name }}::reconstitute($id, $name, $createdAt, $updatedAt);
+
+        // Assert
+        $this->assertEquals($id, ${{ nameSnake }}->getId());
+        $this->assertEquals($name, ${{ nameSnake }}->getName());
+        $this->assertEquals($createdAt, ${{ nameSnake }}->getCreatedAt());
+        $this->assertEquals($updatedAt, ${{ nameSnake }}->getUpdatedAt());
+        $this->assertFalse(${{ nameSnake }}->hasUncommittedEvents());
+    }
+
+    public function test_can_convert_to_array(): void
+    {
+        // Arrange
+        ${{ nameSnake }} = $this->create{{ name }}();
+
+        // Act
+        $array = ${{ nameSnake }}->toArray();
+
+        // Assert
+        $this->assertIsArray($array);
+        $this->assertArrayHasKey('id', $array);
+        $this->assertArrayHasKey('name', $array);
+        $this->assertArrayHasKey('created_at', $array);
+        $this->assertArrayHasKey('updated_at', $array);
+        $this->assertEquals(${{ nameSnake }}->getId()->toString(), $array['id']);
+        $this->assertEquals(${{ nameSnake }}->getName(), $array['name']);
+    }
+
+    private function create{{ name }}(): {{ name }}
+    {
+        return {{ name }}::create(
+            {{ name }}Id::generate(),
+            'Test {{ name }}'
+        );
+    }
+}
