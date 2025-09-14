@@ -705,11 +705,16 @@ namespace {{MODULE_NAMESPACE}}\Application\Handlers\Commands;
 
 use {{MODULE_NAMESPACE}}\Application\Commands\{{ACTION}}{{RESOURCE_NAME}}Command;
 use TaiCrm\LaravelModularDdd\Foundation\Contracts\CommandHandlerInterface;
+use TaiCrm\LaravelModularDdd\Foundation\Contracts\CommandInterface;
 
 class {{ACTION}}{{RESOURCE_NAME}}CommandHandler implements CommandHandlerInterface
 {
-    public function handle({{ACTION}}{{RESOURCE_NAME}}Command $command): mixed
+    public function handle(CommandInterface $command): mixed
     {
+        if (!$command instanceof {{ACTION}}{{RESOURCE_NAME}}Command) {
+            throw new \InvalidArgumentException('Expected {{ACTION}}{{RESOURCE_NAME}}Command');
+        }
+
         // TODO: Implement {{ACTION}} {{RESOURCE_NAME}} logic
 
         return true;
@@ -729,11 +734,16 @@ namespace {{MODULE_NAMESPACE}}\Application\Handlers\Queries;
 
 use {{MODULE_NAMESPACE}}\Application\Queries\{{ACTION}}{{RESOURCE_NAME}}Query;
 use TaiCrm\LaravelModularDdd\Foundation\Contracts\QueryHandlerInterface;
+use TaiCrm\LaravelModularDdd\Foundation\Contracts\QueryInterface;
 
 class {{ACTION}}{{RESOURCE_NAME}}QueryHandler implements QueryHandlerInterface
 {
-    public function handle({{ACTION}}{{RESOURCE_NAME}}Query $query): mixed
+    public function handle(QueryInterface $query): mixed
     {
+        if (!$query instanceof {{ACTION}}{{RESOURCE_NAME}}Query) {
+            throw new \InvalidArgumentException('Expected {{ACTION}}{{RESOURCE_NAME}}Query');
+        }
+
         // TODO: Implement {{ACTION}} {{RESOURCE_NAME}} logic
 
         return [];
