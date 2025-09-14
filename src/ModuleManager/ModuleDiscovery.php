@@ -146,7 +146,12 @@ class ModuleDiscovery implements ModuleDiscoveryInterface
             'conflicts' => 'sometimes|array',
             'conflicts.*' => 'string|max:255',
             'provides' => 'sometimes|array',
-            'provides.*' => 'string|max:255',
+            'provides.services' => 'sometimes|array',
+            'provides.services.*' => 'string|max:255',
+            'provides.contracts' => 'sometimes|array',
+            'provides.contracts.*' => 'string|max:255',
+            'provides.events' => 'sometimes|array',
+            'provides.events.*' => 'string|max:255',
             'config' => 'sometimes|array',
         ];
 
