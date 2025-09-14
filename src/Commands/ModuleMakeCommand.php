@@ -115,7 +115,7 @@ class ModuleMakeCommand extends Command
 
         $manifest = [
             'name' => $moduleName,
-            'display_name' => Str::title($moduleName),
+            'display_name' => $this->formatDisplayName($moduleName),
             'description' => $description,
             'version' => '1.0.0',
             'author' => $author,
@@ -233,6 +233,21 @@ class ModuleMakeCommand extends Command
             '{{AGGREGATE_LOWER}}' => Str::lower($aggregate),
             '{{NAMESPACE}}' => "Modules\\{$moduleName}",
         ];
+    }
+
+    private function formatDisplayName(string $moduleName): string
+    {
+        // Handle common patterns for better display names
+        $formatted = preg_replace('/([A-Z]+)([A-Z][a-z])/', '$1 $2', $moduleName);
+        $formatted = preg_replace('/([a-z\d])([A-Z])/', '$1 $2', $formatted);
+
+        // Special cases for common abbreviations
+        $abbreviations = ['HR', 'API', 'CRM', 'SMS', 'PDF', 'CSV', 'XML', 'JSON', 'URL', 'UUID'];
+        foreach ($abbreviations as $abbr) {
+            $formatted = str_ireplace($abbr, $abbr, $formatted);
+        }
+
+        return trim($formatted);
     }
 
     private function displayNextSteps(string $moduleName): void

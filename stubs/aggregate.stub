@@ -19,10 +19,10 @@ class {{AGGREGATE}} extends AggregateRoot
     public static function create({{AGGREGATE}}Id $id, string $name): self
     {
         $instance = new self($id, $name);
-        
-        // Record domain event
+
+        // TODO: Uncomment when {{AGGREGATE}}Created event is implemented
         // $instance->recordEvent(new {{AGGREGATE}}Created($id, $name));
-        
+
         return $instance;
     }
 
@@ -43,8 +43,8 @@ class {{AGGREGATE}} extends AggregateRoot
         }
 
         $this->name = $name;
-        
-        // Record domain event
+
+        // TODO: Uncomment when {{AGGREGATE}}NameChanged event is implemented
         // $this->recordEvent(new {{AGGREGATE}}NameChanged($this->id, $name));
     }
 }

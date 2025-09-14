@@ -101,7 +101,7 @@ class ModuleHealthCommand extends Command
         $icon = $report->status->getIcon();
         $color = $report->status->getColor();
 
-        $this->line("{$icon} <fg>={$color}>{$report->moduleName}</fg> ({$report->status->value})");
+        $this->line("$icon <$color>{$report->moduleName}</$color> ({$report->status->value})");
 
         if ($this->option('detailed') || !$report->isHealthy()) {
             $this->displayDetailedChecks($report);
@@ -113,11 +113,18 @@ class ModuleHealthCommand extends Command
     private function displayDetailedChecks($report): void
     {
         foreach ($report->checks as $check) {
-            $status = HealthStatus::from($check['status']);
+            if ($check['status'] instanceof HealthStatus) {
+                $status = $check['status'];
+            } elseif (is_string($check['status'])) {
+                $status = HealthStatus::from($check['status']);
+            } else {
+                $status = HealthStatus::Critical;
+            }
+
             $icon = $status->getIcon();
             $color = $status->getColor();
 
-            $this->line("  {$icon} <fg={$color}>{$check['name']}</fg>: {$check['message']}");
+            $this->line("  $icon <$color>{$check['name']}</$color>: {$check['message']}");
 
             if ($this->option('detailed') && !empty($check['details'])) {
                 foreach ($check['details'] as $key => $value) {
@@ -139,7 +146,7 @@ class ModuleHealthCommand extends Command
         $icon = $overallStatus->getIcon();
         $color = $overallStatus->getColor();
 
-        $this->line("Overall Status: {$icon} <fg={$color}>{$overallStatus->value}</fg>");
+        $this->line("Overall Status: $icon <$color>{$overallStatus->value}</$color>");
         $this->line("Total Modules: {$summary['total']}");
         $this->line("  <info>✅ Healthy:</info> {$summary['healthy']}");
 
