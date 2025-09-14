@@ -280,6 +280,21 @@ class ModuleManager implements ModuleManagerInterface
         $this->list();
     }
 
+    public function getActiveModules(): array
+    {
+        $modules = $this->list();
+        return $modules->filter(function (ModuleInfo $module) {
+            return $this->isEnabled($module->name);
+        })->map(function (ModuleInfo $module) {
+            return [
+                'name' => $module->name,
+                'path' => $module->path,
+                'namespace' => $module->namespace,
+                'dependencies' => $module->dependencies,
+            ];
+        })->values()->toArray();
+    }
+
     private function performInstallation(ModuleInfo $module): void
     {
         // Run migrations, copy assets, etc.

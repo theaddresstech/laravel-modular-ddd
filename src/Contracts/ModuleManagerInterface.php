@@ -39,4 +39,6 @@ interface ModuleManagerInterface
     public function clearCache(): void;
 
     public function rebuildCache(): void;
+
+    public function getActiveModules(): array;
 }
