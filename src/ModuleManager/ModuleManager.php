@@ -289,7 +289,7 @@ class ModuleManager implements ModuleManagerInterface
             return [
                 'name' => $module->name,
                 'path' => $module->path,
-                'namespace' => $module->namespace,
+                'namespace' => $module->namespace ?? ('Modules\\' . $module->name),
                 'dependencies' => $module->dependencies,
             ];
         })->values()->toArray();

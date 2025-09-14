@@ -20,7 +20,7 @@ readonly class ModuleInfo implements JsonSerializable
         public array $provides,
         public string $path,
         public ModuleState $state,
-        public string $namespace = '',
+        public ?string $namespace = null,
         public array $config = []
     ) {}
 
