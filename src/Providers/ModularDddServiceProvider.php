@@ -65,8 +65,11 @@ class ModularDddServiceProvider extends ServiceProvider
 
             // Ensure absolute path - convert relative paths to be relative to Laravel base path
             if (!str_starts_with($modulesPath, '/') && !str_contains($modulesPath, ':/')) {
+                logger()->debug("ModuleDiscovery: Converting relative path '{$modulesPath}' to absolute");
                 $modulesPath = base_path($modulesPath);
             }
+
+            logger()->debug("ModuleDiscovery: Final path is '{$modulesPath}'");
 
             return new ModuleDiscovery(
                 $app['files'],
