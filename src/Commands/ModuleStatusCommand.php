@@ -59,7 +59,7 @@ class ModuleStatusCommand extends Command
             ['Display Name', $moduleInfo->displayName],
             ['Version', $moduleInfo->version],
             ['Author', $moduleInfo->author ?: 'Unknown'],
-            ['Status', "<fg={$statusColor}>{$statusText}</fg>"],
+            ['Status', "<fg={$statusColor}>{$statusText}</>"],
             ['Path', $moduleInfo->path],
             ['Description', $this->wrapText($moduleInfo->description, 50)],
         ]);
@@ -103,7 +103,7 @@ class ModuleStatusCommand extends Command
                 $status = match (true) {
                     $isEnabled => '<info>✓ Enabled</info>',
                     $isInstalled => '<comment>○ Installed</comment>',
-                    default => '<fg=gray>○ Not Installed</fg>'
+                    default => '<fg=gray>○ Not Installed</>'
                 };
 
                 $depRows[] = [$dependent, $status];

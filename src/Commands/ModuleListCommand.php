@@ -75,7 +75,7 @@ class ModuleListCommand extends Command
         $color = $state->getColor();
         $displayName = $state->getDisplayName();
 
-        return "<fg={$color}>{$displayName}</fg>";
+        return "<fg={$color}>{$displayName}</>";
     }
 
     private function truncateText(string $text, int $length): string
