@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use {{NAMESPACE}}\Presentation\Http\Controllers\{{AGGREGATE}}Controller;
+use {{NAMESPACE_MODULE}}\Presentation\Http\Controllers\{{AGGREGATE}}Controller;
 
 Route::prefix('api/{{MODULE_KEBAB}}')
     ->middleware('api')
