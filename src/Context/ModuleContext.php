@@ -82,6 +82,11 @@ enum ModuleContext: string
             self::CLI, self::TESTING => 1,
             self::API => 2,
             self::WEB => 3,
+
+
+
+
+
             self::ADMIN => 4,
             self::QUEUE => 5,
             self::BROADCAST => 6,
