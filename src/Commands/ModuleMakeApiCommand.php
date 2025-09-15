@@ -9,8 +9,8 @@ use Illuminate\Support\Str;
 
 class ModuleMakeApiCommand extends Command
 {
-    protected $signature = 'module:make-api {module} {resource} {--auth} {--validation} {--swagger} {--api-version=} {--all-versions}';
-    protected $description = 'Generate complete REST API scaffolding for a module resource';
+    protected $signature = 'module:make-api {module} {resource} {--auth} {--validation} {--swagger=1} {--api-version=} {--all-versions} {--examples} {--comprehensive}';
+    protected $description = 'Generate complete REST API scaffolding for a module resource with comprehensive Swagger documentation';
 
     public function handle(): int
     {
@@ -18,7 +18,9 @@ class ModuleMakeApiCommand extends Command
         $resourceName = $this->argument('resource');
         $withAuth = $this->option('auth');
         $withValidation = $this->option('validation');
-        $withSwagger = $this->option('swagger');
+        $withSwagger = $this->option('swagger') !== false; // Default to true
+        $withExamples = $this->option('examples');
+        $withComprehensive = $this->option('comprehensive');
         $specificVersion = $this->option('api-version');
         $allVersions = $this->option('all-versions');
 
@@ -40,12 +42,12 @@ class ModuleMakeApiCommand extends Command
 
         // Generate for each version
         foreach ($versions as $version) {
-            $this->generateVersionedApi($moduleName, $resourceName, $version, $withAuth, $withValidation, $withSwagger);
+            $this->generateVersionedApi($moduleName, $resourceName, $version, $withAuth, $withValidation, $withSwagger, $withComprehensive, $withExamples);
         }
 
         // Generate shared components (not version-specific)
-        $this->generateRequests($moduleName, $resourceName, $withValidation);
-        $this->generateResource($moduleName, $resourceName);
+        $this->generateRequests($moduleName, $resourceName, $withValidation, $withComprehensive);
+        $this->generateResource($moduleName, $resourceName, $withComprehensive);
         $this->generateCommands($moduleName, $resourceName);
         $this->generateQueries($moduleName, $resourceName);
         $this->generateHandlers($moduleName, $resourceName);
@@ -86,11 +88,11 @@ class ModuleMakeApiCommand extends Command
         return [$defaultVersion];
     }
 
-    private function generateVersionedApi(string $moduleName, string $resourceName, string $version, bool $withAuth, bool $withValidation, bool $withSwagger): void
+    private function generateVersionedApi(string $moduleName, string $resourceName, string $version, bool $withAuth, bool $withValidation, bool $withSwagger, bool $withComprehensive = false, bool $withExamples = false): void
     {
         $this->info("Generating API for version {$version}...");
 
-        $this->generateController($moduleName, $resourceName, $version, $withAuth, $withValidation, $withSwagger);
+        $this->generateController($moduleName, $resourceName, $version, $withAuth, $withValidation, $withSwagger, $withComprehensive, $withExamples);
         $this->generateRoutes($moduleName, $resourceName, $version, $withAuth);
     }
 
@@ -114,13 +116,17 @@ class ModuleMakeApiCommand extends Command
         $this->line("     - Handlers: Application/Handlers/");
     }
 
-    private function generateController(string $moduleName, string $resourceName, string $apiVersion, bool $withAuth, bool $withValidation, bool $withSwagger): void
+    private function generateController(string $moduleName, string $resourceName, string $apiVersion, bool $withAuth, bool $withValidation, bool $withSwagger, bool $withComprehensive = false, bool $withExamples = false): void
     {
         $controllersDir = base_path("modules/{$moduleName}/Http/Controllers/Api/{$apiVersion}");
         $this->ensureDirectoryExists($controllersDir);
 
         $controllerFile = "{$controllersDir}/{$resourceName}Controller.php";
-        $template = $this->getControllerTemplate();
+
+        // Use comprehensive Swagger template if enabled or if Swagger is enabled by default
+        $template = ($withComprehensive || $withSwagger) ?
+            $this->getComprehensiveSwaggerControllerTemplate() :
+            $this->getControllerTemplate();
 
         $replacements = [
             '{{MODULE_NAMESPACE}}' => "Modules\\{$moduleName}",
@@ -139,7 +145,7 @@ class ModuleMakeApiCommand extends Command
         file_put_contents($controllerFile, $content);
     }
 
-    private function generateRequests(string $moduleName, string $resourceName, bool $withValidation): void
+    private function generateRequests(string $moduleName, string $resourceName, bool $withValidation, bool $withComprehensive = false): void
     {
         if (!$withValidation) {
             return;
@@ -148,41 +154,60 @@ class ModuleMakeApiCommand extends Command
         $requestsDir = base_path("modules/{$moduleName}/Http/Requests/{$resourceName}");
         $this->ensureDirectoryExists($requestsDir);
 
-        // Create Request
+        // Create Request - use comprehensive Swagger version if enabled
         $createRequestFile = "{$requestsDir}/Create{$resourceName}Request.php";
-        $createTemplate = $this->getCreateRequestTemplate();
+        $createTemplate = $withComprehensive ?
+            $this->getComprehensiveCreateRequestTemplate() :
+            $this->getCreateRequestTemplate();
         $createReplacements = [
             '{{MODULE_NAMESPACE}}' => "Modules\\{$moduleName}",
             '{{RESOURCE_NAME}}' => $resourceName,
-            '{{VALIDATION_RULES}}' => $this->getCreateValidationRules($resourceName),
+            '{{RESOURCE_VARIABLE}}' => Str::camel($resourceName),
+            '{{VALIDATION_RULES}}' => $withComprehensive ?
+                $this->getComprehensiveCreateValidationRules($resourceName) :
+                $this->getCreateValidationRules($resourceName),
         ];
         $createContent = str_replace(array_keys($createReplacements), array_values($createReplacements), $createTemplate);
         file_put_contents($createRequestFile, $createContent);
 
-        // Update Request
+        // Update Request - use comprehensive Swagger version if enabled
         $updateRequestFile = "{$requestsDir}/Update{$resourceName}Request.php";
-        $updateTemplate = $this->getUpdateRequestTemplate();
+        $updateTemplate = $withComprehensive ?
+            $this->getComprehensiveUpdateRequestTemplate() :
+            $this->getUpdateRequestTemplate();
         $updateReplacements = [
             '{{MODULE_NAMESPACE}}' => "Modules\\{$moduleName}",
             '{{RESOURCE_NAME}}' => $resourceName,
-            '{{VALIDATION_RULES}}' => $this->getUpdateValidationRules($resourceName),
+            '{{RESOURCE_VARIABLE}}' => Str::camel($resourceName),
+            '{{VALIDATION_RULES}}' => $withComprehensive ?
+                $this->getComprehensiveUpdateValidationRules($resourceName) :
+                $this->getUpdateValidationRules($resourceName),
+            '{{UPDATE_VALIDATION_RULES}}' => $withComprehensive ?
+                $this->getComprehensiveUpdateValidationRules($resourceName) :
+                $this->getUpdateValidationRules($resourceName),
         ];
         $updateContent = str_replace(array_keys($updateReplacements), array_values($updateReplacements), $updateTemplate);
         file_put_contents($updateRequestFile, $updateContent);
     }
 
-    private function generateResource(string $moduleName, string $resourceName): void
+    private function generateResource(string $moduleName, string $resourceName, bool $withComprehensive = false): void
     {
         $resourcesDir = base_path("modules/{$moduleName}/Http/Resources");
         $this->ensureDirectoryExists($resourcesDir);
 
         $resourceFile = "{$resourcesDir}/{$resourceName}Resource.php";
-        $template = $this->getResourceTemplate();
+        $template = $withComprehensive ?
+            $this->getComprehensiveResourceTemplate() :
+            $this->getResourceTemplate();
 
         $replacements = [
             '{{MODULE_NAMESPACE}}' => "Modules\\{$moduleName}",
             '{{RESOURCE_NAME}}' => $resourceName,
-            '{{RESOURCE_ATTRIBUTES}}' => $this->getResourceAttributes($resourceName),
+            '{{RESOURCE_VARIABLE}}' => Str::camel($resourceName),
+            '{{RESOURCE_KEBAB}}' => Str::kebab($resourceName),
+            '{{RESOURCE_ATTRIBUTES}}' => $withComprehensive ?
+                $this->getComprehensiveResourceAttributes($resourceName) :
+                $this->getResourceAttributes($resourceName),
         ];
 
         $content = str_replace(array_keys($replacements), array_values($replacements), $template);
@@ -966,5 +991,103 @@ PHP;
         $var = Str::camel($resourceName);
         $snake = Str::snake($resourceName);
         return "            '{$snake}_id' => \$this->{$var}Id,\n            'data' => \$this->data,";
+    }
+
+    /**
+     * Get comprehensive Swagger controller template from stub file
+     */
+    private function getComprehensiveSwaggerControllerTemplate(): string
+    {
+        $stubPath = __DIR__ . '/../../stubs/api-controller-comprehensive-swagger.stub';
+
+        if (file_exists($stubPath)) {
+            return file_get_contents($stubPath);
+        }
+
+        // Fallback to inline template if stub file doesn't exist
+        return $this->getControllerTemplate();
+    }
+
+    /**
+     * Get comprehensive Swagger create request template from stub file
+     */
+    private function getComprehensiveCreateRequestTemplate(): string
+    {
+        $stubPath = __DIR__ . '/../../stubs/api-request-create-swagger.stub';
+
+        if (file_exists($stubPath)) {
+            return file_get_contents($stubPath);
+        }
+
+        // Fallback to inline template if stub file doesn't exist
+        return $this->getCreateRequestTemplate();
+    }
+
+    /**
+     * Get comprehensive Swagger update request template from stub file
+     */
+    private function getComprehensiveUpdateRequestTemplate(): string
+    {
+        $stubPath = __DIR__ . '/../../stubs/api-request-update-swagger.stub';
+
+        if (file_exists($stubPath)) {
+            return file_get_contents($stubPath);
+        }
+
+        // Fallback to inline template if stub file doesn't exist
+        return $this->getUpdateRequestTemplate();
+    }
+
+    /**
+     * Get comprehensive Swagger resource template from stub file
+     */
+    private function getComprehensiveResourceTemplate(): string
+    {
+        $stubPath = __DIR__ . '/../../stubs/api-resource-swagger.stub';
+
+        if (file_exists($stubPath)) {
+            return file_get_contents($stubPath);
+        }
+
+        // Fallback to inline template if stub file doesn't exist
+        return $this->getResourceTemplate();
+    }
+
+    /**
+     * Enhanced validation rules for comprehensive requests
+     */
+    private function getComprehensiveCreateValidationRules(string $resourceName): string
+    {
+        return "            'name' => 'required|string|max:255|unique:". Str::snake(Str::plural($resourceName)) . ",name',\n" .
+               "            'description' => 'nullable|string|max:1000',\n" .
+               "            'status' => 'boolean',\n" .
+               "            'metadata' => 'nullable|array',\n" .
+               "            'metadata.*' => 'string|numeric|boolean',";
+    }
+
+    /**
+     * Enhanced validation rules for comprehensive update requests
+     */
+    private function getComprehensiveUpdateValidationRules(string $resourceName): string
+    {
+        return "            'name' => 'sometimes|string|max:255|unique:". Str::snake(Str::plural($resourceName)) . ",name,' . \$" . Str::camel($resourceName) . "Id,\n" .
+               "            'description' => 'nullable|string|max:1000',\n" .
+               "            'status' => 'boolean',\n" .
+               "            'metadata' => 'nullable|array',\n" .
+               "            'metadata.*' => 'string|numeric|boolean',";
+    }
+
+    /**
+     * Enhanced resource attributes for comprehensive resources
+     */
+    private function getComprehensiveResourceAttributes(string $resourceName): string
+    {
+        return "            'id' => \$this->id,\n" .
+               "            'name' => \$this->name,\n" .
+               "            'description' => \$this->description,\n" .
+               "            'status' => \$this->formatStatus(\$this->status ?? true),\n" .
+               "            'metadata' => \$this->transformMetadata(\$this->metadata),\n" .
+               "            'created_at' => \$this->created_at?->toISOString(),\n" .
+               "            'updated_at' => \$this->updated_at?->toISOString(),";
     }
 }

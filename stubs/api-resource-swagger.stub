@@ -1,0 +1,237 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{MODULE_NAMESPACE}}\Http\Resources;
+
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+/**
+ * @OA\Schema(
+ *     schema="{{RESOURCE_NAME}}Resource",
+ *     type="object",
+ *     title="{{RESOURCE_NAME}} Resource",
+ *     description="{{RESOURCE_NAME}} API resource representation with complete data structure",
+ *     @OA\Property(
+ *         property="id",
+ *         type="string",
+ *         format="uuid",
+ *         description="Unique identifier for the {{RESOURCE_NAME}}",
+ *         example="123e4567-e89b-12d3-a456-426614174000"
+ *     ),
+ *     @OA\Property(
+ *         property="name",
+ *         type="string",
+ *         description="Name of the {{RESOURCE_NAME}}",
+ *         example="Example {{RESOURCE_NAME}} Name"
+ *     ),
+ *     @OA\Property(
+ *         property="description",
+ *         type="string",
+ *         nullable=true,
+ *         description="Description of the {{RESOURCE_NAME}}",
+ *         example="This is a comprehensive description of the {{RESOURCE_NAME}}"
+ *     ),
+ *     @OA\Property(
+ *         property="status",
+ *         type="boolean",
+ *         description="Status indicating if the {{RESOURCE_NAME}} is active",
+ *         example=true
+ *     ),
+ *     @OA\Property(
+ *         property="metadata",
+ *         type="object",
+ *         nullable=true,
+ *         description="Additional metadata associated with the {{RESOURCE_NAME}}",
+ *         @OA\AdditionalProperties(
+ *             oneOf={
+ *                 @OA\Schema(type="string"),
+ *                 @OA\Schema(type="number"),
+ *                 @OA\Schema(type="boolean")
+ *             }
+ *         ),
+ *         example={"category": "premium", "priority": 1, "featured": true}
+ *     ),
+ *     @OA\Property(
+ *         property="created_at",
+ *         type="string",
+ *         format="date-time",
+ *         description="Timestamp when the {{RESOURCE_NAME}} was created",
+ *         example="2024-01-15T10:30:00.000000Z"
+ *     ),
+ *     @OA\Property(
+ *         property="updated_at",
+ *         type="string",
+ *         format="date-time",
+ *         description="Timestamp when the {{RESOURCE_NAME}} was last updated",
+ *         example="2024-01-15T15:45:30.000000Z"
+ *     ),
+ *     @OA\Property(
+ *         property="links",
+ *         type="object",
+ *         description="HATEOAS links for the {{RESOURCE_NAME}} resource",
+ *         @OA\Property(
+ *             property="self",
+ *             type="string",
+ *             format="uri",
+ *             description="Link to this {{RESOURCE_NAME}} resource",
+ *             example="/api/v1/{{RESOURCE_KEBAB}}/123e4567-e89b-12d3-a456-426614174000"
+ *         ),
+ *         @OA\Property(
+ *             property="edit",
+ *             type="string",
+ *             format="uri",
+ *             description="Link to edit this {{RESOURCE_NAME}}",
+ *             example="/api/v1/{{RESOURCE_KEBAB}}/123e4567-e89b-12d3-a456-426614174000"
+ *         ),
+ *         @OA\Property(
+ *             property="delete",
+ *             type="string",
+ *             format="uri",
+ *             description="Link to delete this {{RESOURCE_NAME}}",
+ *             example="/api/v1/{{RESOURCE_KEBAB}}/123e4567-e89b-12d3-a456-426614174000"
+ *         )
+ *     )
+ * )
+ *
+ * @OA\Schema(
+ *     schema="{{RESOURCE_NAME}}Collection",
+ *     type="object",
+ *     title="{{RESOURCE_NAME}} Collection",
+ *     description="Paginated collection of {{RESOURCE_NAME}} resources",
+ *     @OA\Property(
+ *         property="data",
+ *         type="array",
+ *         description="Array of {{RESOURCE_NAME}} resources",
+ *         @OA\Items(ref="#/components/schemas/{{RESOURCE_NAME}}Resource")
+ *     ),
+ *     @OA\Property(
+ *         property="links",
+ *         type="object",
+ *         description="Pagination links",
+ *         @OA\Property(property="first", type="string", format="uri", example="/api/v1/{{RESOURCE_KEBAB}}?page=1"),
+ *         @OA\Property(property="last", type="string", format="uri", example="/api/v1/{{RESOURCE_KEBAB}}?page=10"),
+ *         @OA\Property(property="prev", type="string", format="uri", nullable=true, example=null),
+ *         @OA\Property(property="next", type="string", format="uri", example="/api/v1/{{RESOURCE_KEBAB}}?page=2")
+ *     ),
+ *     @OA\Property(
+ *         property="meta",
+ *         type="object",
+ *         description="Pagination metadata",
+ *         @OA\Property(property="current_page", type="integer", example=1),
+ *         @OA\Property(property="from", type="integer", example=1),
+ *         @OA\Property(property="last_page", type="integer", example=10),
+ *         @OA\Property(property="path", type="string", example="/api/v1/{{RESOURCE_KEBAB}}"),
+ *         @OA\Property(property="per_page", type="integer", example=15),
+ *         @OA\Property(property="to", type="integer", example=15),
+ *         @OA\Property(property="total", type="integer", example=150)
+ *     )
+ * )
+ */
+class {{RESOURCE_NAME}}Resource extends JsonResource
+{
+    /**
+     * Transform the resource into an array.
+     *
+     * @return array<string, mixed>
+     */
+    public function toArray(Request $request): array
+    {
+        return [
+{{RESOURCE_ATTRIBUTES}}
+
+            // HATEOAS links
+            'links' => [
+                'self' => $this->getResourceUrl(),
+                'edit' => $this->getResourceUrl(),
+                'delete' => $this->getResourceUrl(),
+            ],
+        ];
+    }
+
+    /**
+     * Get additional data that should be returned with the resource array.
+     *
+     * @return array<string, mixed>
+     */
+    public function with(Request $request): array
+    {
+        return [
+            'version' => config('modular-ddd.api.versions.latest', 'v1'),
+            'timestamp' => now()->toISOString(),
+        ];
+    }
+
+    /**
+     * Customize the response for a request.
+     */
+    public function withResponse(Request $request, $response): void
+    {
+        $response->header('X-{{RESOURCE_NAME}}-Version', '1.0');
+        $response->header('X-Rate-Limit-Remaining', '100');
+    }
+
+    /**
+     * Get the resource URL for HATEOAS links.
+     */
+    private function getResourceUrl(): string
+    {
+        $version = request()->route()->getPrefix() ?
+            str_replace('api/', '', request()->route()->getPrefix()) :
+            config('modular-ddd.api.versions.latest', 'v1');
+
+        return "/api/{$version}/{{RESOURCE_KEBAB}}/{$this->id}";
+    }
+
+    /**
+     * Transform metadata for API output.
+     *
+     * @param mixed $metadata
+     * @return array|null
+     */
+    private function transformMetadata($metadata): ?array
+    {
+        if (is_null($metadata)) {
+            return null;
+        }
+
+        if (is_string($metadata)) {
+            return json_decode($metadata, true) ?: ['raw' => $metadata];
+        }
+
+        return is_array($metadata) ? $metadata : ['value' => $metadata];
+    }
+
+    /**
+     * Format status with additional context.
+     *
+     * @param bool $status
+     * @return array
+     */
+    private function formatStatus(bool $status): array
+    {
+        return [
+            'active' => $status,
+            'label' => $status ? 'Active' : 'Inactive',
+            'color' => $status ? 'green' : 'red',
+        ];
+    }
+
+    /**
+     * Create a new resource collection.
+     *
+     * @param  mixed  $resource
+     * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
+     */
+    public static function collection($resource)
+    {
+        return parent::collection($resource)->additional([
+            'meta' => [
+                'resource_type' => '{{RESOURCE_NAME}}Collection',
+                'generated_at' => now()->toISOString(),
+                'api_version' => config('modular-ddd.api.versions.latest', 'v1'),
+            ],
+        ]);
+    }
+}

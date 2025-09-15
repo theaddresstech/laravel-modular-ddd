@@ -1,0 +1,470 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{MODULE_NAMESPACE}}\Http\Controllers\Api\{{API_VERSION}};
+
+use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use App\Http\Controllers\Controller;
+use TaiCrm\LaravelModularDdd\Foundation\CommandBus;
+use TaiCrm\LaravelModularDdd\Foundation\QueryBus;
+use {{MODULE_NAMESPACE}}\Application\Commands\Create{{RESOURCE_NAME}}Command;
+use {{MODULE_NAMESPACE}}\Application\Commands\Update{{RESOURCE_NAME}}Command;
+use {{MODULE_NAMESPACE}}\Application\Commands\Delete{{RESOURCE_NAME}}Command;
+use {{MODULE_NAMESPACE}}\Application\Queries\Get{{RESOURCE_NAME}}Query;
+use {{MODULE_NAMESPACE}}\Application\Queries\List{{RESOURCE_NAME}}Query;
+use {{MODULE_NAMESPACE}}\Http\Resources\{{RESOURCE_NAME}}Resource;
+{{VALIDATION_IMPORTS}}
+
+/**
+ * @OA\Info(
+ *     title="{{RESOURCE_NAME}} API {{API_VERSION}}",
+ *     version="{{API_VERSION}}",
+ *     description="Comprehensive {{RESOURCE_NAME}} management API with full CRUD operations, validation, and authentication support."
+ * )
+ *
+ * @OA\Server(
+ *     url="/api/{{API_VERSION}}",
+ *     description="{{API_VERSION}} API Server"
+ * )
+ *
+ * @OA\Tag(
+ *     name="{{RESOURCE_NAME}}",
+ *     description="{{RESOURCE_NAME}} management endpoints with full CRUD operations"
+ * )
+ *
+ * @OA\SecurityScheme(
+ *     securityScheme="bearerAuth",
+ *     type="http",
+ *     scheme="bearer",
+ *     bearerFormat="JWT",
+ *     description="Bearer token authentication (JWT or Laravel Passport)"
+ * )
+ *
+ * @OA\SecurityScheme(
+ *     securityScheme="oauth2",
+ *     type="oauth2",
+ *     description="OAuth2 authentication via Laravel Passport",
+ *     @OA\Flow(
+ *         flow="authorizationCode",
+ *         authorizationUrl="/oauth/authorize",
+ *         tokenUrl="/oauth/token",
+ *         scopes={}
+ *     )
+ * )
+ */
+class {{RESOURCE_NAME}}Controller extends Controller
+{
+    public function __construct(
+        private CommandBus $commandBus,
+        private QueryBus $queryBus
+    ) {}
+
+    /**
+     * @OA\Get(
+     *     path="/api/{{API_VERSION}}/{{RESOURCE_KEBAB}}",
+     *     operationId="list{{RESOURCE_NAME}}s{{API_VERSION}}",
+     *     tags={"{{RESOURCE_NAME}}"},
+     *     summary="Get paginated list of {{RESOURCE_NAME}}s",
+     *     description="Retrieve a paginated list of {{RESOURCE_NAME}}s with optional filtering, sorting, and pagination parameters.",
+     *     security={{"bearerAuth": {}}, {"oauth2": {}}},
+     *     @OA\Parameter(
+     *         name="page",
+     *         in="query",
+     *         description="Page number for pagination",
+     *         required=false,
+     *         @OA\Schema(type="integer", minimum=1, default=1, example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         description="Number of items per page",
+     *         required=false,
+     *         @OA\Schema(type="integer", minimum=1, maximum=100, default=15, example=15)
+     *     ),
+     *     @OA\Parameter(
+     *         name="sort",
+     *         in="query",
+     *         description="Field to sort by",
+     *         required=false,
+     *         @OA\Schema(type="string", enum={"name", "created_at", "updated_at"}, default="created_at", example="created_at")
+     *     ),
+     *     @OA\Parameter(
+     *         name="direction",
+     *         in="query",
+     *         description="Sort direction",
+     *         required=false,
+     *         @OA\Schema(type="string", enum={"asc", "desc"}, default="desc", example="desc")
+     *     ),
+     *     @OA\Parameter(
+     *         name="filters[name]",
+     *         in="query",
+     *         description="Filter by name (partial match)",
+     *         required=false,
+     *         @OA\Schema(type="string", example="example name")
+     *     ),
+     *     @OA\Parameter(
+     *         name="filters[status]",
+     *         in="query",
+     *         description="Filter by status",
+     *         required=false,
+     *         @OA\Schema(type="boolean", example=true)
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Successful operation",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="array",
+     *                 @OA\Items(ref="#/components/schemas/{{RESOURCE_NAME}}Resource")
+     *             ),
+     *             @OA\Property(
+     *                 property="meta",
+     *                 type="object",
+     *                 @OA\Property(property="current_page", type="integer", example=1),
+     *                 @OA\Property(property="last_page", type="integer", example=10),
+     *                 @OA\Property(property="per_page", type="integer", example=15),
+     *                 @OA\Property(property="total", type="integer", example=150)
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthorized",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Forbidden",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     )
+     * )
+     */
+    public function index(Request $request): JsonResponse
+    {
+        $query = new List{{RESOURCE_NAME}}Query(
+            $request->get('filters', []),
+            $request->get('sort', 'created_at'),
+            $request->get('direction', 'desc'),
+            $request->get('per_page', 15)
+        );
+
+        ${{RESOURCE_VARIABLE}}s = $this->queryBus->ask($query);
+
+        return response()->json([
+            'data' => {{RESOURCE_NAME}}Resource::collection(${{RESOURCE_VARIABLE}}s->items()),
+            'meta' => [
+                'current_page' => ${{RESOURCE_VARIABLE}}s->currentPage(),
+                'last_page' => ${{RESOURCE_VARIABLE}}s->lastPage(),
+                'per_page' => ${{RESOURCE_VARIABLE}}s->perPage(),
+                'total' => ${{RESOURCE_VARIABLE}}s->total(),
+            ]
+        ]);
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/api/{{API_VERSION}}/{{RESOURCE_KEBAB}}",
+     *     operationId="create{{RESOURCE_NAME}}{{API_VERSION}}",
+     *     tags={"{{RESOURCE_NAME}}"},
+     *     summary="Create a new {{RESOURCE_NAME}}",
+     *     description="Create a new {{RESOURCE_NAME}} with the provided data. All required fields must be provided.",
+     *     security={{"bearerAuth": {}}, {"oauth2": {}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         description="{{RESOURCE_NAME}} data",
+     *         @OA\JsonContent(ref="#/components/schemas/Create{{RESOURCE_NAME}}Request")
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="{{RESOURCE_NAME}} created successfully",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="data", ref="#/components/schemas/{{RESOURCE_NAME}}Resource"),
+     *             @OA\Property(property="message", type="string", example="{{RESOURCE_NAME}} created successfully")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Bad request",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthorized",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ValidationErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     )
+     * )
+     */
+    public function store({{REQUEST_CLASSES}} $request): JsonResponse
+    {
+        $command = new Create{{RESOURCE_NAME}}Command(
+            ...$request->validated()
+        );
+
+        ${{RESOURCE_VARIABLE}} = $this->commandBus->dispatch($command);
+
+        return response()->json([
+            'data' => new {{RESOURCE_NAME}}Resource(${{RESOURCE_VARIABLE}}),
+            'message' => '{{RESOURCE_NAME}} created successfully'
+        ], 201);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/api/{{API_VERSION}}/{{RESOURCE_KEBAB}}/{id}",
+     *     operationId="show{{RESOURCE_NAME}}{{API_VERSION}}",
+     *     tags={"{{RESOURCE_NAME}}"},
+     *     summary="Get a specific {{RESOURCE_NAME}}",
+     *     description="Retrieve a specific {{RESOURCE_NAME}} by its ID.",
+     *     security={{"bearerAuth": {}}, {"oauth2": {}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="{{RESOURCE_NAME}} ID",
+     *         required=true,
+     *         @OA\Schema(type="string", format="uuid", example="123e4567-e89b-12d3-a456-426614174000")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="{{RESOURCE_NAME}} found",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="data", ref="#/components/schemas/{{RESOURCE_NAME}}Resource")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthorized",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="{{RESOURCE_NAME}} not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     )
+     * )
+     */
+    public function show(string $id): JsonResponse
+    {
+        $query = new Get{{RESOURCE_NAME}}Query($id);
+        ${{RESOURCE_VARIABLE}} = $this->queryBus->ask($query);
+
+        if (!${{RESOURCE_VARIABLE}}) {
+            return response()->json(['message' => '{{RESOURCE_NAME}} not found'], 404);
+        }
+
+        return response()->json([
+            'data' => new {{RESOURCE_NAME}}Resource(${{RESOURCE_VARIABLE}})
+        ]);
+    }
+
+    /**
+     * @OA\Put(
+     *     path="/api/{{API_VERSION}}/{{RESOURCE_KEBAB}}/{id}",
+     *     operationId="update{{RESOURCE_NAME}}{{API_VERSION}}",
+     *     tags={"{{RESOURCE_NAME}}"},
+     *     summary="Update a {{RESOURCE_NAME}}",
+     *     description="Update a {{RESOURCE_NAME}} with the provided data. Only provided fields will be updated.",
+     *     security={{"bearerAuth": {}}, {"oauth2": {}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="{{RESOURCE_NAME}} ID",
+     *         required=true,
+     *         @OA\Schema(type="string", format="uuid", example="123e4567-e89b-12d3-a456-426614174000")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         description="{{RESOURCE_NAME}} update data",
+     *         @OA\JsonContent(ref="#/components/schemas/Update{{RESOURCE_NAME}}Request")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="{{RESOURCE_NAME}} updated successfully",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="data", ref="#/components/schemas/{{RESOURCE_NAME}}Resource"),
+     *             @OA\Property(property="message", type="string", example="{{RESOURCE_NAME}} updated successfully")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Bad request",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthorized",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="{{RESOURCE_NAME}} not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ValidationErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     )
+     * )
+     */
+    public function update({{REQUEST_CLASSES}} $request, string $id): JsonResponse
+    {
+        $command = new Update{{RESOURCE_NAME}}Command(
+            $id,
+            $request->validated()
+        );
+
+        ${{RESOURCE_VARIABLE}} = $this->commandBus->dispatch($command);
+
+        return response()->json([
+            'data' => new {{RESOURCE_NAME}}Resource(${{RESOURCE_VARIABLE}}),
+            'message' => '{{RESOURCE_NAME}} updated successfully'
+        ]);
+    }
+
+    /**
+     * @OA\Delete(
+     *     path="/api/{{API_VERSION}}/{{RESOURCE_KEBAB}}/{id}",
+     *     operationId="delete{{RESOURCE_NAME}}{{API_VERSION}}",
+     *     tags={"{{RESOURCE_NAME}}"},
+     *     summary="Delete a {{RESOURCE_NAME}}",
+     *     description="Permanently delete a {{RESOURCE_NAME}}. This action cannot be undone.",
+     *     security={{"bearerAuth": {}}, {"oauth2": {}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="{{RESOURCE_NAME}} ID",
+     *         required=true,
+     *         @OA\Schema(type="string", format="uuid", example="123e4567-e89b-12d3-a456-426614174000")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="{{RESOURCE_NAME}} deleted successfully",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="message", type="string", example="{{RESOURCE_NAME}} deleted successfully")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthorized",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="{{RESOURCE_NAME}} not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     )
+     * )
+     */
+    public function destroy(string $id): JsonResponse
+    {
+        $command = new Delete{{RESOURCE_NAME}}Command($id);
+        $this->commandBus->dispatch($command);
+
+        return response()->json([
+            'message' => '{{RESOURCE_NAME}} deleted successfully'
+        ]);
+    }
+}
+
+/**
+ * @OA\Schema(
+ *     schema="{{RESOURCE_NAME}}Resource",
+ *     type="object",
+ *     title="{{RESOURCE_NAME}} Resource",
+ *     description="{{RESOURCE_NAME}} resource representation",
+ *     @OA\Property(property="id", type="string", format="uuid", description="Unique identifier", example="123e4567-e89b-12d3-a456-426614174000"),
+ *     @OA\Property(property="name", type="string", description="{{RESOURCE_NAME}} name", example="Example {{RESOURCE_NAME}}"),
+ *     @OA\Property(property="description", type="string", nullable=true, description="{{RESOURCE_NAME}} description", example="This is an example {{RESOURCE_NAME}}"),
+ *     @OA\Property(property="status", type="boolean", description="{{RESOURCE_NAME}} status", example=true),
+ *     @OA\Property(property="created_at", type="string", format="date-time", description="Creation timestamp", example="2024-01-15T10:30:00Z"),
+ *     @OA\Property(property="updated_at", type="string", format="date-time", description="Last update timestamp", example="2024-01-15T15:45:00Z")
+ * )
+ *
+ * @OA\Schema(
+ *     schema="Create{{RESOURCE_NAME}}Request",
+ *     type="object",
+ *     title="Create {{RESOURCE_NAME}} Request",
+ *     description="Request schema for creating a {{RESOURCE_NAME}}",
+ *     required={"name"},
+ *     @OA\Property(property="name", type="string", maxLength=255, description="{{RESOURCE_NAME}} name", example="New {{RESOURCE_NAME}}"),
+ *     @OA\Property(property="description", type="string", nullable=true, description="{{RESOURCE_NAME}} description", example="Description of the new {{RESOURCE_NAME}}"),
+ *     @OA\Property(property="status", type="boolean", description="{{RESOURCE_NAME}} status", default=true, example=true)
+ * )
+ *
+ * @OA\Schema(
+ *     schema="Update{{RESOURCE_NAME}}Request",
+ *     type="object",
+ *     title="Update {{RESOURCE_NAME}} Request",
+ *     description="Request schema for updating a {{RESOURCE_NAME}}",
+ *     @OA\Property(property="name", type="string", maxLength=255, description="{{RESOURCE_NAME}} name", example="Updated {{RESOURCE_NAME}}"),
+ *     @OA\Property(property="description", type="string", nullable=true, description="{{RESOURCE_NAME}} description", example="Updated description"),
+ *     @OA\Property(property="status", type="boolean", description="{{RESOURCE_NAME}} status", example=false)
+ * )
+ *
+ * @OA\Schema(
+ *     schema="ErrorResponse",
+ *     type="object",
+ *     title="Error Response",
+ *     description="Standard error response",
+ *     @OA\Property(property="message", type="string", description="Error message", example="Resource not found")
+ * )
+ *
+ * @OA\Schema(
+ *     schema="ValidationErrorResponse",
+ *     type="object",
+ *     title="Validation Error Response",
+ *     description="Validation error response",
+ *     @OA\Property(property="message", type="string", description="Validation error message", example="The given data was invalid."),
+ *     @OA\Property(
+ *         property="errors",
+ *         type="object",
+ *         description="Field-specific validation errors",
+ *         @OA\AdditionalProperties(
+ *             type="array",
+ *             @OA\Items(type="string")
+ *         ),
+ *         example={
+ *             "name": {"The name field is required."},
+ *             "email": {"The email must be a valid email address."}
+ *         }
+ *     )
+ * )
+ */
