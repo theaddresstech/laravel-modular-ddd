@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace TaiCrm\LaravelModularDdd\Commands;
 
 use TaiCrm\LaravelModularDdd\Compilation\Contracts\ModuleCompilerInterface;
+use TaiCrm\LaravelModularDdd\Compilation\ModuleCompiler;
 use TaiCrm\LaravelModularDdd\Loading\ParallelModuleLoader;
+use TaiCrm\LaravelModularDdd\Contracts\ModuleDiscoveryInterface;
+use TaiCrm\LaravelModularDdd\Contracts\DependencyResolverInterface;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Filesystem\Filesystem;
 
 /**
  * Command to compile modules for ultra-performance loading
@@ -22,10 +26,18 @@ class ModuleCompileCommand extends Command
 
     protected $description = 'Compile modules for ultra-performance loading';
 
-    public function handle(ModuleCompilerInterface $compiler, ParallelModuleLoader $loader): int
+    public function handle(): int
     {
         $this->info('🚀 Ultra-Performance Module Compiler');
         $this->newLine();
+
+        try {
+            $compiler = $this->getCompiler();
+        } catch (\Exception $e) {
+            $this->error('❌ Failed to initialize compiler: ' . $e->getMessage());
+            $this->error('💡 This might be due to missing dependencies or configuration issues.');
+            return 1;
+        }
 
         if ($this->option('clear-cache')) {
             $this->info('🧹 Clearing compiled cache...');
@@ -36,7 +48,7 @@ class ModuleCompileCommand extends Command
         }
 
         if ($this->option('dry-run')) {
-            return $this->handleDryRun($compiler);
+            return $this->handleDryRun();
         }
 
         if (!$this->option('force') && !$compiler->isCompilationNeeded()) {
@@ -74,7 +86,29 @@ class ModuleCompileCommand extends Command
         return 0;
     }
 
-    private function handleDryRun(ModuleCompilerInterface $compiler): int
+    /**
+     * Get or create the module compiler instance
+     */
+    private function getCompiler(): ModuleCompilerInterface
+    {
+        try {
+            // Try to resolve from container first
+            return $this->laravel->make(ModuleCompilerInterface::class);
+        } catch (\Exception $e) {
+            // Fallback: create manually
+            $this->warn('🔧 Creating compiler manually (container resolution failed)');
+
+            $discovery = $this->laravel->make(ModuleDiscoveryInterface::class);
+            $resolver = $this->laravel->make(DependencyResolverInterface::class);
+            $files = $this->laravel->make(Filesystem::class);
+            $logger = $this->laravel->make('log');
+            $storagePath = config('modular-ddd.registry_storage', storage_path('framework/modular-ddd'));
+
+            return new ModuleCompiler($discovery, $resolver, $files, $logger, $storagePath);
+        }
+    }
+
+    private function handleDryRun(): int
     {
         $this->info('🔍 Dry Run - Analyzing what would be compiled...');
         $this->newLine();
