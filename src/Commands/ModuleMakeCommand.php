@@ -182,7 +182,8 @@ class ModuleMakeCommand extends Command
         // Get the correct namespace for this specific target file
         $namespace = $this->getNamespaceFromPath($target, $replacements['{{MODULE}}']);
 
-        // Create enhanced replacements including specific namespace and class name
+        // Create enhanced replacements with specific namespace for the target file
+        // Keep {{NAMESPACE_MODULE}} for use statements, use {{NAMESPACE}} for file namespace
         $enhancedReplacements = array_merge($replacements, [
             '{{NAMESPACE}}' => $namespace,
             '{{CLASS_NAME}}' => basename($target, '.php'),

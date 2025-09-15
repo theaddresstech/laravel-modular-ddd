@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace {{NAMESPACE}}\Domain\Repositories;
+namespace {{NAMESPACE}};
 
-use {{NAMESPACE}}\Domain\Models\{{AGGREGATE}};
-use {{NAMESPACE}}\Domain\ValueObjects\{{AGGREGATE}}Id;
+use {{NAMESPACE_MODULE}}\Domain\Models\{{AGGREGATE}};
+use {{NAMESPACE_MODULE}}\Domain\ValueObjects\{{AGGREGATE}}Id;
 use Illuminate\Support\Collection;
 
 interface {{AGGREGATE}}RepositoryInterface

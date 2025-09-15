@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace {{NAMESPACE}}\Domain\Models;
+namespace {{NAMESPACE}};
 
-use {{NAMESPACE}}\Domain\ValueObjects\{{AGGREGATE}}Id;
+use {{NAMESPACE_MODULE}}\Domain\ValueObjects\{{AGGREGATE}}Id;
 use TaiCrm\LaravelModularDdd\Foundation\AggregateRoot;
 
 class {{AGGREGATE}} extends AggregateRoot

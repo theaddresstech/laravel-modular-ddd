@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace {{NAMESPACE}}\Presentation\Http\Controllers;
+namespace {{NAMESPACE}};
 
-use {{NAMESPACE}}\Domain\Models\{{AGGREGATE}};
-use {{NAMESPACE}}\Domain\ValueObjects\{{AGGREGATE}}Id;
-use {{NAMESPACE}}\Domain\Repositories\{{AGGREGATE}}RepositoryInterface;
+use {{NAMESPACE_MODULE}}\Domain\Models\{{AGGREGATE}};
+use {{NAMESPACE_MODULE}}\Domain\ValueObjects\{{AGGREGATE}}Id;
+use {{NAMESPACE_MODULE}}\Domain\Repositories\{{AGGREGATE}}RepositoryInterface;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;

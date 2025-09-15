@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace {{NAMESPACE}}\Providers;
+namespace {{NAMESPACE}};
 
 use TaiCrm\LaravelModularDdd\Communication\ModuleServiceProvider;
-use {{NAMESPACE}}\Domain\Repositories\{{AGGREGATE}}RepositoryInterface;
-use {{NAMESPACE}}\Infrastructure\Persistence\Eloquent\Repositories\Eloquent{{AGGREGATE}}Repository;
+use {{NAMESPACE_MODULE}}\Domain\Repositories\{{AGGREGATE}}RepositoryInterface;
+use {{NAMESPACE_MODULE}}\Infrastructure\Persistence\Eloquent\Repositories\Eloquent{{AGGREGATE}}Repository;
 
 class {{MODULE}}ServiceProvider extends ModuleServiceProvider
 {
