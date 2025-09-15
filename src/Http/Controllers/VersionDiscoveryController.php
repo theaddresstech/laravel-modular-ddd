@@ -55,10 +55,20 @@ class VersionDiscoveryController extends Controller
         $moduleInfo = $this->moduleManager->getInfo($module);
 
         if (!$moduleInfo || !$this->moduleManager->isInstalled($module)) {
+            // Debug info to understand why getInfo returns null
+            $debugInfo = [
+                'working_directory' => getcwd(),
+                'modules_path_config' => config('modular-ddd.modules_path'),
+                'modules_path_absolute' => base_path(config('modular-ddd.modules_path', 'modules')),
+                'module_directory_exists' => is_dir(base_path(config('modular-ddd.modules_path', 'modules')) . '/' . $module),
+                'manifest_exists' => file_exists(base_path(config('modular-ddd.modules_path', 'modules')) . '/' . $module . '/manifest.json'),
+            ];
+
             return response()->json([
                 'error' => 'Module not found',
                 'message' => "Module '{$module}' is not installed or does not exist",
                 'available_modules' => array_keys($this->getModulesVersionInfo()),
+                'debug' => $debugInfo,
             ], 404);
         }
 
