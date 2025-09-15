@@ -895,7 +895,7 @@ PHP;
 
     private function getValidationImports(string $moduleName, string $resourceName): string
     {
-        return "\nuse {$moduleName}\\Http\\Requests\\{$resourceName}\\Create{$resourceName}Request;\nuse {$moduleName}\\Http\\Requests\\{$resourceName}\\Update{$resourceName}Request;";
+        return "\nuse Modules\\{$moduleName}\\Http\\Requests\\{$resourceName}\\Create{$resourceName}Request;\nuse Modules\\{$moduleName}\\Http\\Requests\\{$resourceName}\\Update{$resourceName}Request;";
     }
 
     private function getRequestClasses(string $resourceName): string
