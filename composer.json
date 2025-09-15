@@ -93,7 +93,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "TaiCrm\\LaravelModularDdd\\ModularDddServiceProvider"
+                "TaiCrm\\LaravelModularDdd\\Providers\\ModularDddServiceProvider"
             ],
             "aliases": {
                 "ModuleManager": "TaiCrm\\LaravelModularDdd\\Facades\\ModuleManager",
