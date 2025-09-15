@@ -82,7 +82,7 @@ class SwaggerDocumentationController extends Controller
      */
     private function generateMainApiSpec(): array
     {
-        $modules = $this->moduleManager->getAvailableModules();
+        $modules = $this->moduleManager->list();
 
         $spec = [
             'openapi' => '3.0.3',
@@ -126,7 +126,7 @@ class SwaggerDocumentationController extends Controller
      */
     private function generateVersionApiSpec(string $version): array
     {
-        $modules = $this->moduleManager->getAvailableModules();
+        $modules = $this->moduleManager->list();
 
         $spec = [
             'openapi' => '3.0.3',
@@ -165,7 +165,7 @@ class SwaggerDocumentationController extends Controller
      */
     private function generateModuleApiSpec(string $module): array
     {
-        $moduleInfo = $this->moduleManager->getModule($module);
+        $moduleInfo = $this->moduleManager->get($module);
 
         if (!$moduleInfo) {
             abort(404, "Module '{$module}' not found");
@@ -203,7 +203,7 @@ class SwaggerDocumentationController extends Controller
      */
     private function generateVersionModuleApiSpec(string $version, string $module): array
     {
-        $moduleInfo = $this->moduleManager->getModule($module);
+        $moduleInfo = $this->moduleManager->get($module);
 
         if (!$moduleInfo) {
             abort(404, "Module '{$module}' not found");
