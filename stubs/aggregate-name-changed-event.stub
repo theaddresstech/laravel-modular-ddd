@@ -6,7 +6,7 @@ namespace {{NAMESPACE_MODULE}}\Domain\Events;
 
 use TaiCrm\LaravelModularDdd\Foundation\DomainEvent;
 
-final readonly class {{AGGREGATE}}NameChanged extends DomainEvent
+final class {{AGGREGATE}}NameChanged extends DomainEvent
 {
     public function __construct(
         private string ${{AGGREGATE_VARIABLE}}Id,
