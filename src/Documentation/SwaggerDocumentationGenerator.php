@@ -129,11 +129,11 @@ class SwaggerDocumentationGenerator
             ],
             'servers' => [
                 [
-                    'url' => config('app.url', 'http://localhost') . '/api/v1',
+                    'url' => config('app.url', 'http://localhost') . '/v1',
                     'description' => 'v1 API Server',
                 ],
                 [
-                    'url' => config('app.url', 'http://localhost') . '/api/v2',
+                    'url' => config('app.url', 'http://localhost') . '/v2',
                     'description' => 'v2 API Server',
                 ],
             ],

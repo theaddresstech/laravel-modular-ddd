@@ -242,13 +242,12 @@ class SwaggerDocumentationController extends Controller
     private function getServers(?string $version = null): array
     {
         $baseUrl = Config::get('app.url');
-        $apiPrefix = Config::get('modular-ddd.api.prefix', 'api');
 
         $servers = [
             [
                 'url' => $version
-                    ? "{$baseUrl}/{$apiPrefix}/{$version}"
-                    : "{$baseUrl}/{$apiPrefix}",
+                    ? "{$baseUrl}/{$version}"
+                    : "{$baseUrl}",
                 'description' => $version
                     ? "Production server - {$version}"
                     : 'Production server',
