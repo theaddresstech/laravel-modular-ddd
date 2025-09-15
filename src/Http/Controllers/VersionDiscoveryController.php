@@ -60,7 +60,7 @@ class VersionDiscoveryController extends Controller
             ], 404);
         }
 
-        $moduleInfo = $this->moduleManager->getModuleInfo($module);
+        $moduleInfo = $this->moduleManager->getInfo($module);
         $versions = $this->getModuleVersionInfo($module);
 
         return response()->json([
