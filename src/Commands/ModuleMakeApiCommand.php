@@ -205,7 +205,7 @@ class ModuleMakeApiCommand extends Command
 
         $routeContent = str_replace(array_keys($replacements), array_values($replacements), $routeTemplate);
 
-        $controllerNamespace = "Modules\\{$moduleName}\Http\Controllers\Api\\{$apiVersion}\\{$resourceName}Controller";
+        $controllerNamespace = "Modules\\{$moduleName}\\Http\\Controllers\\Api\\{$apiVersion}\\{$resourceName}Controller";
 
         if (file_exists($routesFile)) {
             $existingContent = file_get_contents($routesFile);
@@ -213,7 +213,7 @@ class ModuleMakeApiCommand extends Command
             $versionedRoutePattern = "Route::prefix('api/{$apiVersion}')";
             if (!str_contains($existingContent, $versionedRoutePattern) || !str_contains($existingContent, "Route::apiResource('" . Str::kebab($resourceName) . "', " . $resourceName . "Controller::class")) {
                 // Use alias for versioned controller to avoid namespace collision
-                $controllerAlias = "{$resourceName}{$apiVersion}Controller";
+                $controllerAlias = "{$resourceName}Controller" . ucfirst($apiVersion);
                 $importLine = "use {$controllerNamespace} as {$controllerAlias};";
 
                 // Add controller import if not exists
@@ -226,7 +226,7 @@ class ModuleMakeApiCommand extends Command
                 file_put_contents($routesFile, $existingContent . "\n" . $routeContent);
             }
         } else {
-            $controllerAlias = "{$resourceName}{$apiVersion}Controller";
+            $controllerAlias = "{$resourceName}Controller" . ucfirst($apiVersion);
             $importLine = "use {$controllerNamespace} as {$controllerAlias};";
             $routeContent = str_replace("{$resourceName}Controller::class", "{$controllerAlias}::class", $routeContent);
             $fullRouteFile = "<?php\n\n/*\n|--------------------------------------------------------------------------\n| {$moduleName} API Routes ({$apiVersion})\n|--------------------------------------------------------------------------\n*/\n\nuse Illuminate\Support\Facades\Route;\n{$importLine}\n\n" . $routeContent;

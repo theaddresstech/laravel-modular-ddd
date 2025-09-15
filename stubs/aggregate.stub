@@ -5,23 +5,35 @@ declare(strict_types=1);
 namespace {{NAMESPACE}};
 
 use {{NAMESPACE_MODULE}}\Domain\ValueObjects\{{AGGREGATE}}Id;
+use {{NAMESPACE_MODULE}}\Domain\Events\{{AGGREGATE}}Created;
+use {{NAMESPACE_MODULE}}\Domain\Events\{{AGGREGATE}}NameChanged;
 use TaiCrm\LaravelModularDdd\Foundation\AggregateRoot;
 
 class {{AGGREGATE}} extends AggregateRoot
 {
+    private \DateTimeImmutable $createdAt;
+    private \DateTimeImmutable $updatedAt;
+
     public function __construct(
         private {{AGGREGATE}}Id $id,
-        private string $name
+        private string $name,
+        ?\DateTimeImmutable $createdAt = null,
+        ?\DateTimeImmutable $updatedAt = null
     ) {
         parent::__construct();
+        $this->createdAt = $createdAt ?? new \DateTimeImmutable();
+        $this->updatedAt = $updatedAt ?? new \DateTimeImmutable();
     }
 
     public static function create({{AGGREGATE}}Id $id, string $name): self
     {
         $instance = new self($id, $name);
 
-        // TODO: Create the event using: php artisan module:make-event {{MODULE}} {{AGGREGATE}}Created --aggregate={{AGGREGATE}}
-        // $instance->apply({{AGGREGATE}}Created::raise($id->value(), $name));
+        $instance->recordEvent(new {{AGGREGATE}}Created(
+            $id->toString(),
+            $name,
+            $instance->createdAt
+        ));
 
         return $instance;
     }
@@ -36,15 +48,31 @@ class {{AGGREGATE}} extends AggregateRoot
         return $this->name;
     }
 
+    public function getCreatedAt(): \DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
+    public function getUpdatedAt(): \DateTimeImmutable
+    {
+        return $this->updatedAt;
+    }
+
     public function changeName(string $name): void
     {
         if ($this->name === $name) {
             return;
         }
 
+        $oldName = $this->name;
         $this->name = $name;
+        $this->updatedAt = new \DateTimeImmutable();
 
-        // TODO: Create the event using: php artisan module:make-event {{MODULE}} {{AGGREGATE}}NameChanged --aggregate={{AGGREGATE}}
-        // $this->apply({{AGGREGATE}}NameChanged::raise($this->id->value(), $name));
+        $this->recordEvent(new {{AGGREGATE}}NameChanged(
+            $this->id->toString(),
+            $oldName,
+            $name,
+            $this->updatedAt
+        ));
     }
 }

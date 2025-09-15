@@ -1,0 +1,63 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{NAMESPACE}}\Domain\Events;
+
+use TaiCrm\LaravelModularDdd\Foundation\DomainEvent;
+
+final readonly class {{AGGREGATE}}NameChanged extends DomainEvent
+{
+    public function __construct(
+        private string ${{AGGREGATE_VARIABLE}}Id,
+        private string $oldName,
+        private string $newName,
+        private \DateTimeImmutable $updatedAt
+    ) {
+        parent::__construct();
+    }
+
+    public function get{{AGGREGATE}}Id(): string
+    {
+        return $this->{{AGGREGATE_VARIABLE}}Id;
+    }
+
+    public function getOldName(): string
+    {
+        return $this->oldName;
+    }
+
+    public function getNewName(): string
+    {
+        return $this->newName;
+    }
+
+    public function getUpdatedAt(): \DateTimeImmutable
+    {
+        return $this->updatedAt;
+    }
+
+    public function getEventType(): string
+    {
+        return '{{AGGREGATE}}NameChanged';
+    }
+
+    public function getPayload(): array
+    {
+        return [
+            '{{AGGREGATE_VARIABLE}}_id' => $this->{{AGGREGATE_VARIABLE}}Id,
+            'old_name' => $this->oldName,
+            'new_name' => $this->newName,
+            'updated_at' => $this->updatedAt->format(\DateTimeInterface::ATOM),
+        ];
+    }
+
+    public static function raise(
+        string ${{AGGREGATE_VARIABLE}}Id,
+        string $oldName,
+        string $newName,
+        \DateTimeImmutable $updatedAt
+    ): self {
+        return new self(${{AGGREGATE_VARIABLE}}Id, $oldName, $newName, $updatedAt);
+    }
+}

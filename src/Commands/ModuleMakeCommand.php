@@ -75,6 +75,7 @@ class ModuleMakeCommand extends Command
             'Application/Queries',
             'Application/DTOs',
             'Application/Services',
+            'Application/Listeners',
             'Infrastructure/Persistence/Eloquent/Models',
             'Infrastructure/Persistence/Eloquent/Repositories',
             'Infrastructure/External',
@@ -129,7 +130,14 @@ class ModuleMakeCommand extends Command
                 'contracts' => [
                     Str::studly($aggregate) . 'RepositoryInterface',
                 ],
-                'events' => [],
+                'events' => [
+                    Str::studly($aggregate) . 'Created',
+                    Str::studly($aggregate) . 'NameChanged',
+                ],
+                'listeners' => [
+                    Str::studly($aggregate) . 'CreatedListener',
+                    Str::studly($aggregate) . 'NameChangedListener',
+                ],
             ],
             'config' => [
                 'auto_load' => true,
@@ -160,6 +168,13 @@ class ModuleMakeCommand extends Command
             'resource.stub' => "Presentation/Http/Resources/{$aggregateStudly}Resource.php",
             'service-provider.stub' => "Providers/{$moduleName}ServiceProvider.php",
             'controller.stub' => "Presentation/Http/Controllers/{$aggregateStudly}Controller.php",
+            'factory.stub' => "Database/Factories/{$aggregateStudly}.php",
+            // Auto-generated Events
+            'aggregate-created-event.stub' => "Domain/Events/{$aggregateStudly}Created.php",
+            'aggregate-name-changed-event.stub' => "Domain/Events/{$aggregateStudly}NameChanged.php",
+            // Auto-generated Event Listeners
+            'aggregate-created-listener.stub' => "Application/Listeners/{$aggregateStudly}CreatedListener.php",
+            'aggregate-name-changed-listener.stub' => "Application/Listeners/{$aggregateStudly}NameChangedListener.php",
             'routes-api.stub' => "Routes/api.php",
             'routes-web.stub' => "Routes/web.php",
         ];
@@ -254,9 +269,14 @@ class ModuleMakeCommand extends Command
             '{{AGGREGATE_SNAKE}}' => Str::snake($aggregate),
             '{{AGGREGATE_KEBAB}}' => Str::kebab($aggregate),
             '{{AGGREGATE_LOWER}}' => Str::camel($aggregate),
+            '{{AGGREGATE_VARIABLE}}' => Str::camel($aggregate),
             '{{CLASS_NAME}}' => $aggregateStudly,
             '{{class}}' => $aggregateStudly,
             '{{AGGREGATE_SERVICE}}' => $aggregateStudly . 'Service',
+            '{{MODEL}}' => $aggregateStudly,
+            '{{FACTORY}}' => $aggregateStudly,
+            '{{MODEL_VARIABLE}}' => Str::camel($aggregate),
+            '{{EVENT}}' => $aggregateStudly,
         ];
     }
 
@@ -277,13 +297,24 @@ class ModuleMakeCommand extends Command
 
     private function displayNextSteps(string $moduleName): void
     {
+        $aggregate = $this->option('aggregate') ?? $moduleName;
+        $aggregateStudly = Str::studly($aggregate);
+
         $this->newLine();
         $this->line("📋 <comment>Next steps:</comment>");
         $this->line("1. Review and update the module manifest: modules/{$moduleName}/manifest.json");
         $this->line("2. Implement your domain logic in the Domain layer");
-        $this->line("3. Create your database migrations: <info>php artisan make:migration create_{$moduleName}_table --path=modules/{$moduleName}/Database/Migrations</info>");
-        $this->line("4. Install the module: <info>php artisan module:install {$moduleName}</info>");
-        $this->line("5. Enable the module: <info>php artisan module:enable {$moduleName}</info>");
+        $this->line("3. Customize the auto-generated event listeners:");
+        $this->line("   - Application/Listeners/{$aggregateStudly}CreatedListener.php");
+        $this->line("   - Application/Listeners/{$aggregateStudly}NameChangedListener.php");
+        $this->line("4. Create your database migrations: <info>php artisan make:migration create_{$moduleName}_table --path=modules/{$moduleName}/Database/Migrations</info>");
+        $this->line("5. Install the module: <info>php artisan module:install {$moduleName}</info>");
+        $this->line("6. Enable the module: <info>php artisan module:enable {$moduleName}</info>");
+        $this->newLine();
+        $this->line("🎉 <info>Auto-generated components:</info>");
+        $this->line("   ✅ Domain Events: {$aggregateStudly}Created, {$aggregateStudly}NameChanged");
+        $this->line("   ✅ Event Listeners: Automatically wired and ready for customization");
+        $this->line("   ✅ Complete DDD structure with timestamps and event handling");
         $this->newLine();
     }
 }

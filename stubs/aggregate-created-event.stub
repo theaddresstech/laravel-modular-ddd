@@ -1,0 +1,55 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{NAMESPACE}}\Domain\Events;
+
+use TaiCrm\LaravelModularDdd\Foundation\DomainEvent;
+
+final readonly class {{AGGREGATE}}Created extends DomainEvent
+{
+    public function __construct(
+        private string ${{AGGREGATE_VARIABLE}}Id,
+        private string $name,
+        private \DateTimeImmutable $createdAt
+    ) {
+        parent::__construct();
+    }
+
+    public function get{{AGGREGATE}}Id(): string
+    {
+        return $this->{{AGGREGATE_VARIABLE}}Id;
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function getCreatedAt(): \DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
+    public function getEventType(): string
+    {
+        return '{{AGGREGATE}}Created';
+    }
+
+    public function getPayload(): array
+    {
+        return [
+            '{{AGGREGATE_VARIABLE}}_id' => $this->{{AGGREGATE_VARIABLE}}Id,
+            'name' => $this->name,
+            'created_at' => $this->createdAt->format(\DateTimeInterface::ATOM),
+        ];
+    }
+
+    public static function raise(
+        string ${{AGGREGATE_VARIABLE}}Id,
+        string $name,
+        \DateTimeImmutable $createdAt
+    ): self {
+        return new self(${{AGGREGATE_VARIABLE}}Id, $name, $createdAt);
+    }
+}

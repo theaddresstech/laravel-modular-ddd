@@ -1,0 +1,65 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{NAMESPACE}}\Application\Listeners;
+
+use {{NAMESPACE}}\Domain\Events\{{AGGREGATE}}NameChanged;
+use Psr\Log\LoggerInterface;
+
+final class {{AGGREGATE}}NameChangedListener
+{
+    public function __construct(
+        private LoggerInterface $logger
+    ) {}
+
+    public function handle({{AGGREGATE}}NameChanged $event): void
+    {
+        $this->logger->info('{{AGGREGATE}}NameChangedListener handling event', [
+            'event_id' => $event->getEventId(),
+            'event_type' => $event->getEventType(),
+            '{{AGGREGATE_VARIABLE}}_id' => $event->get{{AGGREGATE}}Id(),
+            'old_name' => $event->getOldName(),
+            'new_name' => $event->getNewName(),
+        ]);
+
+        try {
+            $this->process{{AGGREGATE}}NameChanged($event);
+
+        } catch (\Exception $e) {
+            $this->logger->error('Error in {{AGGREGATE}}NameChangedListener', [
+                'event_id' => $event->getEventId(),
+                '{{AGGREGATE_VARIABLE}}_id' => $event->get{{AGGREGATE}}Id(),
+                'error' => $e->getMessage(),
+                'exception' => $e,
+            ]);
+
+            throw $e;
+        }
+    }
+
+    private function process{{AGGREGATE}}NameChanged({{AGGREGATE}}NameChanged $event): void
+    {
+        // Implement your business logic here
+        // Examples:
+        // - Update search index
+        // - Notify related services
+        // - Create audit log entry
+        // - Update cached data
+        // - Send notifications
+        // - Update read models
+
+        // Example implementation:
+        // $this->searchService->updateIndex(
+        //     $event->get{{AGGREGATE}}Id(),
+        //     $event->getNewName()
+        // );
+        //
+        // $this->auditService->logNameChange(
+        //     $event->get{{AGGREGATE}}Id(),
+        //     $event->getOldName(),
+        //     $event->getNewName(),
+        //     $event->getUpdatedAt()
+        // );
+    }
+}
