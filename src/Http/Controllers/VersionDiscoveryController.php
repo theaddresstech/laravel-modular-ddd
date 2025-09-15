@@ -66,15 +66,15 @@ class VersionDiscoveryController extends Controller
         return response()->json([
             'module' => [
                 'name' => $module,
-                'display_name' => $moduleInfo->getDisplayName(),
-                'description' => $moduleInfo->getDescription(),
-                'version' => $moduleInfo->getVersion(),
+                'display_name' => $moduleInfo->displayName,
+                'description' => $moduleInfo->description,
+                'version' => $moduleInfo->version,
                 'status' => $this->moduleManager->isEnabled($module) ? 'enabled' : 'disabled',
             ],
             'api_versions' => $versions,
             'endpoints' => $this->getModuleEndpoints($module),
             'capabilities' => $this->getModuleCapabilities($module),
-            'dependencies' => $moduleInfo->getDependencies(),
+            'dependencies' => $moduleInfo->dependencies,
             'links' => [
                 'self' => url("/api/modules/{$module}/versions"),
                 'module_documentation' => url("/api/docs/modules/{$module}"),
@@ -115,7 +115,7 @@ class VersionDiscoveryController extends Controller
             if ($this->moduleManager->isEnabled($moduleInfo->name)) {
                 $modules[$moduleInfo->name] = [
                     'name' => $moduleInfo->name,
-                    'version' => $moduleInfo->getVersion(),
+                    'version' => $moduleInfo->version,
                     'status' => 'enabled',
                     'api_versions' => $this->getModuleVersionInfo($moduleInfo->name),
                     'endpoints_count' => count($this->getModuleEndpoints($moduleInfo->name)),
