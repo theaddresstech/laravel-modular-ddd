@@ -52,7 +52,9 @@ class VersionDiscoveryController extends Controller
 
     public function module(Request $request, string $module): JsonResponse
     {
-        if (!$this->moduleManager->isInstalled($module)) {
+        $moduleInfo = $this->moduleManager->getInfo($module);
+
+        if (!$moduleInfo || !$this->moduleManager->isInstalled($module)) {
             return response()->json([
                 'error' => 'Module not found',
                 'message' => "Module '{$module}' is not installed or does not exist",
@@ -60,7 +62,6 @@ class VersionDiscoveryController extends Controller
             ], 404);
         }
 
-        $moduleInfo = $this->moduleManager->getInfo($module);
         $versions = $this->getModuleVersionInfo($module);
 
         return response()->json([
