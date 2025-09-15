@@ -288,6 +288,9 @@ class ModularDddServiceProvider extends ServiceProvider
                 \TaiCrm\LaravelModularDdd\Commands\ModulePermissionCommand::class,
                 ModuleMakeMigrationCommand::class,
                 ModuleMakeRuleCommand::class,
+                \TaiCrm\LaravelModularDdd\Commands\ModuleSwaggerScanCommand::class,
+                \TaiCrm\LaravelModularDdd\Commands\ModuleSwaggerGenerateCommand::class,
+                \TaiCrm\LaravelModularDdd\Commands\ModuleSwaggerValidateCommand::class,
             ]);
 
             // Register command dependencies

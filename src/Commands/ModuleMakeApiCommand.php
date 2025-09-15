@@ -18,9 +18,16 @@ class ModuleMakeApiCommand extends Command
         $resourceName = $this->argument('resource');
         $withAuth = $this->option('auth');
         $withValidation = $this->option('validation');
-        $withSwagger = $this->option('swagger') !== false; // Default to true
+        $swaggerOption = $this->option('swagger');
+        $withSwagger = $swaggerOption !== false && $swaggerOption !== null; // Default to true unless explicitly disabled
         $withExamples = $this->option('examples');
         $withComprehensive = $this->option('comprehensive');
+
+        // When Swagger is enabled (either by default or explicitly), enable comprehensive mode by default
+        // unless comprehensive is explicitly set to false
+        if ($withSwagger && !$this->option('comprehensive')) {
+            $withComprehensive = true;
+        }
         $specificVersion = $this->option('api-version');
         $allVersions = $this->option('all-versions');
 

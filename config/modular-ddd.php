@@ -168,6 +168,91 @@ return [
 
                     // Deep linking
                     'deep_linking' => env('MODULAR_DDD_SWAGGER_DEEP_LINKING', true),
+
+                    // Display request duration
+                    'display_request_duration' => env('MODULAR_DDD_SWAGGER_DISPLAY_DURATION', true),
+
+                    // Enable filtering
+                    'filter' => env('MODULAR_DDD_SWAGGER_FILTER', true),
+
+                    // Default model expansion depth
+                    'default_models_expand_depth' => env('MODULAR_DDD_SWAGGER_MODELS_EXPAND_DEPTH', 2),
+
+                    // Default model expand depth
+                    'default_model_expand_depth' => env('MODULAR_DDD_SWAGGER_MODEL_EXPAND_DEPTH', 2),
+
+                    // Document expansion: 'list', 'full', 'none'
+                    'doc_expansion' => env('MODULAR_DDD_SWAGGER_DOC_EXPANSION', 'list'),
+
+                    // Show extensions
+                    'show_extensions' => env('MODULAR_DDD_SWAGGER_SHOW_EXTENSIONS', true),
+
+                    // Show common extensions
+                    'show_common_extensions' => env('MODULAR_DDD_SWAGGER_SHOW_COMMON_EXTENSIONS', true),
+                ],
+
+                // Generation settings
+                'generation' => [
+                    // Enable comprehensive mode by default when using --swagger
+                    'comprehensive_by_default' => env('MODULAR_DDD_SWAGGER_COMPREHENSIVE_DEFAULT', true),
+
+                    // Auto-generate examples
+                    'auto_examples' => env('MODULAR_DDD_SWAGGER_AUTO_EXAMPLES', true),
+
+                    // Include HATEOAS links in resources
+                    'include_hateoas' => env('MODULAR_DDD_SWAGGER_INCLUDE_HATEOAS', true),
+
+                    // Include validation error schemas
+                    'include_validation_errors' => env('MODULAR_DDD_SWAGGER_INCLUDE_VALIDATION', true),
+
+                    // Include standard error responses
+                    'include_standard_errors' => env('MODULAR_DDD_SWAGGER_INCLUDE_STANDARD_ERRORS', true),
+
+                    // Include pagination schemas
+                    'include_pagination' => env('MODULAR_DDD_SWAGGER_INCLUDE_PAGINATION', true),
+
+                    // Include advanced property types (metadata, etc.)
+                    'include_advanced_properties' => env('MODULAR_DDD_SWAGGER_INCLUDE_ADVANCED_PROPS', true),
+                ],
+
+                // Documentation scanning
+                'scanning' => [
+                    // Enable automatic schema extraction
+                    'auto_extract_schemas' => env('MODULAR_DDD_SWAGGER_AUTO_EXTRACT', true),
+
+                    // Scan frequency for live documentation
+                    'scan_frequency' => env('MODULAR_DDD_SWAGGER_SCAN_FREQUENCY', 'on_request'), // 'on_request', 'cached', 'background'
+
+                    // Cache TTL for scanned documentation (seconds)
+                    'cache_ttl' => env('MODULAR_DDD_SWAGGER_CACHE_TTL', 3600),
+
+                    // Include internal/private endpoints
+                    'include_private_endpoints' => env('MODULAR_DDD_SWAGGER_INCLUDE_PRIVATE', false),
+
+                    // Exclude patterns (paths to ignore)
+                    'exclude_patterns' => [
+                        '/api/internal/*',
+                        '/api/debug/*',
+                        '/api/health/*',
+                    ],
+                ],
+
+                // Export settings
+                'export' => [
+                    // Output directory for generated Swagger files
+                    'output_dir' => env('MODULAR_DDD_SWAGGER_OUTPUT_DIR', public_path('api-docs')),
+
+                    // Generate combined documentation file
+                    'generate_combined' => env('MODULAR_DDD_SWAGGER_GENERATE_COMBINED', true),
+
+                    // Generate individual module files
+                    'generate_individual' => env('MODULAR_DDD_SWAGGER_GENERATE_INDIVIDUAL', true),
+
+                    // Generate Swagger UI HTML files
+                    'generate_ui' => env('MODULAR_DDD_SWAGGER_GENERATE_UI', true),
+
+                    // JSON formatting options
+                    'json_options' => JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES,
                 ],
             ],
         ],

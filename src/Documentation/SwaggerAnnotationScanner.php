@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Str;
 use ReflectionClass;
 use ReflectionMethod;
+use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
 
 class SwaggerAnnotationScanner
 {
@@ -17,6 +18,193 @@ class SwaggerAnnotationScanner
     public function __construct()
     {
         $this->modulesPath = Config::get('modular-ddd.modules_path');
+    }
+
+    /**
+     * Scan all modules for Swagger annotations
+     */
+    public function scanAllModules(): array
+    {
+        $modules = [];
+        $moduleDirs = File::directories($this->modulesPath);
+
+        foreach ($moduleDirs as $moduleDir) {
+            $moduleName = basename($moduleDir);
+            $moduleDoc = $this->scanModule($moduleName);
+
+            if (!empty($moduleDoc['paths']) || !empty($moduleDoc['components']['schemas'])) {
+                $modules[$moduleName] = $moduleDoc;
+            }
+        }
+
+        return $modules;
+    }
+
+    /**
+     * Extract comprehensive Swagger annotations from controllers
+     */
+    public function extractComprehensiveAnnotations(string $filePath): array
+    {
+        $content = File::get($filePath);
+        $annotations = [];
+
+        // Extract all @OA annotations
+        preg_match_all('/@OA\\\\(\w+)\s*\((.*?)\)/s', $content, $matches, PREG_SET_ORDER);
+
+        foreach ($matches as $match) {
+            $annotationType = $match[1];
+            $annotationContent = $match[2];
+
+            $annotations[] = [
+                'type' => $annotationType,
+                'content' => $annotationContent,
+                'full' => $match[0],
+            ];
+        }
+
+        return $annotations;
+    }
+
+    /**
+     * Parse comprehensive schema definitions from annotations
+     */
+    public function parseSchemaAnnotations(array $annotations): array
+    {
+        $schemas = [];
+
+        foreach ($annotations as $annotation) {
+            if ($annotation['type'] === 'Schema') {
+                $schema = $this->parseSchemaContent($annotation['content']);
+                if (isset($schema['name'])) {
+                    $schemas[$schema['name']] = $schema;
+                }
+            }
+        }
+
+        return $schemas;
+    }
+
+    /**
+     * Parse schema content from annotation
+     */
+    private function parseSchemaContent(string $content): array
+    {
+        $schema = [];
+
+        // Extract schema name
+        if (preg_match('/schema="([^"]+)"/', $content, $matches)) {
+            $schema['name'] = $matches[1];
+        }
+
+        // Extract type
+        if (preg_match('/type="([^"]+)"/', $content, $matches)) {
+            $schema['type'] = $matches[1];
+        }
+
+        // Extract title
+        if (preg_match('/title="([^"]+)"/', $content, $matches)) {
+            $schema['title'] = $matches[1];
+        }
+
+        // Extract description
+        if (preg_match('/description="([^"]+)"/', $content, $matches)) {
+            $schema['description'] = $matches[1];
+        }
+
+        // Extract required fields
+        if (preg_match('/required=\{([^}]+)\}/', $content, $matches)) {
+            $requiredStr = $matches[1];
+            $required = array_map('trim', explode(',', str_replace(['"', '"'], '', $requiredStr)));
+            $schema['required'] = $required;
+        }
+
+        // Extract properties (basic extraction)
+        $properties = [];
+        preg_match_all('/@OA\\\\Property\s*\((.*?)\)/s', $content, $propMatches, PREG_SET_ORDER);
+
+        foreach ($propMatches as $propMatch) {
+            $property = $this->parsePropertyContent($propMatch[1]);
+            if (isset($property['name'])) {
+                $properties[$property['name']] = $property;
+            }
+        }
+
+        if (!empty($properties)) {
+            $schema['properties'] = $properties;
+        }
+
+        return $schema;
+    }
+
+    /**
+     * Parse property content from annotation
+     */
+    private function parsePropertyContent(string $content): array
+    {
+        $property = [];
+
+        // Extract property name
+        if (preg_match('/property="([^"]+)"/', $content, $matches)) {
+            $property['name'] = $matches[1];
+        }
+
+        // Extract type
+        if (preg_match('/type="([^"]+)"/', $content, $matches)) {
+            $property['type'] = $matches[1];
+        }
+
+        // Extract format
+        if (preg_match('/format="([^"]+)"/', $content, $matches)) {
+            $property['format'] = $matches[1];
+        }
+
+        // Extract description
+        if (preg_match('/description="([^"]+)"/', $content, $matches)) {
+            $property['description'] = $matches[1];
+        }
+
+        // Extract example
+        if (preg_match('/example="([^"]+)"/', $content, $matches)) {
+            $property['example'] = $matches[1];
+        } elseif (preg_match('/example=([^,)]+)/', $content, $matches)) {
+            $value = trim($matches[1]);
+            // Convert based on type
+            if ($value === 'true') {
+                $property['example'] = true;
+            } elseif ($value === 'false') {
+                $property['example'] = false;
+            } elseif (is_numeric($value)) {
+                $property['example'] = (int)$value;
+            } else {
+                $property['example'] = $value;
+            }
+        }
+
+        // Extract nullable
+        if (preg_match('/nullable=true/', $content)) {
+            $property['nullable'] = true;
+        }
+
+        // Extract maxLength
+        if (preg_match('/maxLength=(\d+)/', $content, $matches)) {
+            $property['maxLength'] = (int)$matches[1];
+        }
+
+        // Extract default
+        if (preg_match('/default=([^,)]+)/', $content, $matches)) {
+            $value = trim($matches[1]);
+            if ($value === 'true') {
+                $property['default'] = true;
+            } elseif ($value === 'false') {
+                $property['default'] = false;
+            } elseif (is_numeric($value)) {
+                $property['default'] = (int)$value;
+            } else {
+                $property['default'] = $value;
+            }
+        }
+
+        return $property;
     }
 
     /**
@@ -104,36 +292,172 @@ class SwaggerAnnotationScanner
         $paths = [];
         $schemas = [];
 
-        // Extract namespace and class name
-        $namespace = $this->extractNamespace($content);
-        $className = $this->extractClassName($content);
+        // Extract comprehensive annotations first
+        $annotations = $this->extractComprehensiveAnnotations($filePath);
+        $extractedSchemas = $this->parseSchemaAnnotations($annotations);
+        $schemas = array_merge($schemas, $extractedSchemas);
 
-        if (!$namespace || !$className) {
-            return ['paths' => [], 'schemas' => []];
-        }
+        // Extract paths from comprehensive annotations
+        $extractedPaths = $this->extractPathsFromAnnotations($annotations, $moduleName, $version);
+        $paths = array_merge($paths, $extractedPaths);
 
-        $fullClassName = $namespace . '\\' . $className;
+        // Fallback to basic extraction if no comprehensive annotations found
+        if (empty($paths)) {
+            // Extract namespace and class name
+            $namespace = $this->extractNamespace($content);
+            $className = $this->extractClassName($content);
 
-        // Try to create reflection class
-        try {
-            if (!class_exists($fullClassName)) {
-                return ['paths' => [], 'schemas' => []];
-            }
+            if ($namespace && $className) {
+                $fullClassName = $namespace . '\\' . $className;
 
-            $reflectionClass = new ReflectionClass($fullClassName);
-            $methods = $reflectionClass->getMethods(ReflectionMethod::IS_PUBLIC);
+                // Try to create reflection class
+                try {
+                    if (class_exists($fullClassName)) {
+                        $reflectionClass = new ReflectionClass($fullClassName);
+                        $methods = $reflectionClass->getMethods(ReflectionMethod::IS_PUBLIC);
 
-            foreach ($methods as $method) {
-                if ($method->getDeclaringClass()->getName() === $fullClassName) {
-                    $methodPaths = $this->parseMethodAnnotations($method, $content, $moduleName, $version);
-                    $paths = array_merge($paths, $methodPaths);
+                        foreach ($methods as $method) {
+                            if ($method->getDeclaringClass()->getName() === $fullClassName) {
+                                $methodPaths = $this->parseMethodAnnotations($method, $content, $moduleName, $version);
+                                $paths = array_merge($paths, $methodPaths);
+                            }
+                        }
+                    }
+                } catch (\Exception) {
+                    // Skip if class can't be loaded
                 }
             }
-        } catch (\Exception $e) {
-            // Skip if class can't be loaded
         }
 
         return ['paths' => $paths, 'schemas' => $schemas];
+    }
+
+    /**
+     * Extract paths from comprehensive annotations
+     */
+    private function extractPathsFromAnnotations(array $annotations, string $moduleName, ?string $version = null): array
+    {
+        $paths = [];
+        $currentPath = null;
+        $currentMethod = null;
+
+        foreach ($annotations as $annotation) {
+            $type = $annotation['type'];
+            $content = $annotation['content'];
+
+            // Check for HTTP method annotations
+            if (in_array($type, ['Get', 'Post', 'Put', 'Delete', 'Patch', 'Options', 'Head'])) {
+                $httpMethod = strtolower($type);
+
+                // Extract path
+                if (preg_match('/path="([^"]+)"/', $content, $matches)) {
+                    $currentPath = $matches[1];
+                    $currentMethod = $httpMethod;
+
+                    if (!isset($paths[$currentPath])) {
+                        $paths[$currentPath] = [];
+                    }
+
+                    $paths[$currentPath][$httpMethod] = [
+                        'tags' => [$moduleName],
+                        'responses' => ['200' => ['description' => 'Successful operation']],
+                    ];
+
+                    // Extract operation details
+                    if (preg_match('/operationId="([^"]+)"/', $content, $matches)) {
+                        $paths[$currentPath][$httpMethod]['operationId'] = $matches[1];
+                    }
+
+                    if (preg_match('/summary="([^"]+)"/', $content, $matches)) {
+                        $paths[$currentPath][$httpMethod]['summary'] = $matches[1];
+                    }
+
+                    if (preg_match('/description="([^"]+)"/', $content, $matches)) {
+                        $paths[$currentPath][$httpMethod]['description'] = $matches[1];
+                    }
+
+                    // Extract security
+                    if (preg_match('/security=\{([^}]+)\}/', $content, $matches)) {
+                        $securityStr = $matches[1];
+                        $paths[$currentPath][$httpMethod]['security'] = $this->parseSecurityAnnotation($securityStr);
+                    }
+                }
+            }
+
+            // Handle Response annotations
+            if ($type === 'Response' && $currentPath && $currentMethod) {
+                if (preg_match('/response=(\d+)/', $content, $matches)) {
+                    $statusCode = $matches[1];
+                    $response = ['description' => 'Response'];
+
+                    if (preg_match('/description="([^"]+)"/', $content, $descMatches)) {
+                        $response['description'] = $descMatches[1];
+                    }
+
+                    $paths[$currentPath][$currentMethod]['responses'][$statusCode] = $response;
+                }
+            }
+
+            // Handle Parameter annotations
+            if ($type === 'Parameter' && $currentPath && $currentMethod) {
+                if (!isset($paths[$currentPath][$currentMethod]['parameters'])) {
+                    $paths[$currentPath][$currentMethod]['parameters'] = [];
+                }
+
+                $parameter = [];
+                if (preg_match('/name="([^"]+)"/', $content, $matches)) {
+                    $parameter['name'] = $matches[1];
+                }
+                if (preg_match('/in="([^"]+)"/', $content, $matches)) {
+                    $parameter['in'] = $matches[1];
+                }
+                if (preg_match('/required=true/', $content)) {
+                    $parameter['required'] = true;
+                } elseif (preg_match('/required=false/', $content)) {
+                    $parameter['required'] = false;
+                }
+                if (preg_match('/description="([^"]+)"/', $content, $matches)) {
+                    $parameter['description'] = $matches[1];
+                }
+
+                if (!empty($parameter)) {
+                    $paths[$currentPath][$currentMethod]['parameters'][] = $parameter;
+                }
+            }
+
+            // Handle RequestBody annotations
+            if ($type === 'RequestBody' && $currentPath && $currentMethod) {
+                $requestBody = [];
+                if (preg_match('/required=true/', $content)) {
+                    $requestBody['required'] = true;
+                }
+                if (preg_match('/description="([^"]+)"/', $content, $matches)) {
+                    $requestBody['description'] = $matches[1];
+                }
+
+                $paths[$currentPath][$currentMethod]['requestBody'] = $requestBody;
+            }
+        }
+
+        return $paths;
+    }
+
+    /**
+     * Parse security annotation
+     */
+    private function parseSecurityAnnotation(string $securityStr): array
+    {
+        $security = [];
+
+        // Parse {"bearerAuth": {}}, {"oauth2": {}}
+        preg_match_all('/\{"([^"]+)":\s*\{[^}]*\}\}/', $securityStr, $matches, PREG_SET_ORDER);
+
+        foreach ($matches as $match) {
+            $securityScheme = $match[1];
+            $security[] = [$securityScheme => []];
+        }
+
+        return $security;
     }
 
     /**
