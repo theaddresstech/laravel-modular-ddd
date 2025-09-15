@@ -109,7 +109,7 @@ class VersionDiscoveryController extends Controller
     private function getModulesVersionInfo(): array
     {
         $modules = [];
-        $installedModules = $this->moduleManager->getInstalledModules();
+        $installedModules = $this->moduleManager->getActiveModules();
 
         foreach ($installedModules as $moduleName => $moduleInfo) {
             $modules[$moduleName] = [
