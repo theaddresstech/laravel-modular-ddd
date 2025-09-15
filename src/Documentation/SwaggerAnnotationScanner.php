@@ -208,6 +208,110 @@ class SwaggerAnnotationScanner
     }
 
     /**
+     * Generate comprehensive OpenAPI documentation for a module
+     */
+    public function generateModuleDocumentation(string $moduleName): array
+    {
+        $moduleData = $this->scanModule($moduleName);
+
+        if (empty($moduleData)) {
+            return [];
+        }
+
+        $documentation = [
+            'openapi' => '3.0.3',
+            'info' => $this->extractModuleInfo($moduleName),
+            'servers' => $this->generateServers(),
+            'paths' => $moduleData['paths'] ?? [],
+            'components' => [
+                'schemas' => $moduleData['components']['schemas'] ?? [],
+                'securitySchemes' => $this->generateSecuritySchemes(),
+            ],
+            'tags' => $this->generateTags($moduleName),
+        ];
+
+        return $documentation;
+    }
+
+    /**
+     * Extract module info from manifest
+     */
+    private function extractModuleInfo(string $moduleName): array
+    {
+        $manifestPath = base_path("modules/{$moduleName}/manifest.json");
+        $info = [
+            'title' => "{$moduleName} API",
+            'version' => '1.0.0',
+            'description' => "API documentation for {$moduleName} module",
+        ];
+
+        if (file_exists($manifestPath)) {
+            $manifest = json_decode(file_get_contents($manifestPath), true);
+            if ($manifest) {
+                $info['title'] = ($manifest['name'] ?? $moduleName) . ' API';
+                $info['version'] = $manifest['version'] ?? '1.0.0';
+                $info['description'] = $manifest['description'] ?? $info['description'];
+            }
+        }
+
+        return $info;
+    }
+
+    /**
+     * Generate server configurations
+     */
+    private function generateServers(): array
+    {
+        return [
+            [
+                'url' => config('app.url', 'http://localhost') . '/api/v1',
+                'description' => 'v1 API Server',
+            ],
+            [
+                'url' => config('app.url', 'http://localhost') . '/api/v2',
+                'description' => 'v2 API Server',
+            ],
+        ];
+    }
+
+    /**
+     * Generate security schemes
+     */
+    private function generateSecuritySchemes(): array
+    {
+        return [
+            'bearerAuth' => [
+                'type' => 'http',
+                'scheme' => 'bearer',
+                'bearerFormat' => 'JWT',
+            ],
+            'oauth2' => [
+                'type' => 'oauth2',
+                'flows' => [
+                    'authorizationCode' => [
+                        'authorizationUrl' => '/oauth/authorize',
+                        'tokenUrl' => '/oauth/token',
+                        'scopes' => [],
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * Generate tags for the module
+     */
+    private function generateTags(string $moduleName): array
+    {
+        return [
+            [
+                'name' => $moduleName,
+                'description' => "{$moduleName} management endpoints",
+            ],
+        ];
+    }
+
+    /**
      * Scan a module for Swagger annotations
      */
     public function scanModule(string $moduleName, ?string $version = null): array
