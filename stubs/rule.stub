@@ -1,0 +1,46 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\{{ module }}\Http\Rules;
+
+use Illuminate\Contracts\Validation\Rule;
+
+class {{ class }} implements Rule
+{
+    /**
+     * Create a new rule instance.
+     */
+    public function __construct()
+    {
+        // Initialize any dependencies or configuration here
+    }
+
+    /**
+     * Determine if the validation rule passes.
+     *
+     * @param  string  $attribute
+     * @param  mixed  $value
+     * @return bool
+     */
+    public function passes($attribute, $value): bool
+    {
+        // Implement your validation logic here
+        // Return true if validation passes, false otherwise
+
+        // Example implementations:
+        // return $value === strtoupper($value); // Uppercase validation
+        // return preg_match('/^[A-Z0-9]+$/', $value); // Alphanumeric uppercase
+        // return strlen($value) >= 3; // Minimum length validation
+
+        return false; // TODO: Implement validation logic
+    }
+
+    /**
+     * Get the validation error message.
+     */
+    public function message(): string
+    {
+        return 'The :attribute field must pass the {{ rule_name }} validation rule.';
+    }
+}

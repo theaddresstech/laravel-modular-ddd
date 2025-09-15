@@ -19,6 +19,8 @@ A comprehensive Laravel package for implementing modular Domain-Driven Design ar
 - **🛠️ API Scaffolding**: Complete REST API generation with authentication, validation, and Swagger documentation
 - **🔄 Enterprise API Versioning**: Multi-strategy version negotiation with backward compatibility and deprecation management
 - **🎯 Domain Events System**: Event sourcing support with automatic event discovery and listener generation
+- **🗄️ Database Migration Generation**: Module-specific migration creation with table creation and modification support
+- **✅ Validation Rule Generation**: Custom validation rule scaffolding with proper module namespace organization
 - **🧪 Automated Testing**: Intelligent test generation for unit, feature, and integration tests with factory support
 
 ### Performance & Monitoring
@@ -237,6 +239,28 @@ php artisan module:make-policy {Module} {PolicyName} [--model={Name}] [--resourc
 # Examples:
 php artisan module:make-policy UserModule UserPolicy --model=User --resource
 php artisan module:make-policy UserModule UserApiPolicy --model=User --resource --api
+```
+
+#### Database Components
+```bash
+# Create database migrations
+php artisan module:make-migration {Module} {MigrationName} [--create={table}] [--table={table}]
+
+# Examples:
+php artisan module:make-migration UserModule CreateUsersTable --create=users
+php artisan module:make-migration UserModule AddEmailToUsersTable --table=users
+php artisan module:make-migration UserModule UpdateUserPermissions
+```
+
+#### Validation Components
+```bash
+# Create custom validation rules
+php artisan module:make-rule {Module} {RuleName}
+
+# Examples:
+php artisan module:make-rule UserModule Uppercase
+php artisan module:make-rule UserModule ValidEmail
+php artisan module:make-rule UserModule StrongPassword
 ```
 
 ### 🔄 API Versioning Commands

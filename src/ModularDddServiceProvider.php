@@ -14,6 +14,8 @@ use TaiCrm\LaravelModularDdd\ModuleManager\ModuleRegistry;
 use TaiCrm\LaravelModularDdd\Commands\ModuleListCommand;
 use TaiCrm\LaravelModularDdd\Commands\ModuleInstallCommand;
 use TaiCrm\LaravelModularDdd\Commands\ModuleMakeCommand;
+use TaiCrm\LaravelModularDdd\Commands\ModuleMakeMigrationCommand;
+use TaiCrm\LaravelModularDdd\Commands\ModuleMakeRuleCommand;
 use TaiCrm\LaravelModularDdd\Communication\Contracts\ServiceRegistryInterface;
 use TaiCrm\LaravelModularDdd\Communication\ServiceRegistry;
 use TaiCrm\LaravelModularDdd\Communication\EventBus;
@@ -272,6 +274,8 @@ class ModularDddServiceProvider extends ServiceProvider
                 \TaiCrm\LaravelModularDdd\Commands\ModulePerformanceAnalyzeCommand::class,
                 \TaiCrm\LaravelModularDdd\Commands\ModuleMakePolicyCommand::class,
                 \TaiCrm\LaravelModularDdd\Commands\ModulePermissionCommand::class,
+                ModuleMakeMigrationCommand::class,
+                ModuleMakeRuleCommand::class,
             ]);
 
             // Register command dependencies
