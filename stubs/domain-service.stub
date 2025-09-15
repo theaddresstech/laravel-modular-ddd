@@ -4,12 +4,46 @@ declare(strict_types=1);
 
 namespace {{NAMESPACE}};
 
+use {{NAMESPACE_MODULE}}\Domain\Repositories\{{AGGREGATE}}RepositoryInterface;
+use {{NAMESPACE_MODULE}}\Domain\Models\{{AGGREGATE}};
+
 class {{CLASS_NAME}}
 {
-    public function __construct()
-    {
-        // Inject dependencies here
+    public function __construct(
+        private {{AGGREGATE}}RepositoryInterface ${{AGGREGATE_LOWER}}Repository
+    ) {
+        // Dependencies injected via constructor
     }
 
-    // TODO: Implement service methods
+    /**
+     * Business logic methods for {{AGGREGATE}} domain
+     */
+
+    public function create{{AGGREGATE}}(array $data): {{AGGREGATE}}
+    {
+        // TODO: Implement {{AGGREGATE}} creation business logic
+        // Validate business rules, create domain events, etc.
+
+        return $this->{{AGGREGATE_LOWER}}Repository->create($data);
+    }
+
+    public function update{{AGGREGATE}}(string $id, array $data): {{AGGREGATE}}
+    {
+        // TODO: Implement {{AGGREGATE}} update business logic
+        // Validate business rules, create domain events, etc.
+
+        ${{AGGREGATE_LOWER}} = $this->{{AGGREGATE_LOWER}}Repository->findById($id);
+
+        return $this->{{AGGREGATE_LOWER}}Repository->update(${{AGGREGATE_LOWER}}, $data);
+    }
+
+    public function delete{{AGGREGATE}}(string $id): bool
+    {
+        // TODO: Implement {{AGGREGATE}} deletion business logic
+        // Check business rules, create domain events, etc.
+
+        return $this->{{AGGREGATE_LOWER}}Repository->delete($id);
+    }
+
+    // Add more domain-specific business logic methods here
 }

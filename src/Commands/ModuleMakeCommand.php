@@ -179,13 +179,22 @@ class ModuleMakeCommand extends Command
 
         $content = $this->files->get($stubPath);
 
+        // Get the correct namespace for this specific target file
+        $namespace = $this->getNamespaceFromPath($target, $replacements['{{MODULE}}']);
+
+        // Create enhanced replacements including specific namespace and class name
+        $enhancedReplacements = array_merge($replacements, [
+            '{{NAMESPACE}}' => $namespace,
+            '{{CLASS_NAME}}' => basename($target, '.php'),
+        ]);
+
         // Use a more specific replacement pattern to avoid double replacements
         // Sort replacements by key length (longest first) to avoid partial replacements
-        uksort($replacements, function($a, $b) {
+        uksort($enhancedReplacements, function($a, $b) {
             return strlen($b) - strlen($a);
         });
 
-        foreach ($replacements as $search => $replace) {
+        foreach ($enhancedReplacements as $search => $replace) {
             $content = str_replace($search, $replace, $content);
         }
 
@@ -229,16 +238,22 @@ class ModuleMakeCommand extends Command
 
     private function getReplacements(string $moduleName, string $aggregate): array
     {
+        $aggregateStudly = Str::studly($aggregate);
+
         return [
             '{{NAMESPACE}}' => "Modules\\{$moduleName}",
+            '{{NAMESPACE_MODULE}}' => "Modules\\{$moduleName}",
             '{{MODULE}}' => $moduleName,
             '{{MODULE_SNAKE}}' => Str::snake($moduleName),
             '{{MODULE_KEBAB}}' => Str::kebab($moduleName),
             '{{MODULE_LOWER}}' => Str::lower($moduleName),
-            '{{AGGREGATE}}' => Str::studly($aggregate),
+            '{{AGGREGATE}}' => $aggregateStudly,
             '{{AGGREGATE_SNAKE}}' => Str::snake($aggregate),
             '{{AGGREGATE_KEBAB}}' => Str::kebab($aggregate),
             '{{AGGREGATE_LOWER}}' => Str::camel($aggregate),
+            '{{CLASS_NAME}}' => $aggregateStudly,
+            '{{class}}' => $aggregateStudly,
+            '{{AGGREGATE_SERVICE}}' => $aggregateStudly . 'Service',
         ];
     }
 
