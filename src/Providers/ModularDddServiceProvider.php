@@ -23,6 +23,12 @@ use TaiCrm\LaravelModularDdd\Monitoring\MetricsCollector;
 use TaiCrm\LaravelModularDdd\Monitoring\PerformanceMiddleware;
 use TaiCrm\LaravelModularDdd\Visualization\DependencyGraphGenerator;
 use TaiCrm\LaravelModularDdd\Security\ModuleSecurityScanner;
+use TaiCrm\LaravelModularDdd\Compilation\ModuleCompiler;
+use TaiCrm\LaravelModularDdd\Compilation\CompiledRegistry;
+use TaiCrm\LaravelModularDdd\Compilation\Contracts\ModuleCompilerInterface;
+use TaiCrm\LaravelModularDdd\Compilation\Contracts\CompiledRegistryInterface;
+use TaiCrm\LaravelModularDdd\Loading\ParallelModuleLoader;
+use TaiCrm\LaravelModularDdd\Context\ContextAnalyzer;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Contracts\Container\Container;
 
@@ -33,6 +39,7 @@ class ModularDddServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__ . '/../../config/modular-ddd.php', 'modular-ddd');
 
         $this->registerCoreServices();
+        $this->registerCompilationServices();
         $this->registerMonitoringServices();
         $this->registerVisualizationServices();
         $this->registerSecurityServices();
@@ -109,6 +116,47 @@ class ModularDddServiceProvider extends ServiceProvider
                 $app['events'],
                 $app['log'],
                 $app[ModuleRegistry::class]
+            );
+        });
+    }
+
+    private function registerCompilationServices(): void
+    {
+        // Compiled Registry
+        $this->app->singleton(CompiledRegistryInterface::class, function (Container $app) {
+            return new CompiledRegistry(
+                $app['files'],
+                $app['log'],
+                config('modular-ddd.registry_storage', storage_path('framework/modular-ddd'))
+            );
+        });
+
+        // Context Analyzer
+        $this->app->singleton(ContextAnalyzer::class, function (Container $app) {
+            return new ContextAnalyzer(
+                $app['files'],
+                $app['log']
+            );
+        });
+
+        // Module Compiler
+        $this->app->singleton(ModuleCompilerInterface::class, function (Container $app) {
+            return new ModuleCompiler(
+                $app[ModuleDiscoveryInterface::class],
+                $app[DependencyResolverInterface::class],
+                $app['files'],
+                $app['log'],
+                config('modular-ddd.registry_storage', storage_path('framework/modular-ddd'))
+            );
+        });
+
+        // Parallel Module Loader
+        $this->app->singleton(ParallelModuleLoader::class, function (Container $app) {
+            return new ParallelModuleLoader(
+                $app[CompiledRegistryInterface::class],
+                $app[ContextAnalyzer::class],
+                $app,
+                $app['log']
             );
         });
     }
@@ -192,6 +240,7 @@ class ModularDddServiceProvider extends ServiceProvider
                 \TaiCrm\LaravelModularDdd\Commands\ModuleMetricsCommand::class,
                 \TaiCrm\LaravelModularDdd\Commands\ModuleVisualizationCommand::class,
                 \TaiCrm\LaravelModularDdd\Commands\ModuleSecurityCommand::class,
+                \TaiCrm\LaravelModularDdd\Commands\ModuleCompileCommand::class,
             ]);
 
             // Register command dependencies
@@ -295,6 +344,10 @@ class ModularDddServiceProvider extends ServiceProvider
             PerformanceMiddleware::class,
             DependencyGraphGenerator::class,
             ModuleSecurityScanner::class,
+            ModuleCompilerInterface::class,
+            CompiledRegistryInterface::class,
+            ParallelModuleLoader::class,
+            ContextAnalyzer::class,
         ];
     }
 }
