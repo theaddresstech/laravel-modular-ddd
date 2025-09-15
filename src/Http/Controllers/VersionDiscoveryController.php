@@ -55,74 +55,10 @@ class VersionDiscoveryController extends Controller
         $moduleInfo = $this->moduleManager->getInfo($module);
 
         if (!$moduleInfo || !$this->moduleManager->isInstalled($module)) {
-            // More detailed debug info
-            $modulePath = base_path(config('modular-ddd.modules_path', 'modules')) . '/' . $module;
-            $requiredPaths = [
-                'manifest.json',
-                'Domain',
-                'Application',
-                'Infrastructure',
-                'Presentation',
-            ];
-
-            $pathChecks = [];
-            foreach ($requiredPaths as $path) {
-                $fullPath = $modulePath . '/' . $path;
-                if ($path === 'manifest.json') {
-                    $pathChecks[$path] = file_exists($fullPath);
-                } else {
-                    $pathChecks[$path] = is_dir($fullPath);
-                }
-            }
-
-            $manifestContent = null;
-            $manifestError = null;
-            if (file_exists($modulePath . '/manifest.json')) {
-                try {
-                    $manifestContent = json_decode(file_get_contents($modulePath . '/manifest.json'), true);
-                    if (json_last_error() !== JSON_ERROR_NONE) {
-                        $manifestError = json_last_error_msg();
-                    }
-                } catch (\Exception $e) {
-                    $manifestError = $e->getMessage();
-                }
-            }
-
-            // Test the discovery service directly
-            $discovery = app(\TaiCrm\LaravelModularDdd\Contracts\ModuleDiscoveryInterface::class);
-            $discoveryModulesPath = method_exists($discovery, 'getModulesPath') ? $discovery->getModulesPath() : 'N/A';
-            $directDiscoveryResult = method_exists($discovery, 'findModule') ? $discovery->findModule($module) : 'N/A';
-
-            // Test what the discovery service thinks the full module path is
-            $computedModulePath = $discoveryModulesPath . '/' . $module;
-            $discoveryPathExists = is_dir($computedModulePath);
-
-            // Test registry service
-            $registry = app(\TaiCrm\LaravelModularDdd\ModuleManager\ModuleRegistry::class);
-            $registryState = method_exists($registry, 'getModuleState') ? $registry->getModuleState($module)->value : 'N/A';
-
-            $debugInfo = [
-                'working_directory' => getcwd(),
-                'modules_path_config' => config('modular-ddd.modules_path'),
-                'modules_path_absolute' => $modulePath,
-                'module_directory_exists' => is_dir($modulePath),
-                'required_paths' => $pathChecks,
-                'manifest_content' => $manifestContent,
-                'manifest_error' => $manifestError,
-                'manager_class' => get_class($this->moduleManager),
-                'discovery_class' => get_class($discovery),
-                'discovery_modules_path' => $discoveryModulesPath,
-                'computed_module_path' => $computedModulePath,
-                'discovery_path_exists' => $discoveryPathExists,
-                'direct_discovery_result' => $directDiscoveryResult ? 'found' : 'null',
-                'registry_module_state' => $registryState,
-            ];
-
             return response()->json([
                 'error' => 'Module not found',
                 'message' => "Module '{$module}' is not installed or does not exist",
                 'available_modules' => array_keys($this->getModulesVersionInfo()),
-                'debug' => $debugInfo,
             ], 404);
         }
 
