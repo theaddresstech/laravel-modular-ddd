@@ -129,25 +129,25 @@ class ModuleSwaggerGenerateCommand extends Command
 
         foreach ($modules as $module) {
             if (!$module->isEnabled()) {
-                $progressBar->setMessage("Skipping disabled: {$module->getName()}");
+                $progressBar->setMessage("Skipping disabled: {$module->name}");
                 $progressBar->advance();
                 continue;
             }
 
-            $progressBar->setMessage("Processing: {$module->getName()}");
+            $progressBar->setMessage("Processing: {$module->name}");
 
-            $documentation = $this->generator->generateModuleDocumentation($module->getName());
+            $documentation = $this->generator->generateModuleDocumentation($module->name);
 
             if (!empty($documentation)) {
-                $allDocumentation[$module->getName()] = $documentation;
+                $allDocumentation[$module->name] = $documentation;
 
                 if ($individual) {
-                    $file = $this->saveDocumentation($module->getName(), $documentation, $outputDir, $format);
+                    $file = $this->saveDocumentation($module->name, $documentation, $outputDir, $format);
                     $files[] = $file;
                 }
 
                 if ($withUI) {
-                    $uiFile = $this->generator->generateSwaggerUI($module->getName(), $outputDir);
+                    $uiFile = $this->generator->generateSwaggerUI($module->name, $outputDir);
                     $files[] = $uiFile;
                 }
             }

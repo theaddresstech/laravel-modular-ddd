@@ -91,15 +91,15 @@ class ModuleSwaggerValidateCommand extends Command
 
         foreach ($modules as $module) {
             if (!$module->isEnabled()) {
-                $progressBar->setMessage("Skipping disabled: {$module->getName()}");
+                $progressBar->setMessage("Skipping disabled: {$module->name}");
                 $progressBar->advance();
                 continue;
             }
 
-            $progressBar->setMessage("Validating: {$module->getName()}");
+            $progressBar->setMessage("Validating: {$module->name}");
 
-            $result = $this->scanner->scanModule($module->getName());
-            $this->validateModuleDocumentation($module->getName(), $result, $strict, $fix);
+            $result = $this->scanner->scanModule($module->name);
+            $this->validateModuleDocumentation($module->name, $result, $strict, $fix);
 
             $progressBar->advance();
         }

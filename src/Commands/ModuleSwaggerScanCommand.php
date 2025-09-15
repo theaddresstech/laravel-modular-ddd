@@ -106,17 +106,17 @@ class ModuleSwaggerScanCommand extends Command
 
         foreach ($modules as $module) {
             if (!$module->isEnabled()) {
-                $progressBar->setMessage("Skipping disabled: {$module->getName()}");
+                $progressBar->setMessage("Skipping disabled: {$module->name}");
                 $progressBar->advance();
                 continue;
             }
 
-            $progressBar->setMessage("Scanning: {$module->getName()}");
+            $progressBar->setMessage("Scanning: {$module->name}");
 
-            $result = $this->scanner->scanModule($module->getName());
+            $result = $this->scanner->scanModule($module->name);
 
             if (!empty($result['paths']) || !empty($result['components']['schemas'])) {
-                $results[$module->getName()] = $result;
+                $results[$module->name] = $result;
             }
 
             $progressBar->advance();
