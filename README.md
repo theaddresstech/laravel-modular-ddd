@@ -310,185 +310,312 @@ curl -i -H "Accept-Version: v99" http://localhost/api/users
 # Returns HTTP 406 with supported versions list
 ```
 
-### 📚 API Documentation & Swagger UI
+### 📚 API Documentation & Swagger Commands
 
-The package provides comprehensive Swagger/OpenAPI documentation that's automatically generated from your module controllers and annotations.
+The package provides comprehensive Swagger/OpenAPI 3.0.3 documentation with dedicated management commands for scanning, generating, and validating API documentation across all modules.
 
-#### Accessing Documentation
+#### 🔍 Swagger Management Commands
 
-**Main API Documentation:**
-- `http://localhost:8000/api/docs` - Complete API documentation for all modules
-- `http://localhost:8000/api/openapi.json` - OpenAPI specification (JSON)
+**Scan Modules for Swagger Annotations:**
+```bash
+# Scan all modules for Swagger annotations
+php artisan module:swagger:scan
 
-**Version-Specific Documentation:**
-- `http://localhost:8000/api/docs/v1` - Documentation for API version 1
-- `http://localhost:8000/api/docs/v2` - Documentation for API version 2
+# Scan specific module
+php artisan module:swagger:scan BlogModule
 
-**Module-Specific Documentation:**
-- `http://localhost:8000/api/docs/modules/UserModule` - UserModule documentation only
-- `http://localhost:8000/api/docs/v1/modules/UserModule` - Version + Module specific
+# Scan with export to files
+php artisan module:swagger:scan --export --format=json --output=storage/api-docs
 
-**Discovery Endpoints:**
-- `http://localhost:8000/api/versions` - Available API versions and module information
+# Generate combined documentation and Swagger UI
+php artisan module:swagger:scan --export --combined --ui --format=json
+```
 
-#### Swagger Configuration
+**Generate Comprehensive Documentation Files:**
+```bash
+# Generate documentation for all modules
+php artisan module:swagger:generate
 
-Configure Swagger UI in your `config/modular-ddd.php`:
+# Generate for specific module with UI
+php artisan module:swagger:generate BlogModule --ui --output=public/docs
+
+# Generate in YAML format with combined docs
+php artisan module:swagger:generate --format=yaml --combined --individual
+
+# Serve documentation locally
+php artisan module:swagger:generate --serve --port=8080
+```
+
+**Validate Documentation Quality:**
+```bash
+# Validate all module documentation
+php artisan module:swagger:validate
+
+# Validate specific module with strict mode
+php artisan module:swagger:validate BlogModule --strict
+
+# Auto-fix common issues
+php artisan module:swagger:validate --fix
+
+# Generate validation report
+php artisan module:swagger:validate --report=validation-report.json
+```
+
+#### 🚀 Enhanced API Generation with Comprehensive Swagger
+
+When you generate APIs using the `module:make-api` command, the package now creates comprehensive Swagger documentation by default:
+
+```bash
+# Generate API with comprehensive Swagger documentation (default behavior)
+php artisan module:make-api BlogModule Post --auth --validation --swagger
+
+# The above generates:
+# ✅ Full OpenAPI 3.0.3 annotations
+# ✅ Authentication schemes (Bearer, OAuth2)
+# ✅ Comprehensive parameter documentation
+# ✅ Response examples with proper HTTP status codes
+# ✅ Error response handling (400, 401, 403, 404, 422, 500)
+# ✅ HATEOAS links for resource navigation
+# ✅ Schema definitions with validation rules
+# ✅ Request/response examples with realistic data
+```
+
+#### 📊 Generated Documentation Features
+
+**Comprehensive OpenAPI 3.0.3 Annotations:**
+- **Detailed Parameter Documentation**: Query parameters, path parameters, request bodies
+- **Authentication Integration**: Bearer tokens, OAuth2 flows, API key support
+- **Response Examples**: Success and error responses with realistic data
+- **Schema Definitions**: Automatic model schema extraction from validation rules
+- **HATEOAS Support**: Hypermedia links for API navigation
+- **Error Handling**: Standard HTTP error responses with proper descriptions
+
+**Example Generated Controller:**
+```php
+/**
+ * @OA\Get(
+ *     path="/api/v1/posts",
+ *     operationId="listPostsv1",
+ *     tags={"Post"},
+ *     summary="Get paginated list of Posts",
+ *     description="Retrieve a paginated list of Posts with optional filtering, sorting, and pagination parameters.",
+ *     security={{"bearerAuth": {}}, {"oauth2": {}}},
+ *     @OA\Parameter(name="page", in="query", description="Page number for pagination", required=false, @OA\Schema(type="integer", minimum=1, default=1, example=1)),
+ *     @OA\Parameter(name="per_page", in="query", description="Number of items per page", required=false, @OA\Schema(type="integer", minimum=1, maximum=100, default=15, example=15)),
+ *     @OA\Response(
+ *         response=200,
+ *         description="Successfully retrieved Posts",
+ *         @OA\JsonContent(
+ *             @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/Post")),
+ *             @OA\Property(property="links", type="object", example={"first": "http://localhost/api/v1/posts?page=1", "last": "http://localhost/api/v1/posts?page=5", "prev": null, "next": "http://localhost/api/v1/posts?page=2"}),
+ *             @OA\Property(property="meta", type="object", example={"current_page": 1, "from": 1, "last_page": 5, "per_page": 15, "to": 15, "total": 67})
+ *         )
+ *     ),
+ *     @OA\Response(response=401, description="Unauthenticated", @OA\JsonContent(@OA\Property(property="message", type="string", example="Unauthenticated."))),
+ *     @OA\Response(response=403, description="Forbidden", @OA\JsonContent(@OA\Property(property="message", type="string", example="This action is unauthorized."))),
+ *     @OA\Response(response=500, description="Internal Server Error", @OA\JsonContent(@OA\Property(property="message", type="string", example="Internal server error occurred")))
+ * )
+ */
+public function index(): JsonResponse
+{
+    // Controller implementation
+}
+```
+
+#### 🎯 Accessing Generated Documentation
+
+**Local Documentation Server:**
+```bash
+# Start documentation server
+php artisan module:swagger:generate --serve --port=8080
+
+# Access documentation at:
+# http://localhost:8080/api-documentation-ui.html
+```
+
+**File-based Documentation:**
+- **JSON Format**: `storage/api-docs/ModuleName.json`
+- **YAML Format**: `storage/api-docs/ModuleName.yaml`
+- **Swagger UI**: `storage/api-docs/ModuleName-ui.html`
+- **Combined Docs**: `storage/api-docs/api-documentation.json`
+
+#### ⚙️ Swagger Configuration
+
+Configure comprehensive documentation in `config/modular-ddd.php`:
 
 ```php
 'api' => [
     'documentation' => [
         'swagger' => [
-            // Enable/disable Swagger UI
-            'enabled' => true,
+            // Enable comprehensive documentation by default
+            'enabled' => env('MODULAR_DDD_SWAGGER_ENABLED', true),
 
-            // Documentation title and description
-            'title' => 'Your Application API',
-            'description' => 'Comprehensive API documentation',
+            // Documentation metadata
+            'title' => env('MODULAR_DDD_SWAGGER_TITLE', 'Laravel Modular DDD API'),
+            'description' => env('MODULAR_DDD_SWAGGER_DESCRIPTION', 'Comprehensive API documentation for modular application'),
+            'version' => env('MODULAR_DDD_SWAGGER_VERSION', '1.0.0'),
 
             // Contact information
             'contact' => [
-                'name' => 'API Support',
-                'url' => 'https://your-app.com/support',
-                'email' => 'api-support@your-app.com',
+                'name' => env('MODULAR_DDD_SWAGGER_CONTACT_NAME', 'API Support'),
+                'url' => env('MODULAR_DDD_SWAGGER_CONTACT_URL', ''),
+                'email' => env('MODULAR_DDD_SWAGGER_CONTACT_EMAIL', ''),
             ],
 
             // Security schemes
             'security' => [
-                'bearer_token' => true,    // JWT/Bearer tokens
-                'oauth2' => true,          // Laravel Passport
-                'api_key' => false,        // API key authentication
+                'bearer_auth' => env('MODULAR_DDD_SWAGGER_BEARER_AUTH', true),
+                'oauth2' => env('MODULAR_DDD_SWAGGER_OAUTH2_AUTH', true),
+                'api_key' => env('MODULAR_DDD_SWAGGER_API_KEY_AUTH', false),
+            ],
 
-                // OAuth2 scopes (for Passport)
-                'oauth2_scopes' => [
-                    '*' => 'Full access',
-                    'read' => 'Read access',
-                    'write' => 'Write access',
-                ],
+            // Generation settings
+            'generation' => [
+                'comprehensive_by_default' => env('MODULAR_DDD_SWAGGER_COMPREHENSIVE_DEFAULT', true),
+                'auto_examples' => env('MODULAR_DDD_SWAGGER_AUTO_EXAMPLES', true),
+                'include_hateoas' => env('MODULAR_DDD_SWAGGER_INCLUDE_HATEOAS', true),
+                'include_validation_errors' => env('MODULAR_DDD_SWAGGER_INCLUDE_VALIDATION', true),
+            ],
+
+            // Export settings
+            'export' => [
+                'output_dir' => storage_path('api-docs'),
+                'json_options' => JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES,
+            ],
+
+            // UI customization
+            'ui' => [
+                'try_it_out_enabled' => env('MODULAR_DDD_SWAGGER_TRY_IT_OUT', true),
+                'deep_linking' => env('MODULAR_DDD_SWAGGER_DEEP_LINKING', true),
+                'display_request_duration' => true,
+                'doc_expansion' => 'list', // 'list', 'full', 'none'
+                'filter' => true,
+                'show_extensions' => true,
             ],
         ],
     ],
 ],
 ```
 
-#### Laravel Passport Integration
+#### 🔐 Authentication Integration
 
-The package automatically detects Laravel Passport and configures OAuth2 authentication in Swagger UI:
+**Automatic Authentication Detection:**
+- **Bearer Tokens**: JWT and personal access tokens
+- **Laravel Passport**: OAuth2 flows with automatic client detection
+- **API Keys**: Custom header-based authentication
 
-```bash
-# Install Passport (if not already installed)
-composer require laravel/passport
-
-# Run Passport installation
-php artisan passport:install
-
-# Your Swagger UI will automatically include OAuth2 flows
-```
-
-**OAuth2 Flows Supported:**
-- **Authorization Code**: For web applications
-- **Client Credentials**: For server-to-server API access
-
-#### Environment Variables
-
-Customize Swagger UI using environment variables:
-
-```env
-# Enable/disable Swagger UI
-MODULAR_DDD_SWAGGER_ENABLED=true
-
-# Documentation details
-MODULAR_DDD_SWAGGER_TITLE="My Application API"
-MODULAR_DDD_SWAGGER_DESCRIPTION="Complete API documentation"
-
-# Contact information
-MODULAR_DDD_SWAGGER_CONTACT_NAME="API Support Team"
-MODULAR_DDD_SWAGGER_CONTACT_URL="https://myapp.com/support"
-MODULAR_DDD_SWAGGER_CONTACT_EMAIL="api@myapp.com"
-
-# Authentication
-MODULAR_DDD_SWAGGER_BEARER_AUTH=true
-MODULAR_DDD_SWAGGER_OAUTH2_AUTH=true
-MODULAR_DDD_SWAGGER_API_KEY_AUTH=false
-
-# UI customization
-MODULAR_DDD_SWAGGER_TRY_IT_OUT=true
-MODULAR_DDD_SWAGGER_DEEP_LINKING=true
-```
-
-#### Custom Swagger Annotations
-
-Your generated controllers automatically include Swagger annotations:
-
+**OAuth2 Configuration Example:**
 ```php
-/**
- * @OA\Info(title="User API", version="v1")
- */
-class UserController extends Controller
+// Automatically detected when Laravel Passport is installed
+'oauth2_flows' => [
+    'authorizationCode' => [
+        'authorizationUrl' => config('app.url') . '/oauth/authorize',
+        'tokenUrl' => config('app.url') . '/oauth/token',
+        'scopes' => [
+            '*' => 'Full access to API',
+            'read' => 'Read access to resources',
+            'write' => 'Write access to resources',
+        ],
+    ],
+    'clientCredentials' => [
+        'tokenUrl' => config('app.url') . '/oauth/token',
+        'scopes' => [
+            '*' => 'Full access to API',
+        ],
+    ],
+],
+```
+
+#### 📋 Validation and Quality Assurance
+
+**Documentation Quality Checks:**
+```bash
+# Comprehensive validation with detailed reporting
+php artisan module:swagger:validate --strict --report=quality-report.json
+
+# Validation output example:
+# ✅ BlogModule: 4 endpoints, 2 schemas - Good
+# ⚠️  UserModule: 3 warnings (missing descriptions)
+# ❌ ProductModule: 2 errors (missing required responses)
+```
+
+**Quality Metrics:**
+- **API Coverage**: Percentage of endpoints with documentation
+- **Schema Completeness**: Validation of request/response schemas
+- **Security Documentation**: Authentication scheme coverage
+- **Error Handling**: Standard HTTP error response coverage
+- **Example Completeness**: Request/response example availability
+
+#### 🎨 Advanced Features
+
+**HATEOAS Support:**
+```json
 {
-    /**
-     * @OA\Get(
-     *     path="/api/users",
-     *     summary="List all users",
-     *     tags={"Users"},
-     *     @OA\Response(response=200, description="Success")
-     * )
-     */
-    public function index(): JsonResponse
-    {
-        // Controller logic
-    }
+  "data": {
+    "id": 1,
+    "title": "Sample Post",
+    "content": "Post content here"
+  },
+  "links": {
+    "self": "/api/v1/posts/1",
+    "edit": "/api/v1/posts/1",
+    "delete": "/api/v1/posts/1",
+    "comments": "/api/v1/posts/1/comments"
+  }
 }
 ```
 
-#### Advanced Security Schemes
-
-**Bearer Token Authentication:**
-```yaml
-# Swagger UI will include Authorization header
-Authorization: Bearer your-jwt-token-here
-```
-
-**OAuth2 with Passport:**
-```yaml
-# Automatic OAuth2 flows configuration
-# Users can authenticate directly in Swagger UI
-securitySchemes:
-  oauth2:
-    type: oauth2
-    flows:
-      authorizationCode:
-        authorizationUrl: /oauth/authorize
-        tokenUrl: /oauth/token
-```
-
-**API Key Authentication:**
-```yaml
-# Custom API key in headers
-X-API-Key: your-api-key-here
-```
-
-#### Troubleshooting
-
-**Documentation Not Loading:**
+**Multi-Version Support:**
 ```bash
-# Clear cache and regenerate docs
-php artisan config:clear
-php artisan route:clear
+# Generate documentation for all API versions
+php artisan module:make-api BlogModule Post --all-versions --swagger
 
-# Check if routes are registered
-php artisan route:list | grep docs
+# Generates:
+# - v1/PostController.php with v1-specific documentation
+# - v2/PostController.php with v2-specific documentation
+# - Version-aware Swagger annotations
 ```
 
-**Missing Module Documentation:**
-- Ensure your module is properly installed: `php artisan module:install ModuleName`
-- Verify controller annotations are present
-- Check module permissions configuration
+**Custom Schema Definitions:**
+- Automatic schema extraction from validation rules
+- Support for nested objects and arrays
+- Enum values from validation rules
+- Custom format validation (email, date, etc.)
 
-**Authentication Issues:**
-- Verify Passport is properly configured
-- Check OAuth2 client credentials
-- Ensure proper scopes are defined
+#### 🔧 Troubleshooting
+
+**Documentation Not Generating:**
+```bash
+# Check module status and scan results
+php artisan module:swagger:scan ModuleName
+
+# Verify controller annotations
+php artisan module:swagger:validate ModuleName --strict
+
+# Clear cache and regenerate
+php artisan config:clear && php artisan module:swagger:generate ModuleName
+```
+
+**Missing Authentication:**
+```bash
+# Verify Passport installation
+php artisan passport:client --personal
+
+# Check OAuth2 configuration
+php artisan route:list | grep oauth
+
+# Validate security schemes
+php artisan module:swagger:validate --strict
+```
+
+**Quality Issues:**
+```bash
+# Run comprehensive validation
+php artisan module:swagger:validate --strict --fix
+
+# Generate detailed quality report
+php artisan module:swagger:validate --report=quality-report.json
+```
 
 ### 📊 Performance Analysis Commands
 

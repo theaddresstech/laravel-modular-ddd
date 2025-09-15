@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 
 class ModuleMakeApiCommand extends Command
 {
-    protected $signature = 'module:make-api {module} {resource} {--auth} {--validation} {--swagger=1} {--api-version=} {--all-versions} {--examples} {--comprehensive}';
+    protected $signature = 'module:make-api {module} {resource} {--auth} {--validation} {--swagger=1} {--api-version=} {--all-versions} {--examples} {--comprehensive} {--guard=api}';
     protected $description = 'Generate complete REST API scaffolding for a module resource with comprehensive Swagger documentation';
 
     public function handle(): int
@@ -17,6 +17,7 @@ class ModuleMakeApiCommand extends Command
         $moduleName = $this->argument('module');
         $resourceName = $this->argument('resource');
         $withAuth = $this->option('auth');
+        $authGuard = $this->option('guard') ?? 'api';
         $withValidation = $this->option('validation');
         $swaggerOption = $this->option('swagger');
         $withSwagger = $swaggerOption !== false && $swaggerOption !== null; // Default to true unless explicitly disabled
@@ -36,6 +37,18 @@ class ModuleMakeApiCommand extends Command
             return 1;
         }
 
+        // Validate auth guard if auth is enabled
+        if ($withAuth && !$this->guardExists($authGuard)) {
+            $this->warn("Auth guard '{$authGuard}' is not configured. Consider:");
+            $this->line("  1. Adding '{$authGuard}' guard to config/auth.php");
+            $this->line("  2. Using --guard=web to use the web guard");
+            $this->line("  3. Omitting --auth to generate routes without authentication");
+
+            if (!$this->confirm("Continue anyway? Routes will include auth:{$authGuard} middleware.")) {
+                return 1;
+            }
+        }
+
         // Determine which versions to generate
         $versions = $this->getTargetVersions($specificVersion, $allVersions);
 
@@ -49,7 +62,7 @@ class ModuleMakeApiCommand extends Command
 
         // Generate for each version
         foreach ($versions as $version) {
-            $this->generateVersionedApi($moduleName, $resourceName, $version, $withAuth, $withValidation, $withSwagger, $withComprehensive, $withExamples);
+            $this->generateVersionedApi($moduleName, $resourceName, $version, $withAuth, $authGuard, $withValidation, $withSwagger, $withComprehensive, $withExamples);
         }
 
         // Generate shared components (not version-specific)
@@ -76,6 +89,12 @@ class ModuleMakeApiCommand extends Command
         return is_dir(base_path("modules/{$moduleName}"));
     }
 
+    private function guardExists(string $guardName): bool
+    {
+        $guards = config('auth.guards', []);
+        return array_key_exists($guardName, $guards);
+    }
+
     private function getTargetVersions(?string $specificVersion, bool $allVersions): array
     {
         if ($allVersions) {
@@ -95,12 +114,12 @@ class ModuleMakeApiCommand extends Command
         return [$defaultVersion];
     }
 
-    private function generateVersionedApi(string $moduleName, string $resourceName, string $version, bool $withAuth, bool $withValidation, bool $withSwagger, bool $withComprehensive = false, bool $withExamples = false): void
+    private function generateVersionedApi(string $moduleName, string $resourceName, string $version, bool $withAuth, string $authGuard, bool $withValidation, bool $withSwagger, bool $withComprehensive = false, bool $withExamples = false): void
     {
         $this->info("Generating API for version {$version}...");
 
-        $this->generateController($moduleName, $resourceName, $version, $withAuth, $withValidation, $withSwagger, $withComprehensive, $withExamples);
-        $this->generateRoutes($moduleName, $resourceName, $version, $withAuth);
+        $this->generateController($moduleName, $resourceName, $version, $withAuth, $authGuard, $withValidation, $withSwagger, $withComprehensive, $withExamples);
+        $this->generateRoutes($moduleName, $resourceName, $version, $withAuth, $authGuard);
     }
 
     private function displayGeneratedFiles(string $resourceName, array $versions, bool $withSwagger): void
@@ -123,7 +142,7 @@ class ModuleMakeApiCommand extends Command
         $this->line("     - Handlers: Application/Handlers/");
     }
 
-    private function generateController(string $moduleName, string $resourceName, string $apiVersion, bool $withAuth, bool $withValidation, bool $withSwagger, bool $withComprehensive = false, bool $withExamples = false): void
+    private function generateController(string $moduleName, string $resourceName, string $apiVersion, bool $withAuth, string $authGuard, bool $withValidation, bool $withSwagger, bool $withComprehensive = false, bool $withExamples = false): void
     {
         $controllersDir = base_path("modules/{$moduleName}/Http/Controllers/Api/{$apiVersion}");
         $this->ensureDirectoryExists($controllersDir);
@@ -142,7 +161,7 @@ class ModuleMakeApiCommand extends Command
             '{{RESOURCE_VARIABLE}}' => Str::camel($resourceName),
             '{{RESOURCE_SNAKE}}' => Str::snake($resourceName),
             '{{RESOURCE_KEBAB}}' => Str::kebab($resourceName),
-            '{{AUTH_MIDDLEWARE}}' => $withAuth ? "->middleware('auth:api')" : '',
+            '{{AUTH_MIDDLEWARE}}' => $withAuth ? "->middleware('auth:{$authGuard}')" : '',
             '{{VALIDATION_IMPORTS}}' => $withValidation ? $this->getValidationImports($moduleName, $resourceName) : '',
             '{{REQUEST_CLASSES}}' => $withValidation ? $this->getRequestClasses($resourceName) : 'Request',
             '{{SWAGGER_ANNOTATIONS}}' => $withSwagger ? $this->getSwaggerAnnotations($resourceName, $apiVersion) : '',
@@ -221,7 +240,7 @@ class ModuleMakeApiCommand extends Command
         file_put_contents($resourceFile, $content);
     }
 
-    private function generateRoutes(string $moduleName, string $resourceName, string $apiVersion, bool $withAuth): void
+    private function generateRoutes(string $moduleName, string $resourceName, string $apiVersion, bool $withAuth, string $authGuard): void
     {
         $routesFile = base_path("modules/{$moduleName}/Routes/api.php");
         $this->ensureDirectoryExists(dirname($routesFile));
@@ -231,8 +250,8 @@ class ModuleMakeApiCommand extends Command
             '{{RESOURCE_NAME}}' => $resourceName,
             '{{RESOURCE_KEBAB}}' => Str::kebab($resourceName),
             '{{API_VERSION}}' => $apiVersion,
-            '{{AUTH_MIDDLEWARE}}' => $withAuth ? "->middleware('auth:api')" : '',
-            '{{AUTH_MIDDLEWARE_ARRAY}}' => $withAuth ? ", 'auth:api'" : '',
+            '{{AUTH_MIDDLEWARE}}' => $withAuth ? "->middleware('auth:{$authGuard}')" : '',
+            '{{AUTH_MIDDLEWARE_ARRAY}}' => $withAuth ? ", 'auth:{$authGuard}'" : '',
         ];
 
         $routeContent = str_replace(array_keys($replacements), array_values($replacements), $routeTemplate);
