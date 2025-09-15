@@ -40,6 +40,11 @@ class ModuleManager implements ModuleManagerInterface
 
     public function list(): Collection
     {
+        // Check if caching is disabled or we're in testing
+        if (!config('modular-ddd.cache.enabled', true) || app()->environment('testing')) {
+            return $this->discovery->discover();
+        }
+
         return $this->cache->remember(self::CACHE_KEY, self::CACHE_TTL, function () {
             return $this->discovery->discover();
         });
@@ -59,7 +64,8 @@ class ModuleManager implements ModuleManagerInterface
                 throw ModuleInstallationException::cannotInstall($moduleName, 'Module is already installed');
             }
 
-            $this->validateDependencies($moduleName);
+            // Check if all dependencies are available (exist as modules)
+            $this->validateDependenciesAvailable($moduleName);
 
             // Install dependencies first
             $dependencies = $this->getDependencies($moduleName);
@@ -68,6 +74,9 @@ class ModuleManager implements ModuleManagerInterface
                     $this->install($dependency);
                 }
             }
+
+            // Validate that all dependencies are now installed
+            $this->validateDependenciesInstalled($moduleName);
 
             // Perform installation
             $this->performInstallation($module);
@@ -294,6 +303,12 @@ class ModuleManager implements ModuleManagerInterface
 
     public function validateDependencies(string $moduleName): bool
     {
+        return $this->validateDependenciesAvailable($moduleName) &&
+               $this->validateDependenciesInstalled($moduleName);
+    }
+
+    private function validateDependenciesAvailable(string $moduleName): bool
+    {
         $module = $this->getInfo($moduleName);
         if (!$module) {
             throw new ModuleNotFoundException($moduleName);
@@ -308,6 +323,24 @@ class ModuleManager implements ModuleManagerInterface
 
         if ($this->dependencyResolver->hasCircularDependency($module, $availableModules)) {
             throw DependencyException::circularDependency($moduleName);
+        }
+
+        return true;
+    }
+
+    private function validateDependenciesInstalled(string $moduleName): bool
+    {
+        $dependencies = $this->getDependencies($moduleName);
+        $missingDependencies = [];
+
+        foreach ($dependencies as $dependency) {
+            if (!$this->isInstalled($dependency)) {
+                $missingDependencies[] = $dependency;
+            }
+        }
+
+        if (!empty($missingDependencies)) {
+            throw DependencyException::missingDependencies($moduleName, $missingDependencies);
         }
 
         return true;

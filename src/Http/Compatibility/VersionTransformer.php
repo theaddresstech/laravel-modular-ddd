@@ -59,7 +59,12 @@ class VersionTransformer
             return $transformer->transform($response->getData(true), $fromVersion, $toVersion);
         });
 
-        $transformedResponse = response()->json($transformedData, $response->getStatusCode());
+        try {
+            $transformedResponse = response()->json($transformedData, $response->getStatusCode());
+        } catch (\Exception $e) {
+            // Fallback for unit tests where response() helper is not available
+            $transformedResponse = new JsonResponse($transformedData, $response->getStatusCode());
+        }
 
         // Copy headers from original response
         foreach ($response->headers->all() as $key => $values) {

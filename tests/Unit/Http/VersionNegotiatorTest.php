@@ -39,6 +39,14 @@ class VersionNegotiatorTest extends TestCase
         Config::shouldReceive('get')
             ->with('modular-ddd.api.versions.sunset_dates', [])
             ->andReturn([]);
+
+        Config::shouldReceive('get')
+            ->with('modular-ddd.api.versions.deprecated', [])
+            ->andReturn([]);
+
+        Config::shouldReceive('get')
+            ->with('modular-ddd.api.versions.latest', 'v1')
+            ->andReturn('v2');
     }
 
     public function test_negotiates_version_from_url(): void

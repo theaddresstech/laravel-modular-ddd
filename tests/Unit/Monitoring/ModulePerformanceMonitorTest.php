@@ -31,8 +31,13 @@ class ModulePerformanceMonitorTest extends TestCase
         $this->cacheStore = $this->createMock(Repository::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
-        $this->cache->method('get')->willReturn([]);
-        $this->cache->method('put')->willReturn(true);
+        // Setup cache store methods
+        $this->cacheStore->method('get')->willReturn([]);
+        $this->cacheStore->method('put')->willReturn(true);
+        $this->cacheStore->method('forget')->willReturn(true);
+
+        // Make cache manager return our mock store
+        $this->cache->method('store')->willReturn($this->cacheStore);
 
         $this->monitor = new ModulePerformanceMonitor(
             $this->moduleManager,
@@ -191,10 +196,16 @@ class ModulePerformanceMonitorTest extends TestCase
         $modules = collect([
             new ModuleInfo(
                 name: 'TestModule',
+                displayName: 'Test Module',
+                description: 'A test module',
                 version: '1.0.0',
-                path: '/path/to/module',
+                author: 'Test Author',
                 dependencies: [],
-                status: ModuleState::Enabled
+                optionalDependencies: [],
+                conflicts: [],
+                provides: [],
+                path: '/path/to/module',
+                state: ModuleState::Enabled
             ),
         ]);
 

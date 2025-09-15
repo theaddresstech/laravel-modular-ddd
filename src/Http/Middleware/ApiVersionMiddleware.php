@@ -73,7 +73,16 @@ class ApiVersionMiddleware
     private function addVersionHeaders(SymfonyResponse $response, string $version): void
     {
         $response->headers->set('X-API-Version', $version);
-        $response->headers->set('X-API-Module', app('api.module'));
+
+        // Only set module header if module is available
+        try {
+            $module = app('api.module');
+            if ($module) {
+                $response->headers->set('X-API-Module', $module);
+            }
+        } catch (\Exception $e) {
+            // Module not available in container (e.g., during testing)
+        }
 
         // Add supported versions
         $supportedVersions = Config::get('modular-ddd.api.versions.supported', ['v1']);
@@ -116,9 +125,18 @@ class ApiVersionMiddleware
             'documentation' => Config::get('modular-ddd.api.documentation_url'),
         ];
 
-        return response()->json($error, 406, [
+        $headers = [
             'X-API-Supported-Versions' => implode(', ', $supportedVersions),
             'X-API-Latest-Version' => $latestVersion,
-        ]);
+        ];
+
+        try {
+            return response()->json($error, 406, $headers);
+        } catch (\Exception $ex) {
+            // Fallback for unit tests where response() helper is not available
+            return new Response(json_encode($error), 406, array_merge($headers, [
+                'Content-Type' => 'application/json'
+            ]));
+        }
     }
 }

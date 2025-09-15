@@ -66,7 +66,8 @@ class ModulePerformanceMonitor
 
         // Store in cache for aggregation
         $cacheKey = $this->getCacheKey($metric['operation']);
-        $cachedMetrics = $this->cache->get($cacheKey, []);
+        $store = $this->cache->store();
+        $cachedMetrics = $store->get($cacheKey, []);
         $cachedMetrics[] = $metric;
 
         // Keep only last 1000 metrics per operation
@@ -74,10 +75,17 @@ class ModulePerformanceMonitor
             $cachedMetrics = array_slice($cachedMetrics, -1000);
         }
 
-        $this->cache->put($cacheKey, $cachedMetrics, now()->addHours(24));
+        $store->put($cacheKey, $cachedMetrics, now()->addHours(24));
 
         // Log slow operations
-        if ($metric['duration'] > config('modular-ddd.monitoring.slow_operation_threshold', 1.0)) {
+        $threshold = 1.0; // Default threshold
+        try {
+            $threshold = config('modular-ddd.monitoring.slow_operation_threshold', 1.0);
+        } catch (\Exception $e) {
+            // Fallback for unit tests where config is not available
+        }
+
+        if ($metric['duration'] > $threshold) {
             $this->logger->warning('Slow module operation detected', $metric);
         }
     }
@@ -86,7 +94,7 @@ class ModulePerformanceMonitor
     {
         if ($operation) {
             $cacheKey = $this->getCacheKey($operation);
-            $metrics = $this->cache->get($cacheKey, []);
+            $metrics = $this->cache->store()->get($cacheKey, []);
             return collect($metrics)->take($limit);
         }
 
@@ -96,7 +104,7 @@ class ModulePerformanceMonitor
     public function getAggregatedMetrics(string $operation, string $period = '1hour'): array
     {
         $cacheKey = $this->getCacheKey($operation);
-        $metrics = $this->cache->get($cacheKey, []);
+        $metrics = $this->cache->store()->get($cacheKey, []);
 
         if (empty($metrics)) {
             return [];
@@ -183,11 +191,11 @@ class ModulePerformanceMonitor
     {
         if ($operation) {
             $cacheKey = $this->getCacheKey($operation);
-            $this->cache->forget($cacheKey);
+            $this->cache->store()->forget($cacheKey);
         } else {
             $operations = $this->getAllOperations();
             foreach ($operations as $op) {
-                $this->cache->forget($this->getCacheKey($op));
+                $this->cache->store()->forget($this->getCacheKey($op));
             }
             $this->metrics = [];
         }
@@ -337,7 +345,7 @@ class ModulePerformanceMonitor
         $pattern = "module_performance_metrics:*";
 
         try {
-            $store = $this->cache->getStore();
+            $store = $this->cache->store();
 
             // Handle different cache drivers
             if (method_exists($store, 'getRedis')) {

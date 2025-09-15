@@ -56,6 +56,14 @@ class ApiVersionMiddlewareTest extends TestCase
             ->with($request, null)
             ->willReturn('v2');
 
+        Config::shouldReceive('get')
+            ->with('modular-ddd.api.versions.supported', ['v1'])
+            ->andReturn(['v1', 'v2']);
+
+        Config::shouldReceive('get')
+            ->with('modular-ddd.api.versions.deprecated', [])
+            ->andReturn([]);
+
         $nextCalled = false;
         $next = function ($req) use (&$nextCalled) {
             $nextCalled = true;
@@ -79,6 +87,14 @@ class ApiVersionMiddlewareTest extends TestCase
             ->with($request, null)
             ->willReturn('v1');
 
+        Config::shouldReceive('get')
+            ->with('modular-ddd.api.versions.supported', ['v1'])
+            ->andReturn(['v1', 'v2']);
+
+        Config::shouldReceive('get')
+            ->with('modular-ddd.api.versions.deprecated', [])
+            ->andReturn([]);
+
         $next = function ($req) {
             // Verify context is set during request processing
             $this->assertEquals('v1', app('api.version'));
@@ -99,6 +115,10 @@ class ApiVersionMiddlewareTest extends TestCase
         Config::shouldReceive('get')
             ->with('modular-ddd.api.versions.supported', ['v1'])
             ->andReturn(['v1', 'v2']);
+
+        Config::shouldReceive('get')
+            ->with('modular-ddd.api.versions.deprecated', [])
+            ->andReturn([]);
 
         $next = function () {
             return new Response('API Response');
@@ -196,11 +216,19 @@ class ApiVersionMiddlewareTest extends TestCase
             ->with($request, 'TestModule')
             ->willReturn('v1');
 
+        Config::shouldReceive('get')
+            ->with('modular-ddd.api.versions.supported', ['v1'])
+            ->andReturn(['v1', 'v2']);
+
+        Config::shouldReceive('get')
+            ->with('modular-ddd.api.versions.deprecated', [])
+            ->andReturn([]);
+
         $next = function () {
             return new Response('OK');
         };
 
-        $response = $this->middleware->handle($request, $next, 'TestModule');
+        $this->middleware->handle($request, $next, 'TestModule');
 
         $this->assertEquals('TestModule', $request->attributes->get('api_module'));
     }

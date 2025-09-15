@@ -113,7 +113,10 @@ class ModularDddServiceProvider extends ServiceProvider
                 $app['cache.store'],
                 $app['events'],
                 $app['log'],
-                $app[ModuleRegistry::class]
+                $app[ModuleRegistry::class],
+                $app,
+                $app['files'],
+                $app['router']
             );
         });
     }

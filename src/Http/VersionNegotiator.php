@@ -145,7 +145,7 @@ class VersionNegotiator
     private function isValidVersionFormat(string $version): bool
     {
         // Support formats: v1, v1.0, v2.1, 1, 1.0, 2.1
-        return preg_match('/^v?\d+(\.\d+)?$/', $version);
+        return preg_match('/^v?\d+(\.\d+)?$/', $version) === 1;
     }
 
     private function normalizeVersion(string $version): string
