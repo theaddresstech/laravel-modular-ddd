@@ -33,6 +33,7 @@ use TaiCrm\LaravelModularDdd\Foundation\CqrsServiceProvider;
 use TaiCrm\LaravelModularDdd\Authorization\ModuleAuthorizationManager;
 use TaiCrm\LaravelModularDdd\Authorization\Middleware\ModulePermissionMiddleware;
 use TaiCrm\LaravelModularDdd\Authorization\Middleware\ModuleRoleMiddleware;
+use TaiCrm\LaravelModularDdd\Documentation\SwaggerAnnotationScanner;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Contracts\Container\Container;
 
@@ -49,6 +50,7 @@ class ModularDddServiceProvider extends ServiceProvider
         $this->registerMonitoringServices();
         $this->registerVisualizationServices();
         $this->registerSecurityServices();
+        $this->registerDocumentationServices();
         $this->registerCommands();
     }
 
@@ -237,6 +239,16 @@ class ModularDddServiceProvider extends ServiceProvider
         });
     }
 
+    /**
+     * Register documentation services
+     */
+    private function registerDocumentationServices(): void
+    {
+        $this->app->singleton(SwaggerAnnotationScanner::class, function (Container $app) {
+            return new SwaggerAnnotationScanner();
+        });
+    }
+
     private function registerCommands(): void
     {
         if ($this->app->runningInConsole() && !$this->app->environment('testing')) {
@@ -339,7 +351,14 @@ class ModularDddServiceProvider extends ServiceProvider
             $this->publishes([
                 __DIR__ . '/../stubs' => resource_path('stubs/modular-ddd'),
             ], 'stubs');
+
+            $this->publishes([
+                __DIR__ . '/../resources/views' => resource_path('views/vendor/modular-ddd'),
+            ], 'views');
         }
+
+        // Load views
+        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'modular-ddd');
     }
 
     private function bootModuleAutoDiscovery(): void
@@ -409,6 +428,7 @@ class ModularDddServiceProvider extends ServiceProvider
 
         $versionAwareRouter = $this->app[\TaiCrm\LaravelModularDdd\Http\VersionAwareRouter::class];
         $versionAwareRouter->registerVersionDiscoveryRoutes();
+        $versionAwareRouter->registerDocumentationRoutes();
         $versionAwareRouter->registerVersionConstraints();
     }
 

@@ -107,6 +107,50 @@ class VersionAwareRouter
         ]);
     }
 
+    /**
+     * Register documentation routes
+     */
+    public function registerDocumentationRoutes(): void
+    {
+        $apiPrefix = Config::get('modular-ddd.api.prefix', 'api');
+        $docsUrl = Config::get('modular-ddd.api.documentation.url', '/api/docs');
+
+        // Main API documentation
+        Route::get($docsUrl, [
+            'uses' => '\TaiCrm\LaravelModularDdd\Http\Controllers\SwaggerDocumentationController@index',
+            'middleware' => ['api'],
+            'as' => 'api.docs.index',
+        ]);
+
+        // Version-specific documentation
+        Route::get("{$docsUrl}/{version}", [
+            'uses' => '\TaiCrm\LaravelModularDdd\Http\Controllers\SwaggerDocumentationController@version',
+            'middleware' => ['api'],
+            'as' => 'api.docs.version',
+        ])->where('version', '^(v[0-9]+)$');
+
+        // Module-specific documentation
+        Route::get("{$docsUrl}/modules/{module}", [
+            'uses' => '\TaiCrm\LaravelModularDdd\Http\Controllers\SwaggerDocumentationController@module',
+            'middleware' => ['api'],
+            'as' => 'api.docs.module',
+        ]);
+
+        // Version and module-specific documentation
+        Route::get("{$docsUrl}/{version}/modules/{module}", [
+            'uses' => '\TaiCrm\LaravelModularDdd\Http\Controllers\SwaggerDocumentationController@versionModule',
+            'middleware' => ['api'],
+            'as' => 'api.docs.version.module',
+        ])->where('version', '^(v[0-9]+)$');
+
+        // OpenAPI specification endpoint
+        Route::get("{$apiPrefix}/openapi.json", [
+            'uses' => '\TaiCrm\LaravelModularDdd\Http\Controllers\SwaggerDocumentationController@spec',
+            'middleware' => ['api'],
+            'as' => 'api.docs.spec',
+        ]);
+    }
+
     public function getVersionedControllerClass(string $baseController, string $version): string
     {
         // Try version-specific controller first

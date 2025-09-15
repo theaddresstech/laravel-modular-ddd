@@ -111,6 +111,65 @@ return [
 
             // Include deprecation notices in responses
             'include_deprecation_notices' => env('MODULAR_DDD_API_INCLUDE_DEPRECATION', true),
+
+            // Swagger UI configuration
+            'swagger' => [
+                // Enable Swagger UI
+                'enabled' => env('MODULAR_DDD_SWAGGER_ENABLED', true),
+
+                // Swagger UI title
+                'title' => env('MODULAR_DDD_SWAGGER_TITLE', 'Laravel Modular DDD API'),
+
+                // Swagger UI description
+                'description' => env('MODULAR_DDD_SWAGGER_DESCRIPTION', 'Comprehensive API documentation for modular DDD application'),
+
+                // Contact information
+                'contact' => [
+                    'name' => env('MODULAR_DDD_SWAGGER_CONTACT_NAME', 'API Support'),
+                    'url' => env('MODULAR_DDD_SWAGGER_CONTACT_URL', ''),
+                    'email' => env('MODULAR_DDD_SWAGGER_CONTACT_EMAIL', ''),
+                ],
+
+                // License information
+                'license' => [
+                    'name' => env('MODULAR_DDD_SWAGGER_LICENSE_NAME', 'MIT'),
+                    'url' => env('MODULAR_DDD_SWAGGER_LICENSE_URL', ''),
+                ],
+
+                // Security schemes
+                'security' => [
+                    // Enable Bearer token authentication
+                    'bearer_token' => env('MODULAR_DDD_SWAGGER_BEARER_AUTH', true),
+
+                    // Enable API key authentication
+                    'api_key' => env('MODULAR_DDD_SWAGGER_API_KEY_AUTH', false),
+
+                    // Enable OAuth2 (Laravel Passport) authentication
+                    'oauth2' => env('MODULAR_DDD_SWAGGER_OAUTH2_AUTH', true),
+
+                    // OAuth2 scopes
+                    'oauth2_scopes' => [
+                        '*' => 'Full access',
+                        'read' => 'Read access',
+                        'write' => 'Write access',
+                    ],
+                ],
+
+                // UI customization
+                'ui' => [
+                    // Custom CSS for Swagger UI
+                    'custom_css' => env('MODULAR_DDD_SWAGGER_CUSTOM_CSS', ''),
+
+                    // Enable try-it-out functionality
+                    'try_it_out' => env('MODULAR_DDD_SWAGGER_TRY_IT_OUT', true),
+
+                    // Supported submit methods
+                    'submit_methods' => ['get', 'post', 'put', 'delete', 'patch'],
+
+                    // Deep linking
+                    'deep_linking' => env('MODULAR_DDD_SWAGGER_DEEP_LINKING', true),
+                ],
+            ],
         ],
     ],
 

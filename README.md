@@ -310,6 +310,186 @@ curl -i -H "Accept-Version: v99" http://localhost/api/users
 # Returns HTTP 406 with supported versions list
 ```
 
+### 📚 API Documentation & Swagger UI
+
+The package provides comprehensive Swagger/OpenAPI documentation that's automatically generated from your module controllers and annotations.
+
+#### Accessing Documentation
+
+**Main API Documentation:**
+- `http://localhost:8000/api/docs` - Complete API documentation for all modules
+- `http://localhost:8000/api/openapi.json` - OpenAPI specification (JSON)
+
+**Version-Specific Documentation:**
+- `http://localhost:8000/api/docs/v1` - Documentation for API version 1
+- `http://localhost:8000/api/docs/v2` - Documentation for API version 2
+
+**Module-Specific Documentation:**
+- `http://localhost:8000/api/docs/modules/UserModule` - UserModule documentation only
+- `http://localhost:8000/api/docs/v1/modules/UserModule` - Version + Module specific
+
+**Discovery Endpoints:**
+- `http://localhost:8000/api/versions` - Available API versions and module information
+
+#### Swagger Configuration
+
+Configure Swagger UI in your `config/modular-ddd.php`:
+
+```php
+'api' => [
+    'documentation' => [
+        'swagger' => [
+            // Enable/disable Swagger UI
+            'enabled' => true,
+
+            // Documentation title and description
+            'title' => 'Your Application API',
+            'description' => 'Comprehensive API documentation',
+
+            // Contact information
+            'contact' => [
+                'name' => 'API Support',
+                'url' => 'https://your-app.com/support',
+                'email' => 'api-support@your-app.com',
+            ],
+
+            // Security schemes
+            'security' => [
+                'bearer_token' => true,    // JWT/Bearer tokens
+                'oauth2' => true,          // Laravel Passport
+                'api_key' => false,        // API key authentication
+
+                // OAuth2 scopes (for Passport)
+                'oauth2_scopes' => [
+                    '*' => 'Full access',
+                    'read' => 'Read access',
+                    'write' => 'Write access',
+                ],
+            ],
+        ],
+    ],
+],
+```
+
+#### Laravel Passport Integration
+
+The package automatically detects Laravel Passport and configures OAuth2 authentication in Swagger UI:
+
+```bash
+# Install Passport (if not already installed)
+composer require laravel/passport
+
+# Run Passport installation
+php artisan passport:install
+
+# Your Swagger UI will automatically include OAuth2 flows
+```
+
+**OAuth2 Flows Supported:**
+- **Authorization Code**: For web applications
+- **Client Credentials**: For server-to-server API access
+
+#### Environment Variables
+
+Customize Swagger UI using environment variables:
+
+```env
+# Enable/disable Swagger UI
+MODULAR_DDD_SWAGGER_ENABLED=true
+
+# Documentation details
+MODULAR_DDD_SWAGGER_TITLE="My Application API"
+MODULAR_DDD_SWAGGER_DESCRIPTION="Complete API documentation"
+
+# Contact information
+MODULAR_DDD_SWAGGER_CONTACT_NAME="API Support Team"
+MODULAR_DDD_SWAGGER_CONTACT_URL="https://myapp.com/support"
+MODULAR_DDD_SWAGGER_CONTACT_EMAIL="api@myapp.com"
+
+# Authentication
+MODULAR_DDD_SWAGGER_BEARER_AUTH=true
+MODULAR_DDD_SWAGGER_OAUTH2_AUTH=true
+MODULAR_DDD_SWAGGER_API_KEY_AUTH=false
+
+# UI customization
+MODULAR_DDD_SWAGGER_TRY_IT_OUT=true
+MODULAR_DDD_SWAGGER_DEEP_LINKING=true
+```
+
+#### Custom Swagger Annotations
+
+Your generated controllers automatically include Swagger annotations:
+
+```php
+/**
+ * @OA\Info(title="User API", version="v1")
+ */
+class UserController extends Controller
+{
+    /**
+     * @OA\Get(
+     *     path="/api/users",
+     *     summary="List all users",
+     *     tags={"Users"},
+     *     @OA\Response(response=200, description="Success")
+     * )
+     */
+    public function index(): JsonResponse
+    {
+        // Controller logic
+    }
+}
+```
+
+#### Advanced Security Schemes
+
+**Bearer Token Authentication:**
+```yaml
+# Swagger UI will include Authorization header
+Authorization: Bearer your-jwt-token-here
+```
+
+**OAuth2 with Passport:**
+```yaml
+# Automatic OAuth2 flows configuration
+# Users can authenticate directly in Swagger UI
+securitySchemes:
+  oauth2:
+    type: oauth2
+    flows:
+      authorizationCode:
+        authorizationUrl: /oauth/authorize
+        tokenUrl: /oauth/token
+```
+
+**API Key Authentication:**
+```yaml
+# Custom API key in headers
+X-API-Key: your-api-key-here
+```
+
+#### Troubleshooting
+
+**Documentation Not Loading:**
+```bash
+# Clear cache and regenerate docs
+php artisan config:clear
+php artisan route:clear
+
+# Check if routes are registered
+php artisan route:list | grep docs
+```
+
+**Missing Module Documentation:**
+- Ensure your module is properly installed: `php artisan module:install ModuleName`
+- Verify controller annotations are present
+- Check module permissions configuration
+
+**Authentication Issues:**
+- Verify Passport is properly configured
+- Check OAuth2 client credentials
+- Ensure proper scopes are defined
+
 ### 📊 Performance Analysis Commands
 
 #### Comprehensive Performance Analysis
