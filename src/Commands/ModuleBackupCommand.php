@@ -353,8 +353,13 @@ class ModuleBackupCommand extends Command
 
     private function formatBytes(int $bytes): string
     {
-        $units = ['B', 'KB', 'MB', 'GB'];
-        $factor = floor((strlen($bytes) - 1) / 3);
+        if ($bytes === 0) {
+            return '0 B';
+        }
+
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        $factor = (int) floor(log($bytes) / log(1024));
+        $factor = min($factor, count($units) - 1);
 
         return sprintf("%.2f %s", $bytes / pow(1024, $factor), $units[$factor]);
     }

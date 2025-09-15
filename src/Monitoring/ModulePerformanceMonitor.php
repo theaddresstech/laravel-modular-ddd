@@ -335,12 +335,33 @@ class ModulePerformanceMonitor
     private function getAllOperations(): array
     {
         $pattern = "module_performance_metrics:*";
-        $keys = $this->cache->getStore()->getRedis()->keys($pattern);
 
-        return array_map(
-            fn($key) => str_replace('module_performance_metrics:', '', $key),
-            $keys
-        );
+        try {
+            $store = $this->cache->getStore();
+
+            // Handle different cache drivers
+            if (method_exists($store, 'getRedis')) {
+                $keys = $store->getRedis()->keys($pattern);
+            } elseif (method_exists($store, 'getConnection')) {
+                // Handle database cache
+                $connection = $store->getConnection();
+                $keys = $connection->table($store->getTable())
+                    ->where('key', 'like', str_replace('*', '%', $pattern))
+                    ->pluck('key')
+                    ->toArray();
+            } else {
+                // Fallback for other cache drivers
+                return [];
+            }
+
+            return array_map(
+                fn($key) => str_replace('module_performance_metrics:', '', $key),
+                $keys
+            );
+        } catch (\Exception $e) {
+            // Return empty array if cache operations fail
+            return [];
+        }
     }
 
     private function metricsToCSV(array $metrics): string

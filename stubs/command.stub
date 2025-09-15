@@ -1,0 +1,23 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{NAMESPACE}};
+
+use TaiCrm\LaravelModularDdd\Foundation\Command;
+
+class {{CLASS_NAME}} extends Command
+{
+    public function __construct(
+        // Add command properties here
+    ) {
+        parent::__construct();
+    }
+
+    protected function toArray(): array
+    {
+        return [
+            // Return command data
+        ];
+    }
+}

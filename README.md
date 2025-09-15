@@ -17,6 +17,7 @@ A comprehensive Laravel package for implementing modular Domain-Driven Design ar
 ### Advanced Development Tools
 - **⚡ CQRS Command/Query Bus**: Built-in CQRS implementation with validation, caching, and handler auto-registration
 - **🛠️ API Scaffolding**: Complete REST API generation with authentication, validation, and Swagger documentation
+- **🔄 Enterprise API Versioning**: Multi-strategy version negotiation with backward compatibility and deprecation management
 - **🎯 Domain Events System**: Event sourcing support with automatic event discovery and listener generation
 - **🧪 Automated Testing**: Intelligent test generation for unit, feature, and integration tests with factory support
 
@@ -187,8 +188,8 @@ php artisan module:make-query UserModule GetUser --aggregate=User --cacheable
 
 #### Complete API Scaffolding
 ```bash
-# Generate complete REST API with all components
-php artisan module:make-api {Module} {Resource} [--auth] [--validation] [--swagger]
+# Generate complete REST API with all components and versioning
+php artisan module:make-api {Module} {Resource} [--auth] [--validation] [--swagger] [--version={v1|v2}] [--all-versions]
 
 # Generate individual API components
 php artisan module:make-controller {Module} {Controller} [--api] [--resource={Model}] [--middleware={Name}]
@@ -198,6 +199,8 @@ php artisan module:make-middleware {Module} {Middleware} [--auth] [--rate-limit]
 
 # Examples:
 php artisan module:make-api UserModule User --auth --validation --swagger
+php artisan module:make-api UserModule User --auth --validation --swagger --version=v2
+php artisan module:make-api UserModule User --auth --validation --swagger --all-versions
 php artisan module:make-controller UserModule UserController --api --resource=User
 php artisan module:make-request UserModule CreateUserRequest --validation
 php artisan module:make-resource UserModule UserResource --model=User
@@ -234,6 +237,53 @@ php artisan module:make-policy {Module} {PolicyName} [--model={Name}] [--resourc
 # Examples:
 php artisan module:make-policy UserModule UserPolicy --model=User --resource
 php artisan module:make-policy UserModule UserApiPolicy --model=User --resource --api
+```
+
+### 🔄 API Versioning Commands
+
+#### Version Management
+```bash
+# Check available API versions
+curl -H "Accept: application/json" http://localhost/api/versions
+
+# Get module-specific version information
+curl -H "Accept: application/json" http://localhost/api/modules/{module}/versions
+
+# Test different version negotiation strategies
+curl -H "Accept-Version: v2" http://localhost/api/users                    # Header-based
+curl http://localhost/api/v2/users                                          # URL-based
+curl http://localhost/api/users?api_version=v2                             # Query parameter
+curl -H "Accept: application/vnd.api+json;version=2" http://localhost/api/users  # Content negotiation
+```
+
+#### API Version Generation
+```bash
+# Generate API for specific version
+php artisan module:make-api UserModule User --version=v2 --auth --validation --swagger
+
+# Generate API for all supported versions
+php artisan module:make-api UserModule User --all-versions --auth --validation --swagger
+
+# The above commands will create:
+# - Http/Controllers/Api/v1/UserController.php
+# - Http/Controllers/Api/v2/UserController.php
+# - Routes/api.php (with versioned routes)
+# - Docs/v1/UserApi.php (version-specific documentation)
+# - Docs/v2/UserApi.php
+```
+
+#### Version Discovery & Testing
+```bash
+# Test version negotiation
+curl -i -H "Accept-Version: v1" http://localhost/api/users
+# Response headers will include:
+# X-API-Version: v1
+# X-API-Supported-Versions: v1, v2
+# Warning: 299 - "This API version (v1) is deprecated. It will be sunset on 2025-12-31."
+
+# Test unsupported version
+curl -i -H "Accept-Version: v99" http://localhost/api/users
+# Returns HTTP 406 with supported versions list
 ```
 
 ### 📊 Performance Analysis Commands
@@ -422,6 +472,71 @@ class ProductController extends Controller
 }
 ```
 
+### API Versioning Usage
+
+```php
+// Using version-aware routes in modules/YourModule/Routes/api.php
+Route::prefix('api/{version}')
+    ->middleware(['api', 'api.version'])
+    ->where('version', 'v[1-2]')
+    ->group(function () {
+        Route::apiResource('users', UserController::class);
+    });
+
+// Version-specific controllers
+// modules/UserModule/Http/Controllers/Api/V1/UserController.php
+class UserController extends Controller
+{
+    public function index()
+    {
+        // v1 implementation
+        return UserResource::collection(User::all());
+    }
+}
+
+// modules/UserModule/Http/Controllers/Api/V2/UserController.php
+class UserController extends Controller
+{
+    public function index()
+    {
+        // v2 implementation with enhanced features
+        return UserResource::collection(
+            User::with('profile', 'preferences')->get()
+        );
+    }
+}
+
+// Custom version transformations
+use TaiCrm\LaravelModularDdd\Http\Compatibility\BaseRequestTransformer;
+
+class UserV1ToV2RequestTransformer extends BaseRequestTransformer
+{
+    protected function getDescription(): string
+    {
+        return 'Transform user requests from v1 to v2';
+    }
+
+    public function transform(Request $request, string $fromVersion, string $toVersion): Request
+    {
+        $data = $request->all();
+
+        // Transform old 'full_name' field to 'first_name' and 'last_name'
+        if (isset($data['full_name'])) {
+            $names = explode(' ', $data['full_name'], 2);
+            $data['first_name'] = $names[0];
+            $data['last_name'] = $names[1] ?? '';
+            unset($data['full_name']);
+        }
+
+        return $this->cloneRequest($request)->replace($data);
+    }
+}
+
+// Register transformers in a service provider
+$registry = app(TransformationRegistry::class);
+$registry->registerRequestTransformer('v1', 'v2', new UserV1ToV2RequestTransformer('v1', 'v2'));
+```
+
 ### Authorization Usage
 
 ```php
@@ -545,6 +660,46 @@ return [
         'resource_tracking' => true,
         'alerts_enabled' => true,
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | API Versioning Configuration
+    |--------------------------------------------------------------------------
+    */
+    'api' => [
+        'prefix' => 'api',
+        'middleware' => ['api'],
+
+        // Multi-version support configuration
+        'versions' => [
+            'supported' => ['v1', 'v2'],
+            'default' => 'v2',
+            'latest' => 'v2',
+            'deprecated' => ['v1'],
+            'sunset_dates' => [
+                'v1' => '2025-12-31',
+            ],
+        ],
+
+        // Version negotiation configuration
+        'negotiation' => [
+            'strategy' => 'url,header,query,default',
+            'headers' => ['Accept-Version', 'X-API-Version'],
+        ],
+
+        // Backward compatibility settings
+        'compatibility' => [
+            'auto_transform' => true,
+            'request_transformation' => true,
+            'response_transformation' => true,
+        ],
+
+        // Documentation and discovery
+        'documentation' => [
+            'discovery_endpoint' => '/api/versions',
+            'include_deprecation_notices' => true,
+        ],
+    ],
 ];
 ```
 
@@ -661,11 +816,15 @@ Schema::create('user_module_roles', function (Blueprint $table) {
 - Handler registration and discovery
 - Validation and caching strategies
 
-### API Scaffolding
+### API Scaffolding & Versioning
 - [API Scaffolding Guide](src/Commands/README-API-SCAFFOLDING.md)
 - REST API generation
 - Authentication and authorization
 - Swagger documentation
+- [API Versioning Guide](docs/api-versioning.md)
+- Multi-version support
+- Backward compatibility
+- Version negotiation strategies
 
 ### Performance Monitoring
 - [Performance Monitoring Guide](src/Monitoring/README-PERFORMANCE-MONITORING.md)

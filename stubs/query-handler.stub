@@ -1,0 +1,21 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{NAMESPACE}};
+
+use {{NAMESPACE}}\{{QUERY_CLASS}};
+use TaiCrm\LaravelModularDdd\Foundation\Contracts\QueryHandlerInterface;
+
+class {{CLASS_NAME}} implements QueryHandlerInterface
+{
+    public function __construct(
+        // Inject dependencies here
+    ) {}
+
+    public function handle({{QUERY_CLASS}} $query): mixed
+    {
+        // TODO: Implement query handling logic
+        return null;
+    }
+}

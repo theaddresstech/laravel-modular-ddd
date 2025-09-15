@@ -1,0 +1,20 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{NAMESPACE}};
+
+use {{NAMESPACE}}\{{COMMAND_CLASS}};
+use TaiCrm\LaravelModularDdd\Foundation\Contracts\CommandHandlerInterface;
+
+class {{CLASS_NAME}} implements CommandHandlerInterface
+{
+    public function __construct(
+        // Inject dependencies here
+    ) {}
+
+    public function handle({{COMMAND_CLASS}} $command): void
+    {
+        // TODO: Implement command handling logic
+    }
+}

@@ -112,7 +112,7 @@ class DependencyGraphGenerator
                 'id' => $module->name,
                 'label' => $module->name,
                 'version' => $module->version,
-                'status' => $module->status->value,
+                'status' => $module->state->value,
                 'enabled' => $module->isEnabled(),
                 'dependencies_count' => count($module->dependencies),
                 'size' => $this->calculateNodeSize($module),
@@ -288,7 +288,7 @@ class DependencyGraphGenerator
         $tree[$module->name] = [
             'module' => $module->name,
             'version' => $module->version,
-            'status' => $module->status->value,
+            'status' => $module->state->value,
             'enabled' => $module->isEnabled(),
             'dependencies' => [],
         ];

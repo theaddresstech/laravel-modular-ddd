@@ -122,7 +122,8 @@ class ModuleStubCommand extends Command
 
     private function generateController(string $name, $module): array
     {
-        $className = Str::studly($name) . 'Controller';
+        $aggregate = Str::studly($name);
+        $className = $aggregate . 'Controller';
         $path = "{$module->path}/Presentation/Http/Controllers/{$className}.php";
 
         if ($this->files->exists($path) && !$this->option('force')) {
@@ -130,11 +131,12 @@ class ModuleStubCommand extends Command
         }
 
         $content = $this->processStub('controller.stub', [
-            'CLASS_NAME' => $className,
+            'NAMESPACE' => "Modules\\{$module->name}",
             'MODULE' => $module->name,
-            'NAMESPACE' => "Modules\\{$module->name}\\Presentation\\Http\\Controllers",
-            'RESOURCE_NAME' => Str::studly($name),
-            'RESOURCE_LOWER' => Str::lower($name),
+            'AGGREGATE' => $aggregate,
+            'AGGREGATE_LOWER' => Str::camel($aggregate),
+            'AGGREGATE_SNAKE' => Str::snake($aggregate),
+            'AGGREGATE_KEBAB' => Str::kebab($aggregate),
         ]);
 
         $this->ensureDirectoryExists(dirname($path));
@@ -145,8 +147,8 @@ class ModuleStubCommand extends Command
             'type' => 'Controller',
             'path' => $path,
             'next_steps' => [
-                "Create request classes: php artisan make:request Store{$name}Request",
-                "Create resource classes: php artisan make:resource {$name}Resource",
+                "Create request classes: php artisan make:request Store{$aggregate}Request",
+                "Create resource classes: php artisan make:resource {$aggregate}Resource",
                 "Add routes in {$module->path}/Routes/api.php",
             ],
         ];
@@ -185,19 +187,22 @@ class ModuleStubCommand extends Command
 
     private function generateRepository(string $name, $module): array
     {
-        $className = Str::studly($name) . 'RepositoryInterface';
+        $aggregate = Str::studly($name);
+        $className = $aggregate . 'RepositoryInterface';
         $path = "{$module->path}/Domain/Repositories/{$className}.php";
 
         if ($this->files->exists($path) && !$this->option('force')) {
             return ['success' => false, 'error' => 'Repository interface already exists. Use --force to overwrite.'];
         }
 
+
         $content = $this->processStub('repository-interface.stub', [
-            'CLASS_NAME' => $className,
+            'NAMESPACE' => "Modules\\{$module->name}",
             'MODULE' => $module->name,
-            'NAMESPACE' => "Modules\\{$module->name}\\Domain\\Repositories",
-            'AGGREGATE' => Str::studly($name),
-            'AGGREGATE_LOWER' => Str::lower($name),
+            'AGGREGATE' => $aggregate,
+            'AGGREGATE_LOWER' => Str::camel($aggregate),
+            'AGGREGATE_SNAKE' => Str::snake($aggregate),
+            'AGGREGATE_KEBAB' => Str::kebab($aggregate),
         ]);
 
         $this->ensureDirectoryExists(dirname($path));
@@ -341,8 +346,10 @@ class ModuleStubCommand extends Command
 
         $content = $this->files->get($stubPath);
 
+        // Process replacements in a specific order to avoid conflicts
         foreach ($replacements as $placeholder => $value) {
-            $content = str_replace("{{$placeholder}}", $value, $content);
+            $searchPattern = '{{'.$placeholder.'}}';
+            $content = str_replace($searchPattern, $value, $content);
         }
 
         return $content;

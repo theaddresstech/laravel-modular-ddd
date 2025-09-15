@@ -1,0 +1,15 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{NAMESPACE}};
+
+class {{CLASS_NAME}}
+{
+    public function __construct()
+    {
+        // Inject dependencies here
+    }
+
+    // TODO: Implement service methods
+}

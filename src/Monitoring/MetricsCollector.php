@@ -48,7 +48,7 @@ class MetricsCollector
             $moduleData = [
                 'name' => $module->name,
                 'version' => $module->version,
-                'status' => $module->status->value,
+                'status' => $module->state->value,
                 'is_enabled' => $module->isEnabled(),
                 'path' => $module->path,
                 'dependencies' => $module->dependencies,

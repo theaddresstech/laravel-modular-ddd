@@ -147,16 +147,17 @@ class ModuleMakeCommand extends Command
     private function createStubFiles(string $moduleName, string $modulePath): void
     {
         $aggregate = $this->option('aggregate') ?? $moduleName;
+        $aggregateStudly = Str::studly($aggregate);
         $replacements = $this->getReplacements($moduleName, $aggregate);
 
         $stubs = [
-            'aggregate.stub' => "Domain/Models/{$aggregate}.php",
-            'value-object-id.stub' => "Domain/ValueObjects/{$aggregate}Id.php",
-            'repository-interface.stub' => "Domain/Repositories/{$aggregate}RepositoryInterface.php",
-            'domain-service.stub' => "Domain/Services/{$aggregate}Service.php",
-            'eloquent-repository.stub' => "Infrastructure/Persistence/Eloquent/Repositories/Eloquent{$aggregate}Repository.php",
+            'aggregate.stub' => "Domain/Models/{$aggregateStudly}.php",
+            'value-object-id.stub' => "Domain/ValueObjects/{$aggregateStudly}Id.php",
+            'repository-interface.stub' => "Domain/Repositories/{$aggregateStudly}RepositoryInterface.php",
+            'domain-service.stub' => "Domain/Services/{$aggregateStudly}Service.php",
+            'eloquent-repository.stub' => "Infrastructure/Persistence/Eloquent/Repositories/Eloquent{$aggregateStudly}Repository.php",
             'service-provider.stub' => "Providers/{$moduleName}ServiceProvider.php",
-            'controller.stub' => "Presentation/Http/Controllers/{$aggregate}Controller.php",
+            'controller.stub' => "Presentation/Http/Controllers/{$aggregateStudly}Controller.php",
             'routes-api.stub' => "Routes/api.php",
             'routes-web.stub' => "Routes/web.php",
         ];
@@ -177,6 +178,12 @@ class ModuleMakeCommand extends Command
         }
 
         $content = $this->files->get($stubPath);
+
+        // Use a more specific replacement pattern to avoid double replacements
+        // Sort replacements by key length (longest first) to avoid partial replacements
+        uksort($replacements, function($a, $b) {
+            return strlen($b) - strlen($a);
+        });
 
         foreach ($replacements as $search => $replace) {
             $content = str_replace($search, $replace, $content);
@@ -223,6 +230,7 @@ class ModuleMakeCommand extends Command
     private function getReplacements(string $moduleName, string $aggregate): array
     {
         return [
+            '{{NAMESPACE}}' => "Modules\\{$moduleName}",
             '{{MODULE}}' => $moduleName,
             '{{MODULE_SNAKE}}' => Str::snake($moduleName),
             '{{MODULE_KEBAB}}' => Str::kebab($moduleName),
@@ -230,8 +238,7 @@ class ModuleMakeCommand extends Command
             '{{AGGREGATE}}' => Str::studly($aggregate),
             '{{AGGREGATE_SNAKE}}' => Str::snake($aggregate),
             '{{AGGREGATE_KEBAB}}' => Str::kebab($aggregate),
-            '{{AGGREGATE_LOWER}}' => Str::lower($aggregate),
-            '{{NAMESPACE}}' => "Modules\\{$moduleName}",
+            '{{AGGREGATE_LOWER}}' => Str::camel($aggregate),
         ];
     }
 

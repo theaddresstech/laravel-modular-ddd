@@ -1,0 +1,23 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{NAMESPACE}};
+
+use TaiCrm\LaravelModularDdd\Foundation\Query;
+
+class {{CLASS_NAME}} extends Query
+{
+    public function __construct(
+        // Add query parameters here
+    ) {
+        parent::__construct();
+    }
+
+    protected function toArray(): array
+    {
+        return [
+            // Return query data
+        ];
+    }
+}
