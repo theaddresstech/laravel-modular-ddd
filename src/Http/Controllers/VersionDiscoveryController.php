@@ -93,6 +93,10 @@ class VersionDiscoveryController extends Controller
             $discoveryModulesPath = method_exists($discovery, 'getModulesPath') ? $discovery->getModulesPath() : 'N/A';
             $directDiscoveryResult = method_exists($discovery, 'findModule') ? $discovery->findModule($module) : 'N/A';
 
+            // Test what the discovery service thinks the full module path is
+            $computedModulePath = $discoveryModulesPath . '/' . $module;
+            $discoveryPathExists = is_dir($computedModulePath);
+
             // Test registry service
             $registry = app(\TaiCrm\LaravelModularDdd\ModuleManager\ModuleRegistry::class);
             $registryState = method_exists($registry, 'getModuleState') ? $registry->getModuleState($module)->value : 'N/A';
@@ -108,6 +112,8 @@ class VersionDiscoveryController extends Controller
                 'manager_class' => get_class($this->moduleManager),
                 'discovery_class' => get_class($discovery),
                 'discovery_modules_path' => $discoveryModulesPath,
+                'computed_module_path' => $computedModulePath,
+                'discovery_path_exists' => $discoveryPathExists,
                 'direct_discovery_result' => $directDiscoveryResult ? 'found' : 'null',
                 'registry_module_state' => $registryState,
             ];
