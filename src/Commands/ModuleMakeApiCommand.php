@@ -209,7 +209,9 @@ class ModuleMakeApiCommand extends Command
 
         if (file_exists($routesFile)) {
             $existingContent = file_get_contents($routesFile);
-            if (!str_contains($existingContent, "Route::apiResource('" . Str::kebab($resourceName))) {
+            // Check specifically for the versioned route pattern
+            $versionedRoutePattern = "Route::prefix('api/{$apiVersion}')";
+            if (!str_contains($existingContent, $versionedRoutePattern) || !str_contains($existingContent, "Route::apiResource('" . Str::kebab($resourceName) . "', " . $resourceName . "Controller::class")) {
                 // Add controller import if not exists
                 if (!str_contains($existingContent, "use {$controllerNamespace};")) {
                     $importLine = "use {$controllerNamespace};";
