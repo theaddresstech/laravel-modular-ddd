@@ -83,25 +83,25 @@ class ServiceProviderCheck implements HealthCheckInterface
             $info[] = 'Has boot() method';
         }
 
-        // Check for module name property
-        if (preg_match('/protected\s+\$moduleName\s*=/', $content)) {
+        // Check for module name property (with or without type declaration)
+        if (preg_match('/protected\s+(?:string\s+)?\$moduleName\s*=/', $content)) {
             $info[] = 'Has moduleName property';
         } else {
             $warnings[] = 'Missing $moduleName property (recommended for ModuleServiceProvider)';
         }
 
-        // Check for contracts array
-        if (preg_match('/protected\s+\$contracts\s*=/', $content)) {
+        // Check for contracts array (with or without type declaration)
+        if (preg_match('/protected\s+(?:array\s+)?\$contracts\s*=/', $content)) {
             $info[] = 'Has contracts registration';
         }
 
-        // Check for services array
-        if (preg_match('/protected\s+\$services\s*=/', $content)) {
+        // Check for services array (with or without type declaration)
+        if (preg_match('/protected\s+(?:array\s+)?\$services\s*=/', $content)) {
             $info[] = 'Has services registration';
         }
 
-        // Check for event listeners array
-        if (preg_match('/protected\s+\$eventListeners\s*=/', $content)) {
+        // Check for event listeners array (with or without type declaration)
+        if (preg_match('/protected\s+(?:array\s+)?\$eventListeners\s*=/', $content)) {
             $info[] = 'Has event listeners registration';
         }
 
