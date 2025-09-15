@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 
 class ModuleMakeApiCommand extends Command
 {
-    protected $signature = 'module:make-api {module} {resource} {--auth} {--validation} {--swagger} {--version=} {--all-versions}';
+    protected $signature = 'module:make-api {module} {resource} {--auth} {--validation} {--swagger} {--api-version=} {--all-versions}';
     protected $description = 'Generate complete REST API scaffolding for a module resource';
 
     public function handle(): int
@@ -19,7 +19,7 @@ class ModuleMakeApiCommand extends Command
         $withAuth = $this->option('auth');
         $withValidation = $this->option('validation');
         $withSwagger = $this->option('swagger');
-        $specificVersion = $this->option('version');
+        $specificVersion = $this->option('api-version');
         $allVersions = $this->option('all-versions');
 
         if (!$this->moduleExists($moduleName)) {
