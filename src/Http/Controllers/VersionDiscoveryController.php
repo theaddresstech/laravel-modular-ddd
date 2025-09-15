@@ -88,6 +88,15 @@ class VersionDiscoveryController extends Controller
                 }
             }
 
+            // Test the discovery service directly
+            $discovery = app(\TaiCrm\LaravelModularDdd\Contracts\ModuleDiscoveryInterface::class);
+            $discoveryModulesPath = method_exists($discovery, 'getModulesPath') ? $discovery->getModulesPath() : 'N/A';
+            $directDiscoveryResult = method_exists($discovery, 'findModule') ? $discovery->findModule($module) : 'N/A';
+
+            // Test registry service
+            $registry = app(\TaiCrm\LaravelModularDdd\ModuleManager\ModuleRegistry::class);
+            $registryState = method_exists($registry, 'getModuleState') ? $registry->getModuleState($module)->value : 'N/A';
+
             $debugInfo = [
                 'working_directory' => getcwd(),
                 'modules_path_config' => config('modular-ddd.modules_path'),
@@ -96,8 +105,11 @@ class VersionDiscoveryController extends Controller
                 'required_paths' => $pathChecks,
                 'manifest_content' => $manifestContent,
                 'manifest_error' => $manifestError,
-                'discovery_service_class' => get_class($this->moduleManager),
-                'discovery_modules_path' => method_exists($this->moduleManager, 'getModulesPath') ? $this->moduleManager->getModulesPath() : 'N/A',
+                'manager_class' => get_class($this->moduleManager),
+                'discovery_class' => get_class($discovery),
+                'discovery_modules_path' => $discoveryModulesPath,
+                'direct_discovery_result' => $directDiscoveryResult ? 'found' : 'null',
+                'registry_module_state' => $registryState,
             ];
 
             return response()->json([
