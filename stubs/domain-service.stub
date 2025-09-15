@@ -6,6 +6,7 @@ namespace {{NAMESPACE}};
 
 use {{NAMESPACE_MODULE}}\Domain\Repositories\{{AGGREGATE}}RepositoryInterface;
 use {{NAMESPACE_MODULE}}\Domain\Models\{{AGGREGATE}};
+use {{NAMESPACE_MODULE}}\Domain\ValueObjects\{{AGGREGATE}}Id;
 
 class {{CLASS_NAME}}
 {
@@ -24,25 +25,49 @@ class {{CLASS_NAME}}
         // TODO: Implement {{AGGREGATE}} creation business logic
         // Validate business rules, create domain events, etc.
 
-        return $this->{{AGGREGATE_LOWER}}Repository->create($data);
+        ${{AGGREGATE_LOWER}}Id = {{AGGREGATE}}Id::generate();
+        ${{AGGREGATE_LOWER}} = {{AGGREGATE}}::create(
+            ${{AGGREGATE_LOWER}}Id,
+            $data['name'] // Add other parameters as needed
+        );
+
+        $this->{{AGGREGATE_LOWER}}Repository->save(${{AGGREGATE_LOWER}});
+
+        return ${{AGGREGATE_LOWER}};
     }
 
-    public function update{{AGGREGATE}}(string $id, array $data): {{AGGREGATE}}
+    public function update{{AGGREGATE}}({{AGGREGATE}}Id $id, array $data): {{AGGREGATE}}
     {
         // TODO: Implement {{AGGREGATE}} update business logic
         // Validate business rules, create domain events, etc.
 
         ${{AGGREGATE_LOWER}} = $this->{{AGGREGATE_LOWER}}Repository->findById($id);
 
-        return $this->{{AGGREGATE_LOWER}}Repository->update(${{AGGREGATE_LOWER}}, $data);
+        if (!${{AGGREGATE_LOWER}}) {
+            throw new \InvalidArgumentException('{{AGGREGATE}} not found');
+        }
+
+        // Update domain object properties
+        if (isset($data['name'])) {
+            ${{AGGREGATE_LOWER}}->changeName($data['name']);
+        }
+
+        $this->{{AGGREGATE_LOWER}}Repository->save(${{AGGREGATE_LOWER}});
+
+        return ${{AGGREGATE_LOWER}};
     }
 
-    public function delete{{AGGREGATE}}(string $id): bool
+    public function delete{{AGGREGATE}}({{AGGREGATE}}Id $id): bool
     {
         // TODO: Implement {{AGGREGATE}} deletion business logic
         // Check business rules, create domain events, etc.
 
-        return $this->{{AGGREGATE_LOWER}}Repository->delete($id);
+        if (!$this->{{AGGREGATE_LOWER}}Repository->exists($id)) {
+            return false;
+        }
+
+        $this->{{AGGREGATE_LOWER}}Repository->remove($id);
+        return true;
     }
 
     // Add more domain-specific business logic methods here

@@ -1,0 +1,37 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{NAMESPACE}};
+
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+use {{NAMESPACE_MODULE}}\Domain\Models\{{AGGREGATE}};
+
+class {{AGGREGATE}}Resource extends JsonResource
+{
+    /**
+     * Transform the resource into an array.
+     *
+     * @return array<string, mixed>
+     */
+    public function toArray(Request $request): array
+    {
+        /** @var {{AGGREGATE}} ${{AGGREGATE_LOWER}} */
+        ${{AGGREGATE_LOWER}} = $this->resource;
+
+        return [
+            'id' => ${{AGGREGATE_LOWER}}->getId()->toString(),
+            'name' => ${{AGGREGATE_LOWER}}->getName(),
+            // Add other attributes as needed
+            'created_at' => $this->when(
+                method_exists(${{AGGREGATE_LOWER}}, 'getCreatedAt'),
+                fn() => ${{AGGREGATE_LOWER}}->getCreatedAt()?->toISOString()
+            ),
+            'updated_at' => $this->when(
+                method_exists(${{AGGREGATE_LOWER}}, 'getUpdatedAt'),
+                fn() => ${{AGGREGATE_LOWER}}->getUpdatedAt()?->toISOString()
+            ),
+        ];
+    }
+}

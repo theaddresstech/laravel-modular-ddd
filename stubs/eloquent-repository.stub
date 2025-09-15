@@ -7,7 +7,7 @@ namespace {{NAMESPACE}};
 use {{NAMESPACE_MODULE}}\Domain\Models\{{AGGREGATE}};
 use {{NAMESPACE_MODULE}}\Domain\ValueObjects\{{AGGREGATE}}Id;
 use {{NAMESPACE_MODULE}}\Domain\Repositories\{{AGGREGATE}}RepositoryInterface;
-use {{NAMESPACE_MODULE}}\Infrastructure\Persistence\Eloquent\Models\{{AGGREGATE}}Model;
+use {{NAMESPACE_MODULE}}\Infrastructure\Persistence\Eloquent\Models\{{AGGREGATE}} as {{AGGREGATE}}Model;
 use Illuminate\Support\Collection;
 
 class Eloquent{{AGGREGATE}}Repository implements {{AGGREGATE}}RepositoryInterface

@@ -7,6 +7,7 @@ namespace {{NAMESPACE}};
 use {{NAMESPACE_MODULE}}\Domain\Models\{{AGGREGATE}};
 use {{NAMESPACE_MODULE}}\Domain\ValueObjects\{{AGGREGATE}}Id;
 use {{NAMESPACE_MODULE}}\Domain\Repositories\{{AGGREGATE}}RepositoryInterface;
+use {{NAMESPACE_MODULE}}\Presentation\Http\Resources\{{AGGREGATE}}Resource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
@@ -23,7 +24,7 @@ class {{AGGREGATE}}Controller extends Controller
         ${{AGGREGATE_LOWER}}s = $this->repository->findAll();
 
         return response()->json([
-            'data' => ${{AGGREGATE_LOWER}}s->toArray(),
+            'data' => {{AGGREGATE}}Resource::collection(${{AGGREGATE_LOWER}}s),
         ]);
     }
 
@@ -39,7 +40,7 @@ class {{AGGREGATE}}Controller extends Controller
         }
 
         return response()->json([
-            'data' => ${{AGGREGATE_LOWER}}->toArray(),
+            'data' => new {{AGGREGATE}}Resource(${{AGGREGATE_LOWER}}),
         ]);
     }
 
@@ -61,7 +62,7 @@ class {{AGGREGATE}}Controller extends Controller
         $this->repository->save(${{AGGREGATE_LOWER}});
 
         return response()->json([
-            'data' => ${{AGGREGATE_LOWER}}->toArray(),
+            'data' => new {{AGGREGATE}}Resource(${{AGGREGATE_LOWER}}),
         ], Response::HTTP_CREATED);
     }
 
@@ -90,7 +91,7 @@ class {{AGGREGATE}}Controller extends Controller
         $this->repository->save(${{AGGREGATE_LOWER}});
 
         return response()->json([
-            'data' => ${{AGGREGATE_LOWER}}->toArray(),
+            'data' => new {{AGGREGATE}}Resource(${{AGGREGATE_LOWER}}),
         ]);
     }
 
