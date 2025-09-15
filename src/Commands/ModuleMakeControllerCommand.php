@@ -56,6 +56,7 @@ class ModuleMakeControllerCommand extends Command
             '{{MODULE_NAMESPACE}}' => "Modules\\{$moduleName}",
             '{{CONTROLLER_NAME}}' => $controllerName,
             '{{RESOURCE_NAME}}' => $resource ?? 'Resource',
+            '{{RESOURCE_NAME_LOWER}}' => $resource ? strtolower($resource) : 'resource',
             '{{RESOURCE_VARIABLE}}' => $resource ? Str::camel($resource) : 'resource',
             '{{RESOURCE_SNAKE}}' => $resource ? Str::snake($resource) : 'resource',
             '{{MIDDLEWARE}}' => $middleware ? "->middleware('{$middleware}')" : '',
@@ -99,28 +100,52 @@ class {{CONTROLLER_NAME}} extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        // TODO: Implement index logic
-        return response()->json([
-            'data' => [],
-            'meta' => [
-                'current_page' => 1,
-                'last_page' => 1,
-                'per_page' => 15,
-                'total' => 0,
-            ]
-        ]);
+        try {
+            $query = new Get{{RESOURCE_NAME}}ListQuery(
+                page: $request->get('page', 1),
+                perPage: $request->get('per_page', 15),
+                search: $request->get('search'),
+                filters: $request->only(['status', 'category']) // Adjust based on your needs
+            );
+
+            $result = $this->queryBus->ask($query);
+
+            return response()->json([
+                'data' => {{RESOURCE_NAME}}Resource::collection($result->data),
+                'meta' => [
+                    'current_page' => $result->currentPage,
+                    'last_page' => $result->lastPage,
+                    'per_page' => $result->perPage,
+                    'total' => $result->total,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Failed to retrieve {{RESOURCE_NAME_LOWER}} records',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request): JsonResponse
+    public function store(Create{{RESOURCE_NAME}}Request $request): JsonResponse
     {
-        // TODO: Implement store logic
-        return response()->json([
-            'data' => [],
-            'message' => '{{RESOURCE_NAME}} created successfully'
-        ], 201);
+        try {
+            $command = new Create{{RESOURCE_NAME}}Command(...$request->validated());
+            ${{RESOURCE_VARIABLE}} = $this->commandBus->dispatch($command);
+
+            return response()->json([
+                'data' => new {{RESOURCE_NAME}}Resource(${{RESOURCE_VARIABLE}}),
+                'message' => '{{RESOURCE_NAME}} created successfully'
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Failed to create {{RESOURCE_NAME_LOWER}}',
+                'message' => $e->getMessage()
+            ], 400);
+        }
     }
 
     /**
@@ -128,22 +153,40 @@ class {{CONTROLLER_NAME}} extends Controller
      */
     public function show(string $id): JsonResponse
     {
-        // TODO: Implement show logic
-        return response()->json([
-            'data' => []
-        ]);
+        try {
+            $query = new Get{{RESOURCE_NAME}}ByIdQuery($id);
+            ${{RESOURCE_VARIABLE}} = $this->queryBus->ask($query);
+
+            return response()->json([
+                'data' => new {{RESOURCE_NAME}}Resource(${{RESOURCE_VARIABLE}})
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => '{{RESOURCE_NAME}} not found',
+                'message' => $e->getMessage()
+            ], 404);
+        }
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id): JsonResponse
+    public function update(Update{{RESOURCE_NAME}}Request $request, string $id): JsonResponse
     {
-        // TODO: Implement update logic
-        return response()->json([
-            'data' => [],
-            'message' => '{{RESOURCE_NAME}} updated successfully'
-        ]);
+        try {
+            $command = new Update{{RESOURCE_NAME}}Command($id, ...$request->validated());
+            ${{RESOURCE_VARIABLE}} = $this->commandBus->dispatch($command);
+
+            return response()->json([
+                'data' => new {{RESOURCE_NAME}}Resource(${{RESOURCE_VARIABLE}}),
+                'message' => '{{RESOURCE_NAME}} updated successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Failed to update {{RESOURCE_NAME_LOWER}}',
+                'message' => $e->getMessage()
+            ], 400);
+        }
     }
 
     /**
@@ -151,10 +194,19 @@ class {{CONTROLLER_NAME}} extends Controller
      */
     public function destroy(string $id): JsonResponse
     {
-        // TODO: Implement destroy logic
-        return response()->json([
-            'message' => '{{RESOURCE_NAME}} deleted successfully'
-        ]);
+        try {
+            $command = new Delete{{RESOURCE_NAME}}Command($id);
+            $this->commandBus->dispatch($command);
+
+            return response()->json([
+                'message' => '{{RESOURCE_NAME}} deleted successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Failed to delete {{RESOURCE_NAME_LOWER}}',
+                'message' => $e->getMessage()
+            ], 400);
+        }
     }
 }
 PHP;
@@ -187,10 +239,32 @@ class {{CONTROLLER_NAME}} extends Controller
      */
     public function __invoke(Request $request): JsonResponse
     {
-        // TODO: Implement controller logic
-        return response()->json([
-            'message' => 'Success'
-        ]);
+        try {
+            // Process the request using appropriate command or query
+            $result = $this->processRequest($request);
+
+            return response()->json([
+                'data' => $result,
+                'message' => 'Request processed successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Request processing failed',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Process the incoming request.
+     */
+    private function processRequest(Request $request): mixed
+    {
+        // Implement your business logic here
+        // Example: $query = new GetDataQuery($request->validated());
+        // return $this->queryBus->ask($query);
+
+        return [];
     }
 }
 PHP;
@@ -224,8 +298,31 @@ class {{CONTROLLER_NAME}} extends Controller
      */
     public function __invoke(Request $request): View|Response
     {
-        // TODO: Implement controller logic
-        return response('Success');
+        try {
+            // Process the request using appropriate command or query
+            $data = $this->processRequest($request);
+
+            // Return view with data or redirect as needed
+            return view('{{MODULE_NAMESPACE|lower}}::index', compact('data'));
+        } catch (\Exception $e) {
+            // Handle errors gracefully - redirect back with error or show error page
+            return back()->withErrors(['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Process the incoming request.
+     */
+    private function processRequest(Request $request): array
+    {
+        // Implement your business logic here
+        // Example: $query = new GetDataQuery($request->validated());
+        // return $this->queryBus->ask($query);
+
+        return [
+            'message' => 'Request processed successfully',
+            'timestamp' => now(),
+        ];
     }
 }
 PHP;

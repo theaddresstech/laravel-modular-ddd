@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace TaiCrm\LaravelModularDdd\Communication;
 
 use TaiCrm\LaravelModularDdd\Communication\Contracts\ServiceRegistryInterface;
+use TaiCrm\LaravelModularDdd\Communication\EventBus;
 use Illuminate\Support\ServiceProvider;
 
 abstract class ModuleServiceProvider extends ServiceProvider

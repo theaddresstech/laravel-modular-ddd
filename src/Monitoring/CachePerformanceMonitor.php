@@ -363,19 +363,67 @@ class CachePerformanceMonitor
 
     private function calculateMemoryEfficiency(): float
     {
-        // Placeholder for memory efficiency calculation
-        return 85.0; // Would implement actual memory usage analysis
+        $totalOperations = $this->metrics['hits'] + $this->metrics['misses'];
+        $totalWrites = $this->metrics['writes'];
+
+        if ($totalOperations === 0) {
+            return 0.0;
+        }
+
+        // Calculate efficiency based on cache utilization
+        $hitRate = $this->getHitRate();
+        $writeToReadRatio = $totalWrites > 0 ? $totalOperations / $totalWrites : 1.0;
+
+        // Higher hit rate and optimal write-to-read ratio indicate better memory efficiency
+        $efficiency = ($hitRate * 0.6) + (min($writeToReadRatio / 10, 1.0) * 40);
+
+        return min(max($efficiency, 0.0), 100.0);
     }
 
     private function calculateTimeEfficiency(): float
     {
-        // Placeholder for time efficiency calculation
-        return 92.0; // Would implement actual time savings analysis
+        $hitRate = $this->getHitRate();
+        $totalOperations = $this->metrics['hits'] + $this->metrics['misses'];
+
+        if ($totalOperations === 0) {
+            return 0.0;
+        }
+
+        // Time efficiency is primarily determined by hit rate
+        // Each cache hit saves significant time vs database/computation
+        $baseEfficiency = $hitRate;
+
+        // Bonus for high operation volume (more time saved)
+        $volumeBonus = min($totalOperations / 1000, 1.0) * 10;
+
+        return min($baseEfficiency + $volumeBonus, 100.0);
     }
 
     private function calculateStorageEfficiency(): float
     {
-        // Placeholder for storage efficiency calculation
-        return 78.0; // Would implement actual storage usage analysis
+        $uniqueKeys = count($this->metrics['hit_keys']) + count($this->metrics['missed_keys']);
+        $totalOperations = $this->metrics['hits'] + $this->metrics['misses'];
+
+        if ($uniqueKeys === 0 || $totalOperations === 0) {
+            return 0.0;
+        }
+
+        // Storage efficiency = operations per unique key (reuse factor)
+        $reuseRate = $totalOperations / $uniqueKeys;
+
+        // Higher reuse rate indicates better storage efficiency
+        $efficiency = min($reuseRate * 10, 100.0);
+
+        // Penalty for too many one-time keys (poor storage utilization)
+        $oneTimeKeys = array_filter(
+            array_merge($this->metrics['hit_keys'], $this->metrics['missed_keys']),
+            fn($count) => $count <= 1
+        );
+
+        if (count($oneTimeKeys) > $uniqueKeys * 0.3) { // More than 30% one-time keys
+            $efficiency *= 0.7; // 30% penalty
+        }
+
+        return min(max($efficiency, 0.0), 100.0);
     }
 }

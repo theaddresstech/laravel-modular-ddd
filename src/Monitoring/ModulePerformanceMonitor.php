@@ -343,9 +343,8 @@ class ModulePerformanceMonitor
             if (method_exists($store, 'getRedis')) {
                 $keys = $store->getRedis()->keys($pattern);
             } elseif (method_exists($store, 'getConnection')) {
-                // Handle database cache - for now return empty as it's complex to query
-                // TODO: Implement proper database cache key lookup
-                return [];
+                // Handle database cache
+                return $this->getDatabaseCacheKeys($store, $pattern);
             } else {
                 // Fallback for other cache drivers
                 return [];
@@ -403,6 +402,39 @@ class ModulePerformanceMonitor
             } else {
                 $xml->addChild($key, htmlspecialchars((string)$value));
             }
+        }
+    }
+
+    private function getDatabaseCacheKeys($store, string $pattern): array
+    {
+        try {
+            $connection = $store->getConnection();
+
+            // Convert Redis-style pattern to SQL LIKE pattern
+            $likePattern = str_replace('*', '%', $pattern);
+
+            // Get the cache table name (default is 'cache')
+            $table = $store->getTable() ?? 'cache';
+
+            // Query cache keys from database
+            $cacheEntries = $connection
+                ->table($table)
+                ->where('key', 'like', $likePattern)
+                ->where('expiration', '>', time()) // Only non-expired entries
+                ->select(['key', 'expiration'])
+                ->get();
+
+            return array_map(
+                fn($entry) => str_replace('module_performance_metrics:', '', $entry->key),
+                $cacheEntries->toArray()
+            );
+
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to retrieve database cache keys', [
+                'pattern' => $pattern,
+                'exception' => $e->getMessage(),
+            ]);
+            return [];
         }
     }
 }

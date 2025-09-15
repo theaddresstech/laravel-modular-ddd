@@ -27,4 +27,9 @@ class ModuleInstallationException extends Exception
     {
         return new self("Cannot remove module '{$moduleName}': {$reason}");
     }
+
+    public static function cannotUpdate(string $moduleName, string $reason): self
+    {
+        return new self("Cannot update module '{$moduleName}': {$reason}");
+    }
 }
