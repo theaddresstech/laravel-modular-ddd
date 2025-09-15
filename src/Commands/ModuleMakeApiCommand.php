@@ -212,15 +212,24 @@ class ModuleMakeApiCommand extends Command
             // Check specifically for the versioned route pattern
             $versionedRoutePattern = "Route::prefix('api/{$apiVersion}')";
             if (!str_contains($existingContent, $versionedRoutePattern) || !str_contains($existingContent, "Route::apiResource('" . Str::kebab($resourceName) . "', " . $resourceName . "Controller::class")) {
+                // Use alias for versioned controller to avoid namespace collision
+                $controllerAlias = "{$resourceName}{$apiVersion}Controller";
+                $importLine = "use {$controllerNamespace} as {$controllerAlias};";
+
                 // Add controller import if not exists
-                if (!str_contains($existingContent, "use {$controllerNamespace};")) {
-                    $importLine = "use {$controllerNamespace};";
+                if (!str_contains($existingContent, "use {$controllerNamespace}")) {
                     $existingContent = str_replace("use Illuminate\Support\Facades\Route;", "use Illuminate\Support\Facades\Route;\n{$importLine}", $existingContent);
                 }
+
+                // Update route content to use aliased controller
+                $routeContent = str_replace("{$resourceName}Controller::class", "{$controllerAlias}::class", $routeContent);
                 file_put_contents($routesFile, $existingContent . "\n" . $routeContent);
             }
         } else {
-            $fullRouteFile = "<?php\n\n/*\n|--------------------------------------------------------------------------\n| {$moduleName} API Routes ({$apiVersion})\n|--------------------------------------------------------------------------\n*/\n\nuse Illuminate\Support\Facades\Route;\nuse {$controllerNamespace};\n\n" . $routeContent;
+            $controllerAlias = "{$resourceName}{$apiVersion}Controller";
+            $importLine = "use {$controllerNamespace} as {$controllerAlias};";
+            $routeContent = str_replace("{$resourceName}Controller::class", "{$controllerAlias}::class", $routeContent);
+            $fullRouteFile = "<?php\n\n/*\n|--------------------------------------------------------------------------\n| {$moduleName} API Routes ({$apiVersion})\n|--------------------------------------------------------------------------\n*/\n\nuse Illuminate\Support\Facades\Route;\n{$importLine}\n\n" . $routeContent;
             file_put_contents($routesFile, $fullRouteFile);
         }
     }
