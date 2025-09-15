@@ -109,20 +109,22 @@ class VersionDiscoveryController extends Controller
     private function getModulesVersionInfo(): array
     {
         $modules = [];
-        $installedModules = $this->moduleManager->getActiveModules();
+        $installedModules = $this->moduleManager->list();
 
-        foreach ($installedModules as $moduleName => $moduleInfo) {
-            $modules[$moduleName] = [
-                'name' => $moduleName,
-                'version' => $moduleInfo->getVersion(),
-                'status' => $this->moduleManager->isEnabled($moduleName) ? 'enabled' : 'disabled',
-                'api_versions' => $this->getModuleVersionInfo($moduleName),
-                'endpoints_count' => count($this->getModuleEndpoints($moduleName)),
-                'links' => [
-                    'versions' => url("/api/modules/{$moduleName}/versions"),
-                    'documentation' => url("/api/docs/modules/{$moduleName}"),
-                ],
-            ];
+        foreach ($installedModules as $moduleInfo) {
+            if ($this->moduleManager->isEnabled($moduleInfo->name)) {
+                $modules[$moduleInfo->name] = [
+                    'name' => $moduleInfo->name,
+                    'version' => $moduleInfo->getVersion(),
+                    'status' => 'enabled',
+                    'api_versions' => $this->getModuleVersionInfo($moduleInfo->name),
+                    'endpoints_count' => count($this->getModuleEndpoints($moduleInfo->name)),
+                    'links' => [
+                        'versions' => url("/api/modules/{$moduleInfo->name}/versions"),
+                        'documentation' => url("/api/docs/modules/{$moduleInfo->name}"),
+                    ],
+                ];
+            }
         }
 
         return $modules;
