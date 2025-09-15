@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace {{NAMESPACE}}\Application\Listeners;
+namespace {{NAMESPACE_MODULE}}\Application\Listeners;
 
-use {{NAMESPACE}}\Domain\Events\{{EVENT}};
+use {{NAMESPACE_MODULE}}\Domain\Events\{{EVENT}};
 use Psr\Log\LoggerInterface;
 
 final class {{LISTENER}}
