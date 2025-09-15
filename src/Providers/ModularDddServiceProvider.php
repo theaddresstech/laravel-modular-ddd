@@ -61,11 +61,18 @@ class ModularDddServiceProvider extends ServiceProvider
 
         // Module Discovery
         $this->app->singleton(ModuleDiscoveryInterface::class, function (Container $app) {
+            $modulesPath = config('modular-ddd.modules_path', base_path('modules'));
+
+            // Ensure absolute path - convert relative paths to be relative to Laravel base path
+            if (!str_starts_with($modulesPath, '/') && !str_contains($modulesPath, ':/')) {
+                $modulesPath = base_path($modulesPath);
+            }
+
             return new ModuleDiscovery(
                 $app['files'],
                 $app['validator'],
                 $app[ModuleRegistry::class],
-                config('modular-ddd.modules_path', base_path('modules'))
+                $modulesPath
             );
         });
 
