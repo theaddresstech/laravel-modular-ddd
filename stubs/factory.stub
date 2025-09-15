@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace {{NAMESPACE}}\Database\Factories;
+namespace {{NAMESPACE_MODULE}}\Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
-use {{NAMESPACE}}\Domain\Models\{{MODEL}};
-use {{NAMESPACE}}\Domain\ValueObjects\{{MODEL}}Id;
+use {{NAMESPACE_MODULE}}\Domain\Models\{{MODEL}};
+use {{NAMESPACE_MODULE}}\Domain\ValueObjects\{{MODEL}}Id;
 
 /**
  * @extends Factory<{{MODEL}}>

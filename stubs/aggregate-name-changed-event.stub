@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace {{NAMESPACE}}\Domain\Events;
+namespace {{NAMESPACE_MODULE}}\Domain\Events;
 
 use TaiCrm\LaravelModularDdd\Foundation\DomainEvent;
 

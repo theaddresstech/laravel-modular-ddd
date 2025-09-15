@@ -180,11 +180,11 @@ class ModuleMakeCommand extends Command
         ];
 
         foreach ($stubs as $stub => $target) {
-            $this->createFileFromStub($stub, $modulePath . '/' . $target, $replacements);
+            $this->createFileFromStub($stub, $modulePath . '/' . $target, $replacements, $target);
         }
     }
 
-    private function createFileFromStub(string $stub, string $target, array $replacements): void
+    private function createFileFromStub(string $stub, string $target, array $replacements, string $relativePath = null): void
     {
         $stubPath = $this->stubPath . '/' . $stub;
 
@@ -197,7 +197,8 @@ class ModuleMakeCommand extends Command
         $content = $this->files->get($stubPath);
 
         // Get the correct namespace for this specific target file
-        $namespace = $this->getNamespaceFromPath($target, $replacements['{{MODULE}}']);
+        $pathForNamespace = $relativePath ?? $target;
+        $namespace = $this->getNamespaceFromPath($pathForNamespace, $replacements['{{MODULE}}']);
 
         // Create enhanced replacements with specific namespace for the target file
         // Keep {{NAMESPACE_MODULE}} for use statements, use {{NAMESPACE}} for file namespace
@@ -241,7 +242,14 @@ class ModuleMakeCommand extends Command
 
     private function getNamespaceFromPath(string $path, string $module): string
     {
-        $relativePath = str_replace($this->modulesPath . '/' . $module . '/', '', $path);
+        // If path contains the full modules path, strip it
+        if (str_contains($path, $this->modulesPath)) {
+            $relativePath = str_replace($this->modulesPath . '/' . $module . '/', '', $path);
+        } else {
+            // Path is already relative to module root
+            $relativePath = $path;
+        }
+
         $directory = dirname($relativePath);
 
         if ($directory === '.') {
