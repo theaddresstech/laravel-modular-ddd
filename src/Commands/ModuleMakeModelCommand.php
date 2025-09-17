@@ -173,7 +173,13 @@ class ModuleMakeModelCommand extends Command
 
         $content = $this->files->get($stubPath);
 
-        foreach ($replacements as $search => $replace) {
+        // Calculate the correct namespace for this specific file
+        $namespace = $this->getNamespaceFromPath($target, $replacements['{{MODULE}}']);
+        $enhancedReplacements = array_merge($replacements, [
+            '{{NAMESPACE}}' => $namespace,
+        ]);
+
+        foreach ($enhancedReplacements as $search => $replace) {
             $content = str_replace($search, $replace, $content);
         }
 
@@ -183,6 +189,26 @@ class ModuleMakeModelCommand extends Command
         }
 
         $this->files->put($target, $content);
+    }
+
+    private function getNamespaceFromPath(string $path, string $module): string
+    {
+        // Extract relative path from modules/{Module}/ onwards
+        $pathParts = explode('/', $path);
+        $moduleIndex = array_search($module, $pathParts);
+
+        if ($moduleIndex === false) {
+            return "Modules\\{$module}";
+        }
+
+        // Get the parts after the module name
+        $namespaceParts = array_slice($pathParts, $moduleIndex + 1, -1); // -1 to exclude the filename
+
+        if (empty($namespaceParts)) {
+            return "Modules\\{$module}";
+        }
+
+        return 'Modules\\' . $module . '\\' . implode('\\', $namespaceParts);
     }
 
     private function createBasicModel(string $target, array $replacements): void
@@ -235,6 +261,10 @@ class {$modelName} extends Model
             '{{MODEL_VARIABLE}}' => Str::camel($modelName),
             '{{TABLE_NAME}}' => Str::snake(Str::plural($modelName)),
             '{{NAMESPACE_MODULE}}' => "Modules\\{$moduleName}",
+            '{{AGGREGATE}}' => $modelName,
+            '{{AGGREGATE_LOWER}}' => Str::camel($modelName),
+            '{{AGGREGATE_SNAKE}}' => Str::snake($modelName),
+            '{{AGGREGATE_VARIABLE}}' => Str::camel($modelName),
         ];
     }
 }
