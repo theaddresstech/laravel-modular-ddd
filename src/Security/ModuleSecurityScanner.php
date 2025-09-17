@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Security;
 
+use Exception;
+use Illuminate\Filesystem\Filesystem;
+use InvalidArgumentException;
+use JsonException;
+use Psr\Log\LoggerInterface;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
 use TaiCrm\LaravelModularDdd\ValueObjects\ModuleInfo;
-use Illuminate\Support\Collection;
-use Illuminate\Filesystem\Filesystem;
-use Psr\Log\LoggerInterface;
 
 class ModuleSecurityScanner
 {
@@ -19,7 +23,7 @@ class ModuleSecurityScanner
     public function __construct(
         private ModuleManagerInterface $moduleManager,
         private Filesystem $filesystem,
-        private LoggerInterface $logger
+        private LoggerInterface $logger,
     ) {
         $this->initializeSecurityPatterns();
     }
@@ -63,32 +67,31 @@ class ModuleSecurityScanner
                 $this->scanForVulnerableCode($module),
                 $this->scanForSensitiveFiles($module),
                 $this->scanForMaliciousFunctions($module),
-                $this->scanForConfigurationIssues($module)
+                $this->scanForConfigurationIssues($module),
             );
 
             // Dependency security checks
             $result['vulnerabilities'] = array_merge(
                 $result['vulnerabilities'],
-                $this->scanDependencies($module)
+                $this->scanDependencies($module),
             );
 
             // Permission checks
             $result['vulnerabilities'] = array_merge(
                 $result['vulnerabilities'],
-                $this->scanFilePermissions($module)
+                $this->scanFilePermissions($module),
             );
 
             // Manifest security validation
             $result['vulnerabilities'] = array_merge(
                 $result['vulnerabilities'],
-                $this->validateManifest($module)
+                $this->validateManifest($module),
             );
 
             // Calculate risk level and score
             $result['score'] = $this->calculateSecurityScore($result['vulnerabilities']);
             $result['risk_level'] = $this->determineRiskLevel($result['score']);
-
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $result['vulnerabilities'][] = [
                 'type' => 'scan_error',
                 'severity' => 'high',
@@ -115,6 +118,7 @@ class ModuleSecurityScanner
         $signatureFile = $module->path . '/module.sig';
         if (!$this->filesystem->exists($signatureFile)) {
             $this->logger->warning("Module signature file missing: {$module->name}");
+
             return false;
         }
 
@@ -123,10 +127,11 @@ class ModuleSecurityScanner
             $moduleHash = $this->calculateModuleHash($module);
 
             return $this->verifySignature($moduleHash, $signature);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error("Signature verification failed for module {$module->name}", [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
@@ -136,7 +141,7 @@ class ModuleSecurityScanner
         try {
             $module = $this->moduleManager->list()->firstWhere('name', $moduleName);
             if (!$module) {
-                throw new \InvalidArgumentException("Module '{$moduleName}' not found");
+                throw new InvalidArgumentException("Module '{$moduleName}' not found");
             }
 
             $quarantinePath = storage_path('app/quarantine');
@@ -160,17 +165,18 @@ class ModuleSecurityScanner
 
             $this->filesystem->put(
                 "{$quarantineDir}/quarantine.json",
-                json_encode($quarantineRecord, JSON_PRETTY_PRINT)
+                json_encode($quarantineRecord, JSON_PRETTY_PRINT),
             );
 
-            $this->logger->critical("Module quarantined", $quarantineRecord);
+            $this->logger->critical('Module quarantined', $quarantineRecord);
 
             return true;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error("Failed to quarantine module {$moduleName}", [
                 'error' => $e->getMessage(),
                 'reason' => $reason,
             ]);
+
             return false;
         }
     }
@@ -190,11 +196,12 @@ class ModuleSecurityScanner
         $report .= "- **High Risk Vulnerabilities**: {$summary['high']}\n";
         $report .= "- **Medium Risk Vulnerabilities**: {$summary['medium']}\n";
         $report .= "- **Low Risk Vulnerabilities**: {$summary['low']}\n";
-        $report .= "- **Average Security Score**: " . number_format($summary['average_score'], 1) . "/100\n\n";
+        $report .= '- **Average Security Score**: ' . number_format($summary['average_score'], 1) . "/100\n\n";
 
         // High-risk modules
-        $highRiskModules = array_filter($scanResults['results'],
-            fn($result) => $result['risk_level'] === 'critical' || $result['risk_level'] === 'high'
+        $highRiskModules = array_filter(
+            $scanResults['results'],
+            static fn ($result) => $result['risk_level'] === 'critical' || $result['risk_level'] === 'high',
         );
 
         if (!empty($highRiskModules)) {
@@ -441,7 +448,7 @@ class ModuleSecurityScanner
         $files = $this->getAllFiles($module->path);
         foreach ($files as $file) {
             $perms = fileperms($file);
-            if ($perms & 0002) { // World writable
+            if ($perms & 0o002) { // World writable
                 $vulnerabilities[] = [
                     'type' => 'file_permissions',
                     'severity' => 'medium',
@@ -468,6 +475,7 @@ class ModuleSecurityScanner
                 'file' => $manifestPath,
                 'line' => 0,
             ];
+
             return $vulnerabilities;
         }
 
@@ -499,8 +507,7 @@ class ModuleSecurityScanner
                     }
                 }
             }
-
-        } catch (\JsonException $e) {
+        } catch (JsonException $e) {
             $vulnerabilities[] = [
                 'type' => 'invalid_manifest',
                 'severity' => 'high',
@@ -525,6 +532,7 @@ class ModuleSecurityScanner
         }
 
         sort($hashes);
+
         return hash('sha256', implode('', $hashes));
     }
 
@@ -615,13 +623,13 @@ class ModuleSecurityScanner
         }
 
         if ($summary['average_score'] < 70) {
-            $recommendations[] = "📊 **SECURITY POSTURE**: Average security score is " . number_format($summary['average_score'], 1) . "/100. Consider implementing additional security measures.";
+            $recommendations[] = '📊 **SECURITY POSTURE**: Average security score is ' . number_format($summary['average_score'], 1) . '/100. Consider implementing additional security measures.';
         }
 
-        $recommendations[] = "🔍 **REGULAR SCANNING**: Schedule automated security scans to run weekly.";
-        $recommendations[] = "📝 **CODE REVIEW**: Implement mandatory security code reviews for all module changes.";
-        $recommendations[] = "🔐 **ACCESS CONTROL**: Restrict module installation to authorized personnel only.";
-        $recommendations[] = "📚 **TRAINING**: Provide security awareness training for developers.";
+        $recommendations[] = '🔍 **REGULAR SCANNING**: Schedule automated security scans to run weekly.';
+        $recommendations[] = '📝 **CODE REVIEW**: Implement mandatory security code reviews for all module changes.';
+        $recommendations[] = '🔐 **ACCESS CONTROL**: Restrict module installation to authorized personnel only.';
+        $recommendations[] = '📚 **TRAINING**: Provide security awareness training for developers.';
 
         return implode("\n", $recommendations) . "\n";
     }
@@ -634,8 +642,8 @@ class ModuleSecurityScanner
     private function getAllFiles(string $path): array
     {
         $files = [];
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($path, \RecursiveDirectoryIterator::SKIP_DOTS)
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($path, RecursiveDirectoryIterator::SKIP_DOTS),
         );
 
         foreach ($iterator as $file) {
@@ -674,7 +682,7 @@ class ModuleSecurityScanner
 
         if (isset($legitimatePaths[$pattern])) {
             foreach ($legitimatePaths[$pattern] as $allowedPath) {
-                if (strpos($file, $allowedPath) !== false) {
+                if (str_contains($file, $allowedPath)) {
                     return true;
                 }
             }
@@ -706,7 +714,7 @@ class ModuleSecurityScanner
     {
         // This would typically check against latest available versions
         // Simplified implementation
-        return $constraint === '*' || strpos($constraint, '^') === false;
+        return $constraint === '*' || !str_contains($constraint, '^');
     }
 
     private function satisfiesConstraint(string $version, string $constraint): bool

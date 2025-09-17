@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace TaiCrm\LaravelModularDdd\Commands;
 
 use Illuminate\Console\Command;
-use TaiCrm\LaravelModularDdd\Monitoring\QueryPerformanceAnalyzer;
+use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
 use TaiCrm\LaravelModularDdd\Monitoring\CachePerformanceMonitor;
 use TaiCrm\LaravelModularDdd\Monitoring\ModuleResourceMonitor;
-use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
+use TaiCrm\LaravelModularDdd\Monitoring\QueryPerformanceAnalyzer;
 
 class ModulePerformanceAnalyzeCommand extends Command
 {
@@ -18,14 +18,13 @@ class ModulePerformanceAnalyzeCommand extends Command
                             {--export= : Export results to file}
                             {--watch : Continuous monitoring mode}
                             {--duration=60 : Watch duration in seconds}';
-
     protected $description = 'Analyze module performance metrics and generate optimization recommendations';
 
     public function __construct(
         private QueryPerformanceAnalyzer $queryAnalyzer,
         private CachePerformanceMonitor $cacheMonitor,
         private ModuleResourceMonitor $resourceMonitor,
-        private ModuleManagerInterface $moduleManager
+        private ModuleManagerInterface $moduleManager,
     ) {
         parent::__construct();
     }
@@ -56,7 +55,7 @@ class ModulePerformanceAnalyzeCommand extends Command
         return 0;
     }
 
-    private function runWatchMode(string $module = null, string $type = 'all', int $duration = 60): int
+    private function runWatchMode(?string $module = null, string $type = 'all', int $duration = 60): int
     {
         $this->info("📊 Starting continuous monitoring for {$duration} seconds...");
         $this->newLine();
@@ -101,7 +100,7 @@ class ModulePerformanceAnalyzeCommand extends Command
         return 0;
     }
 
-    private function runAnalysis(string $module = null, string $type = 'all'): array
+    private function runAnalysis(?string $module = null, string $type = 'all'): array
     {
         $results = [];
 
@@ -123,7 +122,7 @@ class ModulePerformanceAnalyzeCommand extends Command
         return $results;
     }
 
-    private function analyzeQueries(string $module = null): array
+    private function analyzeQueries(?string $module = null): array
     {
         // For static analysis, we'd examine cached query data
         $this->queryAnalyzer->startMonitoring();
@@ -139,24 +138,27 @@ class ModulePerformanceAnalyzeCommand extends Command
 
         // Get results after brief monitoring
         sleep(1);
+
         return $this->queryAnalyzer->stopMonitoring();
     }
 
-    private function analyzeCache(string $module = null): array
+    private function analyzeCache(?string $module = null): array
     {
         $this->cacheMonitor->startMonitoring();
 
         if ($module) {
             // Analyze module-specific cache patterns
             $moduleCache = $this->cacheMonitor->analyzeModuleCacheUsage($module);
+
             return ['module_cache' => $moduleCache];
         }
 
         sleep(1);
+
         return $this->cacheMonitor->stopMonitoring();
     }
 
-    private function analyzeResources(string $module = null): array
+    private function analyzeResources(?string $module = null): array
     {
         if ($module) {
             return $this->resourceMonitor->getModuleResourceUsage($module);
@@ -195,12 +197,15 @@ class ModulePerformanceAnalyzeCommand extends Command
         switch ($type) {
             case 'query_analysis':
                 $this->displayQueryMetrics($data);
+
                 break;
             case 'cache_analysis':
                 $this->displayCacheMetrics($data);
+
                 break;
             case 'resource_analysis':
                 $this->displayResourceMetrics($data);
+
                 break;
         }
     }
@@ -220,7 +225,7 @@ class ModulePerformanceAnalyzeCommand extends Command
                     ['Total Time', round($summary['total_time'] ?? 0, 2) . 'ms'],
                     ['Slow Queries', $summary['slow_queries'] ?? 0],
                     ['Slow Query Threshold', $summary['slow_query_threshold'] ?? 0 . 'ms'],
-                ]
+                ],
             );
         }
 
@@ -256,7 +261,7 @@ class ModulePerformanceAnalyzeCommand extends Command
                     ['Hit Rate', round($summary['hit_rate'] ?? 0, 2) . '%'],
                     ['Miss Rate', round($summary['miss_rate'] ?? 0, 2) . '%'],
                     ['Total Operations', $summary['total_operations'] ?? 0],
-                ]
+                ],
             );
         }
 
@@ -285,7 +290,7 @@ class ModulePerformanceAnalyzeCommand extends Command
                     ['Total Files', $summary['total_file_count'] ?? 0],
                     ['Total Classes', $summary['total_class_count'] ?? 0],
                     ['Total Routes', $summary['total_route_count'] ?? 0],
-                ]
+                ],
             );
         } elseif (isset($data['module_id'])) {
             // Single module metrics
@@ -298,7 +303,7 @@ class ModulePerformanceAnalyzeCommand extends Command
                     ['Class Count', $data['class_count'] ?? 0],
                     ['Route Count', $data['route_count'] ?? 0],
                     ['Dependencies', $data['dependency_count'] ?? 0],
-                ]
+                ],
             );
         }
 
@@ -320,11 +325,12 @@ class ModulePerformanceAnalyzeCommand extends Command
 
         if (empty($recommendations)) {
             $this->info('✅ No performance issues detected!');
+
             return;
         }
 
         foreach ($recommendations as $rec) {
-            $icon = match($rec['severity'] ?? 'low') {
+            $icon = match ($rec['severity'] ?? 'low') {
                 'critical' => '🔴',
                 'high' => '🟠',
                 'medium' => '🟡',

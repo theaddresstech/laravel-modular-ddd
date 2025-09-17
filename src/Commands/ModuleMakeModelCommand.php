@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Commands;
 
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Str;
@@ -19,13 +20,12 @@ class ModuleMakeModelCommand extends Command
                             {--controller : Also create a controller}
                             {--all : Create migration, factory, resource, and controller}
                             {--force : Overwrite existing files}';
-
     protected $description = 'Create a new Eloquent model in a module with repository (auto) and optional related files';
 
     public function __construct(
         private Filesystem $files,
         private string $modulesPath,
-        private string $stubPath
+        private string $stubPath,
     ) {
         parent::__construct();
     }
@@ -38,6 +38,7 @@ class ModuleMakeModelCommand extends Command
 
         if (!$this->files->exists($modulePath)) {
             $this->error("Module '{$moduleName}' does not exist.");
+
             return self::FAILURE;
         }
 
@@ -70,9 +71,9 @@ class ModuleMakeModelCommand extends Command
             $this->info("✅ Model '{$modelName}' with repository created successfully in module '{$moduleName}'!");
 
             return self::SUCCESS;
+        } catch (Exception $e) {
+            $this->error('❌ Failed to create model: ' . $e->getMessage());
 
-        } catch (\Exception $e) {
-            $this->error("❌ Failed to create model: " . $e->getMessage());
             return self::FAILURE;
         }
     }
@@ -83,6 +84,7 @@ class ModuleMakeModelCommand extends Command
 
         if ($this->files->exists($modelPath) && !$this->option('force')) {
             $this->error("Model '{$modelName}' already exists. Use --force to overwrite.");
+
             return;
         }
 
@@ -121,17 +123,17 @@ class ModuleMakeModelCommand extends Command
         $this->call('module:make-migration', [
             'module' => $moduleName,
             'name' => $migrationName,
-            '--create' => $tableName
+            '--create' => $tableName,
         ]);
     }
 
     private function createFactory(string $moduleName, string $modelName): void
     {
-        $this->line("   🏭 Creating factory...");
+        $this->line('   🏭 Creating factory...');
 
         $this->call('module:make-factory', [
             'module' => $moduleName,
-            'name' => $modelName
+            'name' => $modelName,
         ]);
     }
 
@@ -139,12 +141,12 @@ class ModuleMakeModelCommand extends Command
     {
         $resourceName = $modelName . 'Resource';
 
-        $this->line("   📦 Creating API resource...");
+        $this->line('   📦 Creating API resource...');
 
         $this->call('module:make-resource', [
             'module' => $moduleName,
             'name' => $resourceName,
-            '--model' => $modelName
+            '--model' => $modelName,
         ]);
     }
 
@@ -152,13 +154,13 @@ class ModuleMakeModelCommand extends Command
     {
         $controllerName = $modelName . 'Controller';
 
-        $this->line("   🎮 Creating controller...");
+        $this->line('   🎮 Creating controller...');
 
         $this->call('module:make-controller', [
             'module' => $moduleName,
             'name' => $controllerName,
             '--api' => true,
-            '--resource' => $modelName
+            '--resource' => $modelName,
         ]);
     }
 
@@ -168,6 +170,7 @@ class ModuleMakeModelCommand extends Command
 
         if (!$this->files->exists($stubPath)) {
             $this->createBasicModel($target, $replacements);
+
             return;
         }
 
@@ -185,7 +188,7 @@ class ModuleMakeModelCommand extends Command
 
         $targetDir = dirname($target);
         if (!$this->files->exists($targetDir)) {
-            $this->files->makeDirectory($targetDir, 0755, true);
+            $this->files->makeDirectory($targetDir, 0o755, true);
         }
 
         $this->files->put($target, $content);
@@ -223,9 +226,9 @@ declare(strict_types=1);
 
 namespace {$namespace};
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\\Database\\Eloquent\\Factories\\HasFactory;
+use Illuminate\\Database\\Eloquent\\Model;
+use Illuminate\\Database\\Eloquent\\Concerns\\HasUuids;
 
 class {$modelName} extends Model
 {
@@ -247,7 +250,7 @@ class {$modelName} extends Model
 
         $targetDir = dirname($target);
         if (!$this->files->exists($targetDir)) {
-            $this->files->makeDirectory($targetDir, 0755, true);
+            $this->files->makeDirectory($targetDir, 0o755, true);
         }
 
         $this->files->put($target, $content);

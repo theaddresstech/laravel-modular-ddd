@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Commands;
 
-use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
-use TaiCrm\LaravelModularDdd\Exceptions\ModuleNotFoundException;
-use TaiCrm\LaravelModularDdd\Exceptions\ModuleInstallationException;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
+use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
+use TaiCrm\LaravelModularDdd\Exceptions\ModuleNotFoundException;
 
 class ModuleUpdateCommand extends Command
 {
@@ -18,12 +18,11 @@ class ModuleUpdateCommand extends Command
                             {--version= : Specific version to update to}
                             {--force : Force update without confirmation}
                             {--backup : Create backup before updating}';
-
     protected $description = 'Update a module to a newer version';
 
     public function __construct(
         private ModuleManagerInterface $moduleManager,
-        private Filesystem $files
+        private Filesystem $files,
     ) {
         parent::__construct();
     }
@@ -37,6 +36,7 @@ class ModuleUpdateCommand extends Command
         $moduleName = $this->argument('module');
         if (!$moduleName) {
             $this->error('Please specify a module name or use --all flag');
+
             return self::FAILURE;
         }
 
@@ -46,10 +46,11 @@ class ModuleUpdateCommand extends Command
     private function updateAllModules(): int
     {
         $modules = $this->moduleManager->list()
-            ->filter(fn($module) => $module->isInstalled());
+            ->filter(static fn ($module) => $module->isInstalled());
 
         if ($modules->isEmpty()) {
             $this->info('No installed modules found.');
+
             return self::SUCCESS;
         }
 
@@ -80,19 +81,20 @@ class ModuleUpdateCommand extends Command
 
             if (!$module->isInstalled()) {
                 $this->error("❌ Module '{$moduleName}' is not installed.");
+
                 return self::FAILURE;
             }
 
             $this->info("🔄 Updating module: {$moduleName}");
 
             return $this->performModuleUpdate($moduleName);
-
         } catch (ModuleNotFoundException $e) {
-            $this->error("❌ " . $e->getMessage());
-            return self::FAILURE;
+            $this->error('❌ ' . $e->getMessage());
 
-        } catch (\Exception $e) {
-            $this->error("❌ Update failed: " . $e->getMessage());
+            return self::FAILURE;
+        } catch (Exception $e) {
+            $this->error('❌ Update failed: ' . $e->getMessage());
+
             return self::FAILURE;
         }
     }
@@ -108,6 +110,7 @@ class ModuleUpdateCommand extends Command
 
             if (!$updateInfo['hasUpdate']) {
                 $this->line("   ✅ Module '{$moduleName}' is already up to date (v{$currentVersion})");
+
                 return self::SUCCESS;
             }
 
@@ -117,6 +120,7 @@ class ModuleUpdateCommand extends Command
 
             if (!$this->option('force') && !$this->confirmUpdate($moduleName, $currentVersion, $newVersion)) {
                 $this->info('   Update cancelled.');
+
                 return self::SUCCESS;
             }
 
@@ -131,9 +135,9 @@ class ModuleUpdateCommand extends Command
             $this->info("   ✅ Module '{$moduleName}' updated successfully to v{$newVersion}");
 
             return self::SUCCESS;
-
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->error("   ❌ Failed to update module '{$moduleName}': " . $e->getMessage());
+
             return self::FAILURE;
         }
     }
@@ -147,7 +151,7 @@ class ModuleUpdateCommand extends Command
         // 3. Return available updates
 
         // For demo purposes, simulate update checking
-        $hasUpdate = rand(1, 3) === 1; // 1/3 chance of having an update
+        $hasUpdate = mt_rand(1, 3) === 1; // 1/3 chance of having an update
         $latestVersion = $hasUpdate ? $this->incrementVersion($currentVersion) : $currentVersion;
 
         return [
@@ -156,7 +160,7 @@ class ModuleUpdateCommand extends Command
             'latestVersion' => $latestVersion,
             'changelog' => $hasUpdate ? $this->generateMockChangelog($currentVersion, $latestVersion) : [],
             'breaking' => false,
-            'security' => rand(1, 10) === 1, // 1/10 chance of security update
+            'security' => mt_rand(1, 10) === 1, // 1/10 chance of security update
         ];
     }
 
@@ -164,9 +168,11 @@ class ModuleUpdateCommand extends Command
     {
         $parts = explode('.', $version);
         if (count($parts) >= 3) {
-            $parts[2] = (int)$parts[2] + 1;
+            $parts[2] = (int) $parts[2] + 1;
+
             return implode('.', $parts);
         }
+
         return $version;
     }
 
@@ -182,33 +188,33 @@ class ModuleUpdateCommand extends Command
     private function displayUpdateInfo(string $moduleName, string $current, string $new, array $info): void
     {
         $this->newLine();
-        $this->line("   📋 <comment>Update Available:</comment>");
+        $this->line('   📋 <comment>Update Available:</comment>');
         $this->line("   Current Version: {$current}");
         $this->line("   New Version: {$new}");
 
         if ($info['security']) {
-            $this->line("   <error>🔒 Security Update Available</error>");
+            $this->line('   <error>🔒 Security Update Available</error>');
         }
 
         if (!empty($info['changelog'])) {
-            $this->line("   <comment>Changes:</comment>");
+            $this->line('   <comment>Changes:</comment>');
 
             if (!empty($info['changelog']['features'])) {
-                $this->line("   <info>✨ New Features:</info>");
+                $this->line('   <info>✨ New Features:</info>');
                 foreach ($info['changelog']['features'] as $feature) {
                     $this->line("     • {$feature}");
                 }
             }
 
             if (!empty($info['changelog']['fixes'])) {
-                $this->line("   <info>🐛 Bug Fixes:</info>");
+                $this->line('   <info>🐛 Bug Fixes:</info>');
                 foreach ($info['changelog']['fixes'] as $fix) {
                     $this->line("     • {$fix}");
                 }
             }
 
             if (!empty($info['changelog']['breaking'])) {
-                $this->line("   <error>💥 Breaking Changes:</error>");
+                $this->line('   <error>💥 Breaking Changes:</error>');
                 foreach ($info['changelog']['breaking'] as $breaking) {
                     $this->line("     • {$breaking}");
                 }
@@ -220,7 +226,7 @@ class ModuleUpdateCommand extends Command
     {
         return $this->confirm(
             "Do you want to update '{$moduleName}' from v{$current} to v{$new}?",
-            true
+            true,
         );
     }
 
@@ -231,7 +237,7 @@ class ModuleUpdateCommand extends Command
         $backupDir = "{$backupPath}/{$timestamp}";
 
         if (!$this->files->exists($backupDir)) {
-            $this->files->makeDirectory($backupDir, 0755, true);
+            $this->files->makeDirectory($backupDir, 0o755, true);
         }
 
         // Copy module files to backup directory
@@ -251,19 +257,19 @@ class ModuleUpdateCommand extends Command
         // 5. Re-enable the module
         // 6. Clear caches
 
-        $this->line("   🔄 Downloading update...");
+        $this->line('   🔄 Downloading update...');
         sleep(1); // Simulate download time
 
-        $this->line("   🔄 Installing update...");
+        $this->line('   🔄 Installing update...');
         sleep(1); // Simulate installation time
 
-        $this->line("   🔄 Running migrations...");
+        $this->line('   🔄 Running migrations...');
         $this->call('module:migrate', [
             'module' => $moduleName,
             '--force' => true,
         ]);
 
-        $this->line("   🔄 Clearing caches...");
+        $this->line('   🔄 Clearing caches...');
         $this->call('module:cache', ['action' => 'clear']);
 
         // Update module version in manifest (simulation)
@@ -275,7 +281,7 @@ class ModuleUpdateCommand extends Command
                 $manifest['version'] = $newVersion;
                 $this->files->put(
                     $manifestPath,
-                    json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
+                    json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
                 );
             }
         }

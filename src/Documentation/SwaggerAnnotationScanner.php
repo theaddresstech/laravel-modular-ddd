@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Documentation;
 
-use Illuminate\Support\Facades\File;
+use Exception;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use ReflectionClass;
 use ReflectionMethod;
-use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
 
 class SwaggerAnnotationScanner
 {
@@ -21,7 +21,7 @@ class SwaggerAnnotationScanner
     }
 
     /**
-     * Scan all modules for Swagger annotations
+     * Scan all modules for Swagger annotations.
      */
     public function scanAllModules(): array
     {
@@ -41,7 +41,7 @@ class SwaggerAnnotationScanner
     }
 
     /**
-     * Extract comprehensive Swagger annotations from controllers
+     * Extract comprehensive Swagger annotations from controllers.
      */
     public function extractComprehensiveAnnotations(string $filePath): array
     {
@@ -66,7 +66,7 @@ class SwaggerAnnotationScanner
     }
 
     /**
-     * Parse comprehensive schema definitions from annotations
+     * Parse comprehensive schema definitions from annotations.
      */
     public function parseSchemaAnnotations(array $annotations): array
     {
@@ -85,7 +85,86 @@ class SwaggerAnnotationScanner
     }
 
     /**
-     * Parse schema content from annotation
+     * Generate comprehensive OpenAPI documentation for a module.
+     */
+    public function generateModuleDocumentation(string $moduleName): array
+    {
+        $moduleData = $this->scanModule($moduleName);
+
+        if (empty($moduleData)) {
+            return [];
+        }
+
+        return [
+            'openapi' => '3.0.3',
+            'info' => $this->extractModuleInfo($moduleName),
+            'servers' => $this->generateServers(),
+            'paths' => $moduleData['paths'] ?? [],
+            'components' => [
+                'schemas' => $moduleData['components']['schemas'] ?? [],
+                'securitySchemes' => $this->generateSecuritySchemes(),
+            ],
+            'tags' => $this->generateTags($moduleName),
+        ];
+    }
+
+    /**
+     * Scan a module for Swagger annotations.
+     */
+    public function scanModule(string $moduleName, ?string $version = null): array
+    {
+        $modulePath = $this->modulesPath . '/' . $moduleName;
+
+        if (!File::exists($modulePath)) {
+            return ['paths' => [], 'components' => ['schemas' => []]];
+        }
+
+        $paths = [];
+        $schemas = [];
+
+        // Scan controllers for API routes
+        $controllersPath = $version
+            ? $modulePath . '/Http/Controllers/Api/' . $version
+            : $modulePath . '/Http/Controllers/Api/v1'; // Default to v1
+
+        if (File::exists($controllersPath)) {
+            $controllerResults = $this->scanControllers($controllersPath, $moduleName, $version);
+            $paths = array_merge($paths, $controllerResults['paths']);
+            $schemas = array_merge($schemas, $controllerResults['schemas']);
+        }
+
+        // Also scan Presentation layer controllers
+        $presentationPath = $modulePath . '/Presentation/Http/Controllers';
+        if (File::exists($presentationPath)) {
+            $presentationResults = $this->scanControllers($presentationPath, $moduleName, $version);
+            $paths = array_merge($paths, $presentationResults['paths']);
+            $schemas = array_merge($schemas, $presentationResults['schemas']);
+        }
+
+        // Scan resources for schema definitions
+        $resourcesPath = $modulePath . '/Http/Resources';
+        if (File::exists($resourcesPath)) {
+            $resourceSchemas = $this->scanResources($resourcesPath, $moduleName);
+            $schemas = array_merge($schemas, $resourceSchemas);
+        }
+
+        // Also scan Presentation layer resources
+        $presentationResourcesPath = $modulePath . '/Presentation/Http/Resources';
+        if (File::exists($presentationResourcesPath)) {
+            $presentationResourceSchemas = $this->scanResources($presentationResourcesPath, $moduleName);
+            $schemas = array_merge($schemas, $presentationResourceSchemas);
+        }
+
+        return [
+            'paths' => $paths,
+            'components' => [
+                'schemas' => $schemas,
+            ],
+        ];
+    }
+
+    /**
+     * Parse schema content from annotation.
      */
     private function parseSchemaContent(string $content): array
     {
@@ -137,7 +216,7 @@ class SwaggerAnnotationScanner
     }
 
     /**
-     * Parse property content from annotation
+     * Parse property content from annotation.
      */
     private function parsePropertyContent(string $content): array
     {
@@ -174,7 +253,7 @@ class SwaggerAnnotationScanner
             } elseif ($value === 'false') {
                 $property['example'] = false;
             } elseif (is_numeric($value)) {
-                $property['example'] = (int)$value;
+                $property['example'] = (int) $value;
             } else {
                 $property['example'] = $value;
             }
@@ -187,7 +266,7 @@ class SwaggerAnnotationScanner
 
         // Extract maxLength
         if (preg_match('/maxLength=(\d+)/', $content, $matches)) {
-            $property['maxLength'] = (int)$matches[1];
+            $property['maxLength'] = (int) $matches[1];
         }
 
         // Extract default
@@ -198,7 +277,7 @@ class SwaggerAnnotationScanner
             } elseif ($value === 'false') {
                 $property['default'] = false;
             } elseif (is_numeric($value)) {
-                $property['default'] = (int)$value;
+                $property['default'] = (int) $value;
             } else {
                 $property['default'] = $value;
             }
@@ -208,33 +287,7 @@ class SwaggerAnnotationScanner
     }
 
     /**
-     * Generate comprehensive OpenAPI documentation for a module
-     */
-    public function generateModuleDocumentation(string $moduleName): array
-    {
-        $moduleData = $this->scanModule($moduleName);
-
-        if (empty($moduleData)) {
-            return [];
-        }
-
-        $documentation = [
-            'openapi' => '3.0.3',
-            'info' => $this->extractModuleInfo($moduleName),
-            'servers' => $this->generateServers(),
-            'paths' => $moduleData['paths'] ?? [],
-            'components' => [
-                'schemas' => $moduleData['components']['schemas'] ?? [],
-                'securitySchemes' => $this->generateSecuritySchemes(),
-            ],
-            'tags' => $this->generateTags($moduleName),
-        ];
-
-        return $documentation;
-    }
-
-    /**
-     * Extract module info from manifest
+     * Extract module info from manifest.
      */
     private function extractModuleInfo(string $moduleName): array
     {
@@ -258,7 +311,7 @@ class SwaggerAnnotationScanner
     }
 
     /**
-     * Generate server configurations
+     * Generate server configurations.
      */
     private function generateServers(): array
     {
@@ -275,7 +328,7 @@ class SwaggerAnnotationScanner
     }
 
     /**
-     * Generate security schemes
+     * Generate security schemes.
      */
     private function generateSecuritySchemes(): array
     {
@@ -299,7 +352,7 @@ class SwaggerAnnotationScanner
     }
 
     /**
-     * Generate tags for the module
+     * Generate tags for the module.
      */
     private function generateTags(string $moduleName): array
     {
@@ -312,62 +365,7 @@ class SwaggerAnnotationScanner
     }
 
     /**
-     * Scan a module for Swagger annotations
-     */
-    public function scanModule(string $moduleName, ?string $version = null): array
-    {
-        $modulePath = $this->modulesPath . '/' . $moduleName;
-
-        if (!File::exists($modulePath)) {
-            return ['paths' => [], 'components' => ['schemas' => []]];
-        }
-
-        $paths = [];
-        $schemas = [];
-
-        // Scan controllers for API routes
-        $controllersPath = $version
-            ? $modulePath . '/Http/Controllers/Api/' . $version
-            : $modulePath . '/Http/Controllers/Api/v1'; // Default to v1
-
-        if (File::exists($controllersPath)) {
-            $controllerResults = $this->scanControllers($controllersPath, $moduleName, $version);
-            $paths = array_merge($paths, $controllerResults['paths']);
-            $schemas = array_merge($schemas, $controllerResults['schemas']);
-        }
-
-        // Also scan Presentation layer controllers
-        $presentationPath = $modulePath . '/Presentation/Http/Controllers';
-        if (File::exists($presentationPath)) {
-            $presentationResults = $this->scanControllers($presentationPath, $moduleName, $version);
-            $paths = array_merge($paths, $presentationResults['paths']);
-            $schemas = array_merge($schemas, $presentationResults['schemas']);
-        }
-
-        // Scan resources for schema definitions
-        $resourcesPath = $modulePath . '/Http/Resources';
-        if (File::exists($resourcesPath)) {
-            $resourceSchemas = $this->scanResources($resourcesPath, $moduleName);
-            $schemas = array_merge($schemas, $resourceSchemas);
-        }
-
-        // Also scan Presentation layer resources
-        $presentationResourcesPath = $modulePath . '/Presentation/Http/Resources';
-        if (File::exists($presentationResourcesPath)) {
-            $presentationResourceSchemas = $this->scanResources($presentationResourcesPath, $moduleName);
-            $schemas = array_merge($schemas, $presentationResourceSchemas);
-        }
-
-        return [
-            'paths' => $paths,
-            'components' => [
-                'schemas' => $schemas
-            ]
-        ];
-    }
-
-    /**
-     * Scan controllers for Swagger annotations
+     * Scan controllers for Swagger annotations.
      */
     private function scanControllers(string $controllersPath, string $moduleName, ?string $version = null): array
     {
@@ -388,7 +386,7 @@ class SwaggerAnnotationScanner
     }
 
     /**
-     * Parse a controller file for Swagger annotations
+     * Parse a controller file for Swagger annotations.
      */
     private function parseControllerFile(string $filePath, string $moduleName, ?string $version = null): array
     {
@@ -427,7 +425,7 @@ class SwaggerAnnotationScanner
                             }
                         }
                     }
-                } catch (\Exception) {
+                } catch (Exception) {
                     // Skip if class can't be loaded
                 }
             }
@@ -437,7 +435,7 @@ class SwaggerAnnotationScanner
     }
 
     /**
-     * Extract paths from comprehensive annotations
+     * Extract paths from comprehensive annotations.
      */
     private function extractPathsFromAnnotations(array $annotations, string $moduleName, ?string $version = null): array
     {
@@ -547,7 +545,7 @@ class SwaggerAnnotationScanner
     }
 
     /**
-     * Parse security annotation
+     * Parse security annotation.
      */
     private function parseSecurityAnnotation(string $securityStr): array
     {
@@ -565,7 +563,7 @@ class SwaggerAnnotationScanner
     }
 
     /**
-     * Parse method annotations for Swagger
+     * Parse method annotations for Swagger.
      */
     private function parseMethodAnnotations(ReflectionMethod $method, string $content, string $moduleName, ?string $version = null): array
     {
@@ -580,7 +578,7 @@ class SwaggerAnnotationScanner
 
         $resourceName = strtolower(str_replace('Controller', '', $method->getDeclaringClass()->getShortName()));
 
-        $pathPrefix = $version ? "/api/{$version}" : "/api";
+        $pathPrefix = $version ? "/api/{$version}" : '/api';
         $path = $this->generatePathFromMethod($methodName, $resourceName, $pathPrefix);
 
         if ($path) {
@@ -590,7 +588,7 @@ class SwaggerAnnotationScanner
                     'summary' => $this->generateSummary($methodName, $resourceName),
                     'description' => $this->generateDescription($methodName, $resourceName),
                     'responses' => $this->generateDefaultResponses($methodName),
-                ]
+                ],
             ];
 
             // Add parameters for show, update, destroy methods
@@ -601,8 +599,8 @@ class SwaggerAnnotationScanner
                         'in' => 'path',
                         'required' => true,
                         'schema' => ['type' => 'string'],
-                        'description' => ucfirst($resourceName) . ' ID'
-                    ]
+                        'description' => ucfirst($resourceName) . ' ID',
+                    ],
                 ];
             }
 
@@ -617,20 +615,20 @@ class SwaggerAnnotationScanner
                                 'properties' => [
                                     'name' => [
                                         'type' => 'string',
-                                        'description' => 'Name field'
-                                    ]
+                                        'description' => 'Name field',
+                                    ],
                                 ],
-                                'required' => ['name']
-                            ]
-                        ]
-                    ]
+                                'required' => ['name'],
+                            ],
+                        ],
+                    ],
                 ];
             }
 
             // Add security if not a public endpoint
             if (!in_array($methodName, ['index', 'show'])) {
                 $paths[$path][$httpMethod]['security'] = [
-                    ['bearerAuth' => []]
+                    ['bearerAuth' => []],
                 ];
             }
         }
@@ -639,7 +637,7 @@ class SwaggerAnnotationScanner
     }
 
     /**
-     * Scan resources for schema definitions
+     * Scan resources for schema definitions.
      */
     private function scanResources(string $resourcesPath, string $moduleName): array
     {
@@ -657,23 +655,23 @@ class SwaggerAnnotationScanner
                     'properties' => [
                         'id' => [
                             'type' => 'string',
-                            'description' => 'Unique identifier'
+                            'description' => 'Unique identifier',
                         ],
                         'name' => [
                             'type' => 'string',
-                            'description' => 'Name field'
+                            'description' => 'Name field',
                         ],
                         'created_at' => [
                             'type' => 'string',
                             'format' => 'date-time',
-                            'description' => 'Creation timestamp'
+                            'description' => 'Creation timestamp',
                         ],
                         'updated_at' => [
                             'type' => 'string',
                             'format' => 'date-time',
-                            'description' => 'Last update timestamp'
-                        ]
-                    ]
+                            'description' => 'Last update timestamp',
+                        ],
+                    ],
                 ];
             }
         }
@@ -682,29 +680,31 @@ class SwaggerAnnotationScanner
     }
 
     /**
-     * Extract namespace from file content
+     * Extract namespace from file content.
      */
     private function extractNamespace(string $content): ?string
     {
         if (preg_match('/namespace\s+([^;]+);/', $content, $matches)) {
             return trim($matches[1]);
         }
+
         return null;
     }
 
     /**
-     * Extract class name from file content
+     * Extract class name from file content.
      */
     private function extractClassName(string $content): ?string
     {
         if (preg_match('/class\s+(\w+)/', $content, $matches)) {
             return trim($matches[1]);
         }
+
         return null;
     }
 
     /**
-     * Get HTTP method from method name
+     * Get HTTP method from method name.
      */
     private function getHttpMethodFromMethodName(string $methodName): ?string
     {
@@ -720,7 +720,7 @@ class SwaggerAnnotationScanner
     }
 
     /**
-     * Generate path from method name
+     * Generate path from method name.
      */
     private function generatePathFromMethod(string $methodName, string $resourceName, string $prefix = '/api'): ?string
     {
@@ -740,7 +740,7 @@ class SwaggerAnnotationScanner
     }
 
     /**
-     * Generate summary for method
+     * Generate summary for method.
      */
     private function generateSummary(string $methodName, string $resourceName): string
     {
@@ -763,7 +763,7 @@ class SwaggerAnnotationScanner
     }
 
     /**
-     * Generate description for method
+     * Generate description for method.
      */
     private function generateDescription(string $methodName, string $resourceName): string
     {
@@ -786,17 +786,17 @@ class SwaggerAnnotationScanner
     }
 
     /**
-     * Generate default responses for method
+     * Generate default responses for method.
      */
     private function generateDefaultResponses(string $methodName): array
     {
         $responses = [
             '400' => [
-                'description' => 'Bad Request'
+                'description' => 'Bad Request',
             ],
             '500' => [
-                'description' => 'Internal Server Error'
-            ]
+                'description' => 'Internal Server Error',
+            ],
         ];
 
         switch ($methodName) {
@@ -810,7 +810,7 @@ class SwaggerAnnotationScanner
                                 'properties' => [
                                     'data' => [
                                         'type' => 'array',
-                                        'items' => ['type' => 'object']
+                                        'items' => ['type' => 'object'],
                                     ],
                                     'meta' => [
                                         'type' => 'object',
@@ -818,31 +818,36 @@ class SwaggerAnnotationScanner
                                             'current_page' => ['type' => 'integer'],
                                             'last_page' => ['type' => 'integer'],
                                             'per_page' => ['type' => 'integer'],
-                                            'total' => ['type' => 'integer']
-                                        ]
-                                    ]
-                                ]
-                            ]
-                        ]
-                    ]
+                                            'total' => ['type' => 'integer'],
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
                 ];
+
                 break;
             case 'show':
                 $responses['200'] = ['description' => 'Successful response'];
                 $responses['404'] = ['description' => 'Resource not found'];
+
                 break;
             case 'store':
                 $responses['201'] = ['description' => 'Resource created successfully'];
                 $responses['422'] = ['description' => 'Validation error'];
+
                 break;
             case 'update':
                 $responses['200'] = ['description' => 'Resource updated successfully'];
                 $responses['404'] = ['description' => 'Resource not found'];
                 $responses['422'] = ['description' => 'Validation error'];
+
                 break;
             case 'destroy':
                 $responses['204'] = ['description' => 'Resource deleted successfully'];
                 $responses['404'] = ['description' => 'Resource not found'];
+
                 break;
         }
 

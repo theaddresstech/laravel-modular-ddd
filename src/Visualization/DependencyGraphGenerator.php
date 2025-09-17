@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Visualization;
 
+use Illuminate\Support\Collection;
+use InvalidArgumentException;
+use RuntimeException;
 use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
 use TaiCrm\LaravelModularDdd\ValueObjects\ModuleInfo;
-use Illuminate\Support\Collection;
 
 class DependencyGraphGenerator
 {
     public function __construct(
-        private ModuleManagerInterface $moduleManager
+        private ModuleManagerInterface $moduleManager,
     ) {}
 
     public function generateGraph(array $options = []): array
@@ -75,7 +77,7 @@ class DependencyGraphGenerator
         $targetModule = $modules->firstWhere('name', $moduleName);
 
         if (!$targetModule) {
-            throw new \InvalidArgumentException("Module '{$moduleName}' not found");
+            throw new InvalidArgumentException("Module '{$moduleName}' not found");
         }
 
         return [
@@ -91,6 +93,7 @@ class DependencyGraphGenerator
     public function generateInstallationOrder(): array
     {
         $modules = $this->moduleManager->list();
+
         return $this->topologicalSort($modules);
     }
 
@@ -101,25 +104,23 @@ class DependencyGraphGenerator
             'total_modules' => $modules->count(),
             'enabled_modules' => $modules->filter->isEnabled()->count(),
             'disabled_modules' => $modules->reject->isEnabled()->count(),
-            'total_dependencies' => $modules->sum(fn($m) => count($m->dependencies)),
+            'total_dependencies' => $modules->sum(static fn ($m) => count($m->dependencies)),
         ];
     }
 
     private function generateNodes(Collection $modules): array
     {
-        return $modules->map(function (ModuleInfo $module) {
-            return [
-                'id' => $module->name,
-                'label' => $module->name,
-                'version' => $module->version,
-                'status' => $module->state->value,
-                'enabled' => $module->isEnabled(),
-                'dependencies_count' => count($module->dependencies),
-                'size' => $this->calculateNodeSize($module),
-                'color' => $this->getNodeColor($module),
-                'shape' => $this->getNodeShape($module),
-            ];
-        })->values()->toArray();
+        return $modules->map(fn (ModuleInfo $module) => [
+            'id' => $module->name,
+            'label' => $module->name,
+            'version' => $module->version,
+            'status' => $module->state->value,
+            'enabled' => $module->isEnabled(),
+            'dependencies_count' => count($module->dependencies),
+            'size' => $this->calculateNodeSize($module),
+            'color' => $this->getNodeColor($module),
+            'shape' => $this->getNodeShape($module),
+        ])->values()->toArray();
     }
 
     private function generateEdges(Collection $modules): array
@@ -172,7 +173,7 @@ class DependencyGraphGenerator
     private function calculateGraphMetrics(Collection $modules): array
     {
         $totalNodes = $modules->count();
-        $totalEdges = $modules->sum(fn($m) => count($m->dependencies));
+        $totalEdges = $modules->sum(static fn ($m) => count($m->dependencies));
 
         return [
             'nodes' => $totalNodes,
@@ -227,7 +228,7 @@ class DependencyGraphGenerator
 
         // Add edges
         foreach ($graph['edges'] as $edge) {
-            $arrow = $edge['satisfied'] ? '-->' : '-'.'->';
+            $arrow = $edge['satisfied'] ? '-->' : '-' . '->';
             $mermaid .= "    {$edge['source']} {$arrow} {$edge['target']}\n";
         }
 
@@ -307,7 +308,7 @@ class DependencyGraphGenerator
         array &$visiting,
         array &$visited,
         array &$cycles,
-        array $path
+        array $path,
     ): void {
         $visiting[$module->name] = true;
         $path[] = $module->name;
@@ -364,7 +365,7 @@ class DependencyGraphGenerator
         ModuleInfo $module,
         Collection $modules,
         array &$transitive,
-        array &$visited
+        array &$visited,
     ): void {
         if (isset($visited[$module->name])) {
             return;
@@ -403,6 +404,7 @@ class DependencyGraphGenerator
                         'constraint' => $dependency['constraint'] ?? '*',
                         'type' => $dependency['type'] ?? 'required',
                     ];
+
                     break;
                 }
             }
@@ -430,6 +432,7 @@ class DependencyGraphGenerator
                     foreach ($otherModule->dependencies as $dependency) {
                         if ($dependency['name'] === $current) {
                             $toProcess[] = $otherModule->name;
+
                             break;
                         }
                     }
@@ -444,7 +447,7 @@ class DependencyGraphGenerator
     {
         $dependents = $this->getModuleDependents($module, $modules);
         $impactRadius = $this->calculateImpactRadius($module, $modules);
-        $requiredDependents = array_filter($dependents, fn($d) => $d['type'] === 'required');
+        $requiredDependents = array_filter($dependents, static fn ($d) => $d['type'] === 'required');
 
         // Score based on number of dependents, required dependents, and impact radius
         return (count($dependents) * 0.4) + (count($requiredDependents) * 0.4) + ($impactRadius * 0.2);
@@ -470,14 +473,14 @@ class DependencyGraphGenerator
         Collection $modules,
         array &$temporary,
         array &$permanent,
-        array &$sorted
+        array &$sorted,
     ): void {
         if (isset($permanent[$module->name])) {
             return;
         }
 
         if (isset($temporary[$module->name])) {
-            throw new \RuntimeException("Circular dependency detected involving module: {$module->name}");
+            throw new RuntimeException("Circular dependency detected involving module: {$module->name}");
         }
 
         $temporary[$module->name] = true;
@@ -578,6 +581,7 @@ class DependencyGraphGenerator
                             $visited[$otherModule->name] = true;
                             $component[] = $otherModule->name;
                             $toVisit[] = $otherModule;
+
                             break;
                         }
                     }
@@ -647,9 +651,7 @@ class DependencyGraphGenerator
 
         foreach ($modules as $module) {
             $hasDependencies = !empty($module->dependencies);
-            $hasDependents = $modules->contains(function ($other) use ($module) {
-                return collect($other->dependencies)->contains('name', $module->name);
-            });
+            $hasDependents = $modules->contains(static fn ($other) => collect($other->dependencies)->contains('name', $module->name));
 
             if (!$hasDependencies && !$hasDependents) {
                 $isolated++;

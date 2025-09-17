@@ -4,29 +4,28 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\ModuleManager;
 
-use TaiCrm\LaravelModularDdd\ValueObjects\ModuleState;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Filesystem\Filesystem;
+use TaiCrm\LaravelModularDdd\ValueObjects\ModuleState;
 
 class ModuleRegistry
 {
     private const REGISTRY_FILE = 'modules.json';
     private const CACHE_KEY = 'modular_ddd_registry';
-
     private array $registry = [];
 
     public function __construct(
         private Filesystem $files,
         private CacheRepository $cache,
-        private string $storagePath
+        private string $storagePath,
     ) {
         $this->loadRegistry();
     }
 
     public function isInstalled(string $moduleName): bool
     {
-        return isset($this->registry[$moduleName]) &&
-               !$this->getModuleState($moduleName)->equals(ModuleState::NotInstalled);
+        return isset($this->registry[$moduleName])
+               && !$this->getModuleState($moduleName)->equals(ModuleState::NotInstalled);
     }
 
     public function isEnabled(string $moduleName): bool
@@ -110,12 +109,12 @@ class ModuleRegistry
         $directory = dirname($registryPath);
 
         if (!$this->files->isDirectory($directory)) {
-            $this->files->makeDirectory($directory, 0755, true);
+            $this->files->makeDirectory($directory, 0o755, true);
         }
 
         $this->files->put(
             $registryPath,
-            json_encode($this->registry, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
+            json_encode($this->registry, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
         );
     }
 

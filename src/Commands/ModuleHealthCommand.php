@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Commands;
 
+use Exception;
+use Illuminate\Console\Command;
+use TaiCrm\LaravelModularDdd\Exceptions\ModuleNotFoundException;
 use TaiCrm\LaravelModularDdd\Health\ModuleHealthChecker;
 use TaiCrm\LaravelModularDdd\Health\ValueObjects\HealthStatus;
-use TaiCrm\LaravelModularDdd\Exceptions\ModuleNotFoundException;
-use Illuminate\Console\Command;
 
 class ModuleHealthCommand extends Command
 {
     protected $signature = 'module:health {module? : Check specific module} {--all : Check all enabled modules} {--detailed : Show detailed output}';
-
     protected $description = 'Check module health status';
 
     public function __construct(
-        private ModuleHealthChecker $healthChecker
+        private ModuleHealthChecker $healthChecker,
     ) {
         parent::__construct();
     }
@@ -30,6 +30,7 @@ class ModuleHealthCommand extends Command
         $moduleName = $this->argument('module');
         if (!$moduleName) {
             $this->error('Please specify a module name or use --all flag');
+
             return self::FAILURE;
         }
 
@@ -44,13 +45,13 @@ class ModuleHealthCommand extends Command
             $this->displayModuleHealth($report);
 
             return $report->isCritical() ? self::FAILURE : self::SUCCESS;
-
         } catch (ModuleNotFoundException $e) {
-            $this->error("❌ " . $e->getMessage());
-            return self::FAILURE;
+            $this->error('❌ ' . $e->getMessage());
 
-        } catch (\Exception $e) {
-            $this->error("❌ Health check failed: " . $e->getMessage());
+            return self::FAILURE;
+        } catch (Exception $e) {
+            $this->error('❌ Health check failed: ' . $e->getMessage());
+
             return self::FAILURE;
         }
     }
@@ -64,6 +65,7 @@ class ModuleHealthCommand extends Command
 
         if ($reports->isEmpty()) {
             $this->info('No enabled modules found.');
+
             return self::SUCCESS;
         }
 

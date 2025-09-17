@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Commands;
 
-use TaiCrm\LaravelModularDdd\Security\ModuleSecurityScanner;
-use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
 use Illuminate\Console\Command;
+use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
+use TaiCrm\LaravelModularDdd\Security\ModuleSecurityScanner;
 
 class ModuleSecurityCommand extends Command
 {
@@ -20,12 +20,11 @@ class ModuleSecurityCommand extends Command
                             {--format=text : Report format (text, json, html)}
                             {--fix : Attempt to fix low-risk issues automatically}
                             {--schedule : Set up scheduled security scans}';
-
     protected $description = 'Manage module security scanning and validation';
 
     public function __construct(
         private ModuleSecurityScanner $scanner,
-        private ModuleManagerInterface $moduleManager
+        private ModuleManagerInterface $moduleManager,
     ) {
         parent::__construct();
     }
@@ -75,6 +74,7 @@ class ModuleSecurityCommand extends Command
 
         if (!$targetModule) {
             $this->error("Module '{$moduleName}' not found.");
+
             return 1;
         }
 
@@ -88,10 +88,11 @@ class ModuleSecurityCommand extends Command
 
         // Check if quarantine is needed
         if ($result['risk_level'] === 'critical') {
-            if ($this->confirm("Module has critical vulnerabilities. Quarantine immediately?", true)) {
+            if ($this->confirm('Module has critical vulnerabilities. Quarantine immediately?', true)) {
                 $reason = 'Critical security vulnerabilities detected during scan';
                 if ($this->scanner->quarantineModule($moduleName, $reason)) {
-                    $this->error("Module has been quarantined due to critical security issues.");
+                    $this->error('Module has been quarantined due to critical security issues.');
+
                     return 2;
                 }
             }
@@ -109,8 +110,9 @@ class ModuleSecurityCommand extends Command
         $this->displayScanSummary($results);
 
         // Show detailed results for high-risk modules
-        $highRiskModules = array_filter($results['results'],
-            fn($result) => in_array($result['risk_level'], ['critical', 'high'])
+        $highRiskModules = array_filter(
+            $results['results'],
+            static fn ($result) => in_array($result['risk_level'], ['critical', 'high']),
         );
 
         if (!empty($highRiskModules)) {
@@ -123,8 +125,9 @@ class ModuleSecurityCommand extends Command
             }
 
             // Offer to quarantine critical modules
-            $criticalModules = array_filter($highRiskModules,
-                fn($result) => $result['risk_level'] === 'critical'
+            $criticalModules = array_filter(
+                $highRiskModules,
+                static fn ($result) => $result['risk_level'] === 'critical',
             );
 
             if (!empty($criticalModules) && $this->confirm('Quarantine critical modules?', true)) {
@@ -143,6 +146,7 @@ class ModuleSecurityCommand extends Command
         }
 
         $hasHighRiskModules = !empty($highRiskModules);
+
         return $hasHighRiskModules ? 1 : 0;
     }
 
@@ -178,7 +182,7 @@ class ModuleSecurityCommand extends Command
             $this->line("  {$module->name}: {$status}");
         }
 
-        $invalidModules = array_filter($verificationResults, fn($valid) => !$valid);
+        $invalidModules = array_filter($verificationResults, static fn ($valid) => !$valid);
 
         if (!empty($invalidModules)) {
             $this->line('');
@@ -198,6 +202,7 @@ class ModuleSecurityCommand extends Command
         }
 
         $this->info('All module signatures are valid.');
+
         return 0;
     }
 
@@ -207,16 +212,19 @@ class ModuleSecurityCommand extends Command
 
         if (!$reason) {
             $this->error('Quarantine reason is required.');
+
             return 1;
         }
 
         if ($this->scanner->quarantineModule($moduleName, $reason)) {
             $this->info("Module '{$moduleName}' has been quarantined.");
             $this->line("Reason: {$reason}");
+
             return 0;
         }
 
         $this->error("Failed to quarantine module '{$moduleName}'.");
+
         return 1;
     }
 
@@ -263,7 +271,7 @@ class ModuleSecurityCommand extends Command
                 ['Medium', $summary['medium']],
                 ['Low', $summary['low']],
                 ['Total Vulnerabilities', $summary['total_vulnerabilities']],
-            ]
+            ],
         );
 
         $this->line('');
@@ -317,7 +325,7 @@ class ModuleSecurityCommand extends Command
                 }
 
                 if (!empty($vuln['code_snippet'])) {
-                    $this->line("    Code: " . trim($vuln['code_snippet']));
+                    $this->line('    Code: ' . trim($vuln['code_snippet']));
                 }
             }
         }
@@ -329,12 +337,14 @@ class ModuleSecurityCommand extends Command
     {
         $this->info('Attempting to fix low-risk issues...');
 
-        $fixableIssues = array_filter($result['vulnerabilities'],
-            fn($vuln) => $vuln['severity'] === 'low' && $this->isFixable($vuln['type'])
+        $fixableIssues = array_filter(
+            $result['vulnerabilities'],
+            fn ($vuln) => $vuln['severity'] === 'low' && $this->isFixable($vuln['type']),
         );
 
         if (empty($fixableIssues)) {
             $this->line('No automatically fixable issues found.');
+
             return;
         }
 
@@ -356,7 +366,7 @@ class ModuleSecurityCommand extends Command
     {
         switch ($issue['type']) {
             case 'file_permissions':
-                return chmod($issue['file'], 0644);
+                return chmod($issue['file'], 0o644);
 
             case 'loose_dependency':
                 // This would require more complex logic to update manifest.json
@@ -430,6 +440,7 @@ class ModuleSecurityCommand extends Command
         }
 
         $html .= '</body></html>';
+
         return $html;
     }
 }

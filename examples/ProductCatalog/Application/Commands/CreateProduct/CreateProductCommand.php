@@ -13,7 +13,7 @@ readonly class CreateProductCommand
         public string $currency,
         public ?string $categoryId = null,
         public array $images = [],
-        public array $attributes = []
+        public array $attributes = [],
     ) {}
 
     public function toArray(): array

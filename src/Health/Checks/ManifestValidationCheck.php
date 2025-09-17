@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Health\Checks;
 
+use Exception;
 use TaiCrm\LaravelModularDdd\Health\Contracts\HealthCheckInterface;
 use TaiCrm\LaravelModularDdd\Health\ValueObjects\HealthStatus;
 use TaiCrm\LaravelModularDdd\ValueObjects\ModuleInfo;
@@ -16,7 +17,6 @@ class ManifestValidationCheck implements HealthCheckInterface
         'version',
         'author',
     ];
-
     private array $arrayFields = [
         'dependencies',
         'optional_dependencies',
@@ -51,8 +51,7 @@ class ManifestValidationCheck implements HealthCheckInterface
             }
 
             return $this->validateManifestStructure($manifest);
-
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return [
                 'name' => $this->getName(),
                 'status' => HealthStatus::Critical,
@@ -60,6 +59,16 @@ class ManifestValidationCheck implements HealthCheckInterface
                 'details' => ['error' => $e->getMessage()],
             ];
         }
+    }
+
+    public function getName(): string
+    {
+        return 'Manifest Validation';
+    }
+
+    public function getDescription(): string
+    {
+        return 'Validates the module manifest.json file structure and content';
     }
 
     private function validateManifestStructure(array $manifest): array
@@ -155,15 +164,5 @@ class ManifestValidationCheck implements HealthCheckInterface
         }
 
         return $suggestions;
-    }
-
-    public function getName(): string
-    {
-        return 'Manifest Validation';
-    }
-
-    public function getDescription(): string
-    {
-        return 'Validates the module manifest.json file structure and content';
     }
 }

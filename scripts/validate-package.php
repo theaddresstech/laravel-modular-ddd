@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Laravel Modular DDD Package Validation Script
+ * Laravel Modular DDD Package Validation Script.
  *
  * This script validates the package structure, configuration, and functionality
  * before release to ensure everything is working correctly.
@@ -13,10 +13,10 @@ require_once __DIR__ . '/../vendor/autoload.php';
 
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use Symfony\Component\Console\Helper\Table;
 
 class PackageValidationCommand extends Command
 {
@@ -106,9 +106,10 @@ class PackageValidationCommand extends Command
             }
         }
 
-        $this->io->success(sprintf('Validated %d directories and %d files',
+        $this->io->success(sprintf(
+            'Validated %d directories and %d files',
             count($this->results['directories'] ?? []),
-            count($this->results['files'] ?? [])
+            count($this->results['files'] ?? []),
         ));
     }
 
@@ -118,6 +119,7 @@ class PackageValidationCommand extends Command
 
         if (!file_exists('composer.json')) {
             $this->errors[] = 'composer.json not found';
+
             return;
         }
 
@@ -125,6 +127,7 @@ class PackageValidationCommand extends Command
 
         if (json_last_error() !== JSON_ERROR_NONE) {
             $this->errors[] = 'Invalid JSON in composer.json';
+
             return;
         }
 
@@ -176,6 +179,7 @@ class PackageValidationCommand extends Command
 
         if (!file_exists($providerPath)) {
             $this->errors[] = 'ModularDddServiceProvider.php not found';
+
             return;
         }
 
@@ -297,6 +301,7 @@ class PackageValidationCommand extends Command
 
         if (!is_dir($productCatalogPath)) {
             $this->errors[] = 'ProductCatalog example module not found';
+
             return;
         }
 
@@ -345,6 +350,7 @@ class PackageValidationCommand extends Command
         foreach ($docFiles as $file) {
             if (!file_exists($file)) {
                 $this->errors[] = "Missing documentation file: {$file}";
+
                 continue;
             }
 
@@ -370,6 +376,7 @@ class PackageValidationCommand extends Command
 
         if (!is_dir('tests')) {
             $this->warnings[] = 'No tests directory found';
+
             return;
         }
 
@@ -380,6 +387,7 @@ class PackageValidationCommand extends Command
         foreach ($phpunitFiles as $file) {
             if (file_exists($file)) {
                 $hasPhpunitConfig = true;
+
                 break;
             }
         }

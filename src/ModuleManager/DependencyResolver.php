@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\ModuleManager;
 
+use Illuminate\Support\Collection;
+use InvalidArgumentException;
 use TaiCrm\LaravelModularDdd\Contracts\DependencyResolverInterface;
 use TaiCrm\LaravelModularDdd\ValueObjects\ModuleInfo;
-use Illuminate\Support\Collection;
 
 class DependencyResolver implements DependencyResolverInterface
 {
@@ -75,16 +76,14 @@ class DependencyResolver implements DependencyResolverInterface
 
     public function getDependents(string $moduleName, Collection $modules): Collection
     {
-        return $modules->filter(function (ModuleInfo $module) use ($moduleName) {
-            return $module->hasDependency($moduleName);
-        })->pluck('name');
+        return $modules->filter(static fn (ModuleInfo $module) => $module->hasDependency($moduleName))->pluck('name');
     }
 
     private function detectCycle(
         string $moduleName,
         Collection $modules,
         array &$visited,
-        array &$recursionStack
+        array &$recursionStack,
     ): bool {
         $visited[$moduleName] = true;
         $recursionStack[$moduleName] = true;
@@ -105,6 +104,7 @@ class DependencyResolver implements DependencyResolverInterface
         }
 
         unset($recursionStack[$moduleName]);
+
         return false;
     }
 
@@ -113,10 +113,10 @@ class DependencyResolver implements DependencyResolverInterface
         Collection $modules,
         array &$visited,
         array &$visiting,
-        Collection $sorted
+        Collection $sorted,
     ): void {
         if (isset($visiting[$module->name])) {
-            throw new \InvalidArgumentException("Circular dependency detected involving module: {$module->name}");
+            throw new InvalidArgumentException("Circular dependency detected involving module: {$module->name}");
         }
 
         if (isset($visited[$module->name])) {

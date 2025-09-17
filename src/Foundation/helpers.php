@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 if (!function_exists('dispatch_command')) {
     /**
      * Dispatch a command through the command bus.
      */
-    function dispatch_command(\TaiCrm\LaravelModularDdd\Foundation\Contracts\CommandInterface $command): mixed
+    function dispatch_command(TaiCrm\LaravelModularDdd\Foundation\Contracts\CommandInterface $command): mixed
     {
-        return app(\TaiCrm\LaravelModularDdd\Foundation\CommandBus::class)->dispatch($command);
+        return app(TaiCrm\LaravelModularDdd\Foundation\CommandBus::class)->dispatch($command);
     }
 }
 
@@ -14,9 +16,9 @@ if (!function_exists('ask_query')) {
     /**
      * Ask a query through the query bus.
      */
-    function ask_query(\TaiCrm\LaravelModularDdd\Foundation\Contracts\QueryInterface $query): mixed
+    function ask_query(TaiCrm\LaravelModularDdd\Foundation\Contracts\QueryInterface $query): mixed
     {
-        return app(\TaiCrm\LaravelModularDdd\Foundation\QueryBus::class)->ask($query);
+        return app(TaiCrm\LaravelModularDdd\Foundation\QueryBus::class)->ask($query);
     }
 }
 
@@ -26,7 +28,7 @@ if (!function_exists('register_command_handler')) {
      */
     function register_command_handler(string $commandClass, string $handlerClass): void
     {
-        app(\TaiCrm\LaravelModularDdd\Foundation\CommandBus::class)->register($commandClass, $handlerClass);
+        app(TaiCrm\LaravelModularDdd\Foundation\CommandBus::class)->register($commandClass, $handlerClass);
     }
 }
 
@@ -36,6 +38,6 @@ if (!function_exists('register_query_handler')) {
      */
     function register_query_handler(string $queryClass, string $handlerClass): void
     {
-        app(\TaiCrm\LaravelModularDdd\Foundation\QueryBus::class)->register($queryClass, $handlerClass);
+        app(TaiCrm\LaravelModularDdd\Foundation\QueryBus::class)->register($queryClass, $handlerClass);
     }
 }

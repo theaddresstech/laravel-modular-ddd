@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\ModuleManager;
 
+use Exception;
+use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\Collection;
+use Illuminate\Validation\Factory as ValidationFactory;
+use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
 use TaiCrm\LaravelModularDdd\Contracts\ModuleDiscoveryInterface;
 use TaiCrm\LaravelModularDdd\ValueObjects\ModuleInfo;
-use TaiCrm\LaravelModularDdd\ValueObjects\ModuleState;
-use Illuminate\Support\Collection;
-use Illuminate\Filesystem\Filesystem;
-use Illuminate\Validation\ValidationException;
-use Illuminate\Validation\Validator;
-use Illuminate\Validation\Factory as ValidationFactory;
 
 class ModuleDiscovery implements ModuleDiscoveryInterface
 {
@@ -19,7 +19,7 @@ class ModuleDiscovery implements ModuleDiscoveryInterface
         private Filesystem $files,
         private ValidationFactory $validator,
         private ModuleRegistry $registry,
-        private string $modulesPath
+        private string $modulesPath,
     ) {}
 
     public function discover(): Collection
@@ -74,7 +74,7 @@ class ModuleDiscovery implements ModuleDiscoveryInterface
                 'state' => $state,
                 'config' => $manifest['config'] ?? [],
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return null;
         }
     }
@@ -116,14 +116,14 @@ class ModuleDiscovery implements ModuleDiscoveryInterface
         $manifestPath = $modulePath . '/manifest.json';
 
         if (!$this->files->exists($manifestPath)) {
-            throw new \InvalidArgumentException("Manifest file not found at: {$manifestPath}");
+            throw new InvalidArgumentException("Manifest file not found at: {$manifestPath}");
         }
 
         $content = $this->files->get($manifestPath);
         $manifest = json_decode($content, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new \InvalidArgumentException("Invalid JSON in manifest file: " . json_last_error_msg());
+            throw new InvalidArgumentException('Invalid JSON in manifest file: ' . json_last_error_msg());
         }
 
         $this->validateManifest($manifest);

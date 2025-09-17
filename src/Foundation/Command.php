@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Foundation;
 
-use TaiCrm\LaravelModularDdd\Foundation\Contracts\CommandInterface;
-use Ramsey\Uuid\Uuid;
+use Exception;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\ValidationException;
+use Ramsey\Uuid\Uuid;
+use ReflectionClass;
+use TaiCrm\LaravelModularDdd\Foundation\Contracts\CommandInterface;
 
 abstract class Command implements CommandInterface
 {
@@ -27,7 +28,8 @@ abstract class Command implements CommandInterface
 
     public function getCommandType(): string
     {
-        $reflection = new \ReflectionClass($this);
+        $reflection = new ReflectionClass($this);
+
         return $reflection->getShortName();
     }
 
@@ -60,6 +62,8 @@ abstract class Command implements CommandInterface
         return [];
     }
 
+    abstract protected function toArray(): array;
+
     private function validateCommand(): void
     {
         $rules = $this->getValidationRules();
@@ -72,16 +76,14 @@ abstract class Command implements CommandInterface
             $validator = Validator::make(
                 $this->toArray(),
                 $rules,
-                $this->getValidationMessages()
+                $this->getValidationMessages(),
             );
 
             if ($validator->fails()) {
                 $this->validationErrors = $validator->errors()->toArray();
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->validationErrors = ['validation' => ['Command validation failed: ' . $e->getMessage()]];
         }
     }
-
-    abstract protected function toArray(): array;
 }

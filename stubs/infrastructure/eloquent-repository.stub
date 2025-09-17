@@ -19,22 +19,34 @@ class Eloquent{{ name }}Repository implements {{ name }}RepositoryInterface
 
     public function save({{ name }} ${{ nameSnake }}): void
     {
-        $model = {{ name }}Model::firstOrNew([
-            'id' => ${{ nameSnake }}->getId()->toString()
-        ]);
+        try {
+            $model = {{ name }}Model::firstOrNew([
+                'id' => ${{ nameSnake }}->getId()->toString()
+            ]);
 
-        $model->fill([
-            'name' => ${{ nameSnake }}->getName(),
-            'created_at' => ${{ nameSnake }}->getCreatedAt(),
-            'updated_at' => ${{ nameSnake }}->getUpdatedAt(),
-        ]);
+            $model->fill([
+                'name' => ${{ nameSnake }}->getName(),
+                'description' => ${{ nameSnake }}->getDescription(),
+                'status' => ${{ nameSnake }}->getStatus() ?? true,
+                'created_at' => ${{ nameSnake }}->getCreatedAt(),
+                'updated_at' => ${{ nameSnake }}->getUpdatedAt() ?? now(),
+            ]);
 
-        $model->save();
+            $model->save();
 
-        $this->logger->debug('{{ name }} saved', [
-            'id' => ${{ nameSnake }}->getId()->toString(),
-            'name' => ${{ nameSnake }}->getName(),
-        ]);
+            $this->logger->debug('{{ name }} saved', [
+                'id' => ${{ nameSnake }}->getId()->toString(),
+                'name' => ${{ nameSnake }}->getName(),
+                'description' => ${{ nameSnake }}->getDescription(),
+            ]);
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to save {{ name }}', [
+                'id' => ${{ nameSnake }}->getId()->toString(),
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
     }
 
     public function findById({{ name }}Id $id): ?{{ name }}
@@ -125,6 +137,8 @@ class Eloquent{{ name }}Repository implements {{ name }}RepositoryInterface
         return {{ name }}::reconstitute(
             {{ name }}Id::fromString($model->id),
             $model->name,
+            $model->description ?? '',
+            $model->status ?? true,
             $model->created_at->toDateTimeImmutable(),
             $model->updated_at?->toDateTimeImmutable()
         );

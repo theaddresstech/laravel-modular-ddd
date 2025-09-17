@@ -11,6 +11,7 @@ class DependencyException extends Exception
     public static function missingDependencies(string $moduleName, array $missing): self
     {
         $dependencies = implode(', ', $missing);
+
         return new self("Module '{$moduleName}' has missing dependencies: {$dependencies}");
     }
 
@@ -22,6 +23,7 @@ class DependencyException extends Exception
     public static function conflictingModules(string $moduleName, array $conflicts): self
     {
         $conflictList = implode(', ', $conflicts);
+
         return new self("Module '{$moduleName}' conflicts with: {$conflictList}");
     }
 }

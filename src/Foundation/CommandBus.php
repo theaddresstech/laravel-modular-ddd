@@ -4,28 +4,27 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Foundation;
 
-use TaiCrm\LaravelModularDdd\Foundation\Contracts\CommandInterface;
-use TaiCrm\LaravelModularDdd\Foundation\Contracts\CommandHandlerInterface;
 use Illuminate\Container\Container;
 use InvalidArgumentException;
+use TaiCrm\LaravelModularDdd\Foundation\Contracts\CommandHandlerInterface;
+use TaiCrm\LaravelModularDdd\Foundation\Contracts\CommandInterface;
 
 class CommandBus
 {
     private array $handlers = [];
 
     public function __construct(
-        private Container $container
-    ) {
-    }
+        private Container $container,
+    ) {}
 
     public function register(string $commandClass, string $handlerClass): void
     {
         if (!is_subclass_of($commandClass, CommandInterface::class)) {
-            throw new InvalidArgumentException("Command class must implement CommandInterface");
+            throw new InvalidArgumentException('Command class must implement CommandInterface');
         }
 
         if (!is_subclass_of($handlerClass, CommandHandlerInterface::class)) {
-            throw new InvalidArgumentException("Handler class must implement CommandHandlerInterface");
+            throw new InvalidArgumentException('Handler class must implement CommandHandlerInterface');
         }
 
         $this->handlers[$commandClass] = $handlerClass;
@@ -35,11 +34,11 @@ class CommandBus
     {
         if (!$command->isValid()) {
             throw new InvalidArgumentException(
-                'Command validation failed: ' . json_encode($command->validate())
+                'Command validation failed: ' . json_encode($command->validate()),
             );
         }
 
-        $commandClass = get_class($command);
+        $commandClass = $command::class;
 
         if (!isset($this->handlers[$commandClass])) {
             throw new InvalidArgumentException("No handler registered for command: {$commandClass}");

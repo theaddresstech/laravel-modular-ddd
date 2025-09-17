@@ -4,16 +4,18 @@ declare(strict_types=1);
 
 namespace Modules\ProductCatalog\Application\Commands\CreateProduct;
 
+use Exception;
+use InvalidArgumentException;
+use Modules\ProductCatalog\Application\DTOs\ProductDTO;
+use Modules\ProductCatalog\Domain\Contracts\CategoryRepositoryInterface;
+use Modules\ProductCatalog\Domain\Contracts\ProductRepositoryInterface;
+use Modules\ProductCatalog\Domain\Exceptions\CategoryNotFoundException;
 use Modules\ProductCatalog\Domain\Models\Product;
-use Modules\ProductCatalog\Domain\ValueObjects\ProductId;
 use Modules\ProductCatalog\Domain\ValueObjects\CategoryId;
 use Modules\ProductCatalog\Domain\ValueObjects\Money;
-use Modules\ProductCatalog\Domain\Repositories\ProductRepositoryInterface;
-use Modules\ProductCatalog\Domain\Repositories\CategoryRepositoryInterface;
-use Modules\ProductCatalog\Domain\Exceptions\CategoryNotFoundException;
-use Modules\ProductCatalog\Application\DTOs\ProductDTO;
-use TaiCrm\LaravelModularDdd\Communication\EventBus;
+use Modules\ProductCatalog\Domain\ValueObjects\ProductId;
 use Psr\Log\LoggerInterface;
+use TaiCrm\LaravelModularDdd\Foundation\EventBus;
 
 readonly class CreateProductHandler
 {
@@ -21,7 +23,7 @@ readonly class CreateProductHandler
         private ProductRepositoryInterface $productRepository,
         private CategoryRepositoryInterface $categoryRepository,
         private EventBus $eventBus,
-        private LoggerInterface $logger
+        private LoggerInterface $logger,
     ) {}
 
     public function handle(CreateProductCommand $command): ProductDTO
@@ -29,8 +31,8 @@ readonly class CreateProductHandler
         // Validate command
         $validationErrors = $command->validate();
         if (!empty($validationErrors)) {
-            throw new \InvalidArgumentException(
-                'Invalid command data: ' . json_encode($validationErrors)
+            throw new InvalidArgumentException(
+                'Invalid command data: ' . json_encode($validationErrors),
             );
         }
 
@@ -57,7 +59,7 @@ readonly class CreateProductHandler
                 trim($command->name),
                 trim($command->description),
                 $price,
-                $categoryId
+                $categoryId,
             );
 
             // Add images if provided
@@ -87,8 +89,7 @@ readonly class CreateProductHandler
 
             // Return DTO
             return ProductDTO::fromAggregate($product);
-
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error('Failed to create product', [
                 'command' => $command->toArray(),
                 'error' => $e->getMessage(),

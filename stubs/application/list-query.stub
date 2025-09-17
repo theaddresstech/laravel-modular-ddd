@@ -1,0 +1,45 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\{{ module }}\Application\Queries\List{{ name }}s;
+
+readonly class List{{ name }}sQuery
+{
+    public function __construct(
+        private array $filters = [],
+        private array $sorting = [],
+        private ?int $limit = null,
+        private ?int $offset = null
+    ) {}
+
+    public function getFilters(): array
+    {
+        return $this->filters;
+    }
+
+    public function getSorting(): array
+    {
+        return $this->sorting;
+    }
+
+    public function getLimit(): ?int
+    {
+        return $this->limit;
+    }
+
+    public function getOffset(): ?int
+    {
+        return $this->offset;
+    }
+
+    public function toArray(): array
+    {
+        return array_filter([
+            'filters' => $this->filters,
+            'sorting' => $this->sorting,
+            'limit' => $this->limit,
+            'offset' => $this->offset,
+        ], fn($value) => $value !== null && $value !== []);
+    }
+}

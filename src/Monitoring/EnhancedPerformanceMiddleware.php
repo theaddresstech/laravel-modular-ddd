@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace TaiCrm\LaravelModularDdd\Monitoring;
 
 use Closure;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
@@ -16,9 +17,8 @@ class EnhancedPerformanceMiddleware
     public function __construct(
         private QueryPerformanceAnalyzer $queryAnalyzer,
         private CachePerformanceMonitor $cacheMonitor,
-        private ModuleResourceMonitor $resourceMonitor
-    ) {
-    }
+        private ModuleResourceMonitor $resourceMonitor,
+    ) {}
 
     public function handle(Request $request, Closure $next): Response
     {
@@ -70,10 +70,10 @@ class EnhancedPerformanceMiddleware
             $this->checkPerformanceThresholds($requestId, $this->metrics[$requestId]);
 
             return $response;
-
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Log error with performance context
             $this->logErrorWithMetrics($requestId, $e);
+
             throw $e;
         } finally {
             // Cleanup
@@ -133,7 +133,7 @@ class EnhancedPerformanceMiddleware
 
         // Check memory usage
         if ($metrics['memory_usage'] > 50 * 1024 * 1024) { // 50MB
-            $issues[] = "High memory usage: " . $this->formatBytes($metrics['memory_usage']);
+            $issues[] = 'High memory usage: ' . $this->formatBytes($metrics['memory_usage']);
         }
 
         // Check query performance
@@ -148,7 +148,7 @@ class EnhancedPerformanceMiddleware
 
         // Check N+1 queries
         if (isset($queryMetrics['n_plus_one_queries']) && count($queryMetrics['n_plus_one_queries']) > 0) {
-            $issues[] = "N+1 queries detected: " . count($queryMetrics['n_plus_one_queries']);
+            $issues[] = 'N+1 queries detected: ' . count($queryMetrics['n_plus_one_queries']);
         }
 
         // Check cache performance
@@ -170,7 +170,7 @@ class EnhancedPerformanceMiddleware
         }
     }
 
-    private function logErrorWithMetrics(string $requestId, \Exception $e): void
+    private function logErrorWithMetrics(string $requestId, Exception $e): void
     {
         $metrics = $this->metrics[$requestId] ?? [];
 

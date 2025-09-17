@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace TaiCrm\LaravelModularDdd\Monitoring;
 
 use Illuminate\Database\Events\QueryExecuted;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class QueryPerformanceAnalyzer
@@ -18,7 +18,7 @@ class QueryPerformanceAnalyzer
 
     public function __construct(
         float $slowQueryThreshold = 1000.0, // milliseconds
-        bool $enabled = true
+        bool $enabled = true,
     ) {
         $this->slowQueryThreshold = $slowQueryThreshold;
         $this->enabled = $enabled;
@@ -82,6 +82,7 @@ class QueryPerformanceAnalyzer
     public function getAverageQueryTime(): float
     {
         $count = count($this->queries);
+
         return $count > 0 ? $this->getTotalQueryTime() / $count : 0;
     }
 
@@ -151,7 +152,7 @@ class QueryPerformanceAnalyzer
 
     private function registerListeners(): void
     {
-        DB::listen(function (QueryExecuted $query) {
+        DB::listen(function (QueryExecuted $query): void {
             $this->handleQueryExecuted($query);
         });
     }
@@ -232,7 +233,7 @@ class QueryPerformanceAnalyzer
             $recommendations[] = [
                 'type' => 'n_plus_one',
                 'severity' => 'high',
-                'message' => "Detected " . count($nPlusOneQueries) . " potential N+1 query patterns.",
+                'message' => 'Detected ' . count($nPlusOneQueries) . ' potential N+1 query patterns.',
                 'action' => 'Use eager loading (with()) to reduce query count.',
             ];
         }

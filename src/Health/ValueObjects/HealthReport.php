@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Health\ValueObjects;
 
-use TaiCrm\LaravelModularDdd\Foundation\ValueObject;
 use Carbon\Carbon;
+use TaiCrm\LaravelModularDdd\Foundation\ValueObject;
 
 readonly class HealthReport extends ValueObject
 {
@@ -13,7 +13,7 @@ readonly class HealthReport extends ValueObject
         public string $moduleName,
         public HealthStatus $status,
         public array $checks,
-        public Carbon $timestamp
+        public Carbon $timestamp,
     ) {}
 
     public static function failed(string $moduleName, string $message): self
@@ -27,18 +27,18 @@ readonly class HealthReport extends ValueObject
                     'status' => HealthStatus::Critical,
                     'message' => $message,
                     'details' => [],
-                ]
+                ],
             ],
-            timestamp: now()
+            timestamp: now(),
         );
     }
 
     public function equals(object $other): bool
     {
-        return $other instanceof self &&
-               $this->moduleName === $other->moduleName &&
-               $this->status === $other->status &&
-               $this->timestamp->equalTo($other->timestamp);
+        return $other instanceof self
+               && $this->moduleName === $other->moduleName
+               && $this->status === $other->status
+               && $this->timestamp->equalTo($other->timestamp);
     }
 
     public function isHealthy(): bool
@@ -53,23 +53,23 @@ readonly class HealthReport extends ValueObject
 
     public function hasWarnings(): bool
     {
-        return $this->status === HealthStatus::Warning ||
-               collect($this->checks)->contains('status', HealthStatus::Warning);
+        return $this->status === HealthStatus::Warning
+               || collect($this->checks)->contains('status', HealthStatus::Warning);
     }
 
     public function getHealthyChecks(): array
     {
-        return array_filter($this->checks, fn($check) => $check['status'] === HealthStatus::Healthy);
+        return array_filter($this->checks, static fn ($check) => $check['status'] === HealthStatus::Healthy);
     }
 
     public function getWarningChecks(): array
     {
-        return array_filter($this->checks, fn($check) => $check['status'] === HealthStatus::Warning);
+        return array_filter($this->checks, static fn ($check) => $check['status'] === HealthStatus::Warning);
     }
 
     public function getCriticalChecks(): array
     {
-        return array_filter($this->checks, fn($check) => $check['status'] === HealthStatus::Critical);
+        return array_filter($this->checks, static fn ($check) => $check['status'] === HealthStatus::Critical);
     }
 
     public function toArray(): array

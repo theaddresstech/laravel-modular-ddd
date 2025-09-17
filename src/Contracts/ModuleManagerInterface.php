@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Contracts;
 
+use Illuminate\Support\Collection;
 use TaiCrm\LaravelModularDdd\ValueObjects\ModuleInfo;
 use TaiCrm\LaravelModularDdd\ValueObjects\ModuleState;
-use Illuminate\Support\Collection;
 
 interface ModuleManagerInterface
 {

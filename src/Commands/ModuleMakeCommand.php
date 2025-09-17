@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Commands;
 
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Str;
@@ -17,13 +18,12 @@ class ModuleMakeCommand extends Command
                             {--description= : Module description}
                             {--force : Overwrite existing module}
                             {--no-migration : Skip migration generation}';
-
     protected $description = 'Create a new DDD module with complete structure';
 
     public function __construct(
         private Filesystem $files,
         private string $modulesPath,
-        private string $stubPath
+        private string $stubPath,
     ) {
         parent::__construct();
     }
@@ -35,6 +35,7 @@ class ModuleMakeCommand extends Command
 
         if ($this->files->exists($modulePath) && !$this->option('force')) {
             $this->error("Module '{$moduleName}' already exists. Use --force to overwrite.");
+
             return self::FAILURE;
         }
 
@@ -54,9 +55,8 @@ class ModuleMakeCommand extends Command
             $this->displayNextSteps($moduleName);
 
             return self::SUCCESS;
-
-        } catch (\Exception $e) {
-            $this->error("❌ Failed to create module: " . $e->getMessage());
+        } catch (Exception $e) {
+            $this->error('❌ Failed to create module: ' . $e->getMessage());
 
             // Clean up partial creation
             if ($this->files->exists($modulePath)) {
@@ -107,7 +107,7 @@ class ModuleMakeCommand extends Command
 
         foreach ($directories as $directory) {
             $fullPath = $modulePath . '/' . $directory;
-            $this->files->makeDirectory($fullPath, 0755, true);
+            $this->files->makeDirectory($fullPath, 0o755, true);
 
             // Create .gitkeep for empty directories
             $this->files->put($fullPath . '/.gitkeep', '');
@@ -154,7 +154,7 @@ class ModuleMakeCommand extends Command
         $manifestPath = $modulePath . '/manifest.json';
         $this->files->put(
             $manifestPath,
-            json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
+            json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
         );
     }
 
@@ -181,8 +181,8 @@ class ModuleMakeCommand extends Command
             // Auto-generated Event Listeners
             'aggregate-created-listener.stub' => "Application/Listeners/{$aggregateStudly}CreatedListener.php",
             'aggregate-name-changed-listener.stub' => "Application/Listeners/{$aggregateStudly}NameChangedListener.php",
-            'routes-api.stub' => "Routes/api.php",
-            'routes-web.stub' => "Routes/web.php",
+            'routes-api.stub' => 'Routes/api.php',
+            'routes-web.stub' => 'Routes/web.php',
         ];
 
         foreach ($stubs as $stub => $target) {
@@ -190,13 +190,14 @@ class ModuleMakeCommand extends Command
         }
     }
 
-    private function createFileFromStub(string $stub, string $target, array $replacements, string $relativePath = null): void
+    private function createFileFromStub(string $stub, string $target, array $replacements, ?string $relativePath = null): void
     {
         $stubPath = $this->stubPath . '/' . $stub;
 
         if (!$this->files->exists($stubPath)) {
             // Create a basic file if stub doesn't exist
             $this->createBasicFile($target, $replacements);
+
             return;
         }
 
@@ -215,9 +216,7 @@ class ModuleMakeCommand extends Command
 
         // Use a more specific replacement pattern to avoid double replacements
         // Sort replacements by key length (longest first) to avoid partial replacements
-        uksort($enhancedReplacements, function($a, $b) {
-            return strlen($b) - strlen($a);
-        });
+        uksort($enhancedReplacements, static fn ($a, $b) => strlen($b) - strlen($a));
 
         foreach ($enhancedReplacements as $search => $replace) {
             $content = str_replace($search, $replace, $content);
@@ -225,7 +224,7 @@ class ModuleMakeCommand extends Command
 
         $targetDir = dirname($target);
         if (!$this->files->exists($targetDir)) {
-            $this->files->makeDirectory($targetDir, 0755, true);
+            $this->files->makeDirectory($targetDir, 0o755, true);
         }
 
         $this->files->put($target, $content);
@@ -240,7 +239,7 @@ class ModuleMakeCommand extends Command
 
         $targetDir = dirname($target);
         if (!$this->files->exists($targetDir)) {
-            $this->files->makeDirectory($targetDir, 0755, true);
+            $this->files->makeDirectory($targetDir, 0o755, true);
         }
 
         $this->files->put($target, $content);
@@ -263,9 +262,8 @@ class ModuleMakeCommand extends Command
         }
 
         $namespaceParts = explode('/', $directory);
-        $namespace = 'Modules\\' . $module . '\\' . implode('\\', $namespaceParts);
 
-        return $namespace;
+        return 'Modules\\' . $module . '\\' . implode('\\', $namespaceParts);
     }
 
     private function getReplacements(string $moduleName, string $aggregate): array
@@ -315,21 +313,21 @@ class ModuleMakeCommand extends Command
         $aggregateStudly = Str::studly($aggregate);
 
         $this->newLine();
-        $this->line("📋 <comment>Next steps:</comment>");
+        $this->line('📋 <comment>Next steps:</comment>');
         $this->line("1. Review and update the module manifest: modules/{$moduleName}/manifest.json");
-        $this->line("2. Implement your domain logic in the Domain layer");
-        $this->line("3. Customize the auto-generated event listeners:");
+        $this->line('2. Implement your domain logic in the Domain layer');
+        $this->line('3. Customize the auto-generated event listeners:');
         $this->line("   - Application/Listeners/{$aggregateStudly}CreatedListener.php");
         $this->line("   - Application/Listeners/{$aggregateStudly}NameChangedListener.php");
         $this->line("4. Review and customize the auto-generated migration: modules/{$moduleName}/Database/Migrations/");
         $this->line("5. Install the module: <info>php artisan module:install {$moduleName}</info>");
         $this->line("6. Enable the module: <info>php artisan module:enable {$moduleName}</info>");
         $this->newLine();
-        $this->line("🎉 <info>Auto-generated components:</info>");
+        $this->line('🎉 <info>Auto-generated components:</info>');
         $this->line("   ✅ Domain Events: {$aggregateStudly}Created, {$aggregateStudly}NameChanged");
-        $this->line("   ✅ Event Listeners: Automatically wired and ready for customization");
-        $this->line("   ✅ Database Migration: Basic table structure with UUID primary key");
-        $this->line("   ✅ Complete DDD structure with timestamps and event handling");
+        $this->line('   ✅ Event Listeners: Automatically wired and ready for customization');
+        $this->line('   ✅ Database Migration: Basic table structure with UUID primary key');
+        $this->line('   ✅ Complete DDD structure with timestamps and event handling');
         $this->newLine();
     }
 
@@ -343,7 +341,7 @@ class ModuleMakeCommand extends Command
         $this->call('module:make-migration', [
             'module' => $moduleName,
             'name' => "create_{$tableName}_table",
-            '--create' => $tableName
+            '--create' => $tableName,
         ]);
     }
 }

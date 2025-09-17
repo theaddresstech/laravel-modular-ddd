@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace TaiCrm\LaravelModularDdd\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\File;
+use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
 use TaiCrm\LaravelModularDdd\Documentation\SwaggerAnnotationScanner;
 use TaiCrm\LaravelModularDdd\Documentation\SwaggerDocumentationGenerator;
-use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
-use Illuminate\Support\Facades\File;
 
 class ModuleSwaggerScanCommand extends Command
 {
@@ -21,13 +21,12 @@ class ModuleSwaggerScanCommand extends Command
                             {--ui : Generate Swagger UI HTML files}
                             {--cache : Use cached results if available}
                             {--fresh : Force fresh scan, ignore cache}';
-
     protected $description = 'Scan modules for Swagger annotations and generate documentation';
 
     public function __construct(
         private SwaggerAnnotationScanner $scanner,
         private SwaggerDocumentationGenerator $generator,
-        private ModuleManagerInterface $moduleManager
+        private ModuleManagerInterface $moduleManager,
     ) {
         parent::__construct();
     }
@@ -49,6 +48,7 @@ class ModuleSwaggerScanCommand extends Command
             $result = $this->scanSingleModule($moduleName, $useCache);
             if (empty($result)) {
                 $this->error("No Swagger documentation found for module '{$moduleName}'");
+
                 return 1;
             }
         } else {
@@ -56,6 +56,7 @@ class ModuleSwaggerScanCommand extends Command
             $result = $this->scanAllModules($useCache);
             if (empty($result)) {
                 $this->warn('No Swagger documentation found in any modules');
+
                 return 0;
             }
         }
@@ -67,16 +68,18 @@ class ModuleSwaggerScanCommand extends Command
         }
 
         $this->info('✅ Swagger scan completed successfully!');
+
         return 0;
     }
 
     /**
-     * Scan a single module
+     * Scan a single module.
      */
     private function scanSingleModule(string $moduleName, bool $useCache): array
     {
         if (!$this->moduleExists($moduleName)) {
             $this->error("Module '{$moduleName}' does not exist.");
+
             return [];
         }
 
@@ -92,7 +95,7 @@ class ModuleSwaggerScanCommand extends Command
     }
 
     /**
-     * Scan all modules
+     * Scan all modules.
      */
     private function scanAllModules(bool $useCache): array
     {
@@ -108,6 +111,7 @@ class ModuleSwaggerScanCommand extends Command
             if (!$module->isEnabled()) {
                 $progressBar->setMessage("Skipping disabled: {$module->name}");
                 $progressBar->advance();
+
                 continue;
             }
 
@@ -130,7 +134,7 @@ class ModuleSwaggerScanCommand extends Command
     }
 
     /**
-     * Display scan results
+     * Display scan results.
      */
     private function displayScanResults(array $results): void
     {
@@ -167,7 +171,7 @@ class ModuleSwaggerScanCommand extends Command
         $this->table($headers, $rows);
 
         if ($totalPaths > 0) {
-            $this->info("🎯 Found {$totalPaths} API endpoints across " . count($results) . " modules");
+            $this->info("🎯 Found {$totalPaths} API endpoints across " . count($results) . ' modules');
         }
 
         if ($totalSchemas > 0) {
@@ -176,7 +180,7 @@ class ModuleSwaggerScanCommand extends Command
     }
 
     /**
-     * Export documentation to files
+     * Export documentation to files.
      */
     private function exportDocumentation(array $results, string $outputDir, string $format, bool $withCombined, bool $withUI): void
     {
@@ -184,7 +188,7 @@ class ModuleSwaggerScanCommand extends Command
 
         // Ensure output directory exists
         if (!File::exists($outputDir)) {
-            File::makeDirectory($outputDir, 0755, true);
+            File::makeDirectory($outputDir, 0o755, true);
             $this->line("Created output directory: {$outputDir}");
         }
 
@@ -227,7 +231,7 @@ class ModuleSwaggerScanCommand extends Command
     }
 
     /**
-     * Export module documentation
+     * Export module documentation.
      */
     private function exportModuleDocumentation(string $moduleName, array $documentation, string $outputDir, string $format): string
     {
@@ -249,7 +253,7 @@ class ModuleSwaggerScanCommand extends Command
     }
 
     /**
-     * Export combined documentation
+     * Export combined documentation.
      */
     private function exportCombinedDocumentation(array $documentation, string $outputDir, string $format): string
     {
@@ -270,7 +274,7 @@ class ModuleSwaggerScanCommand extends Command
     }
 
     /**
-     * Generate combined Swagger UI
+     * Generate combined Swagger UI.
      */
     private function generateCombinedSwaggerUI(string $outputDir): string
     {
@@ -278,47 +282,47 @@ class ModuleSwaggerScanCommand extends Command
         $jsonUrl = '/api-documentation.json';
 
         $htmlContent = <<<HTML
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>{$appName} - Complete API Documentation</title>
-    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css" />
-    <style>
-        html { box-sizing: border-box; overflow: -moz-scrollbars-vertical; overflow-y: scroll; }
-        *, *:before, *:after { box-sizing: inherit; }
-        body { margin:0; background: #fafafa; }
-    </style>
-</head>
-<body>
-    <div id="swagger-ui"></div>
-    <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js"></script>
-    <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-standalone-preset.js"></script>
-    <script>
-        window.onload = function() {
-            const ui = SwaggerUIBundle({
-                url: '{$jsonUrl}',
-                dom_id: '#swagger-ui',
-                deepLinking: true,
-                presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
-                plugins: [SwaggerUIBundle.plugins.DownloadUrl],
-                layout: "StandaloneLayout",
-                tryItOutEnabled: true,
-                supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch'],
-                persistAuthorization: true,
-                displayRequestDuration: true,
-                docExpansion: 'list',
-                filter: true,
-                showExtensions: true,
-                showCommonExtensions: true,
-                defaultModelsExpandDepth: 2,
-                defaultModelExpandDepth: 2
-            });
-        };
-    </script>
-</body>
-</html>
-HTML;
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <title>{$appName} - Complete API Documentation</title>
+                <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css" />
+                <style>
+                    html { box-sizing: border-box; overflow: -moz-scrollbars-vertical; overflow-y: scroll; }
+                    *, *:before, *:after { box-sizing: inherit; }
+                    body { margin:0; background: #fafafa; }
+                </style>
+            </head>
+            <body>
+                <div id="swagger-ui"></div>
+                <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js"></script>
+                <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-standalone-preset.js"></script>
+                <script>
+                    window.onload = function() {
+                        const ui = SwaggerUIBundle({
+                            url: '{$jsonUrl}',
+                            dom_id: '#swagger-ui',
+                            deepLinking: true,
+                            presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+                            plugins: [SwaggerUIBundle.plugins.DownloadUrl],
+                            layout: "StandaloneLayout",
+                            tryItOutEnabled: true,
+                            supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch'],
+                            persistAuthorization: true,
+                            displayRequestDuration: true,
+                            docExpansion: 'list',
+                            filter: true,
+                            showExtensions: true,
+                            showCommonExtensions: true,
+                            defaultModelsExpandDepth: 2,
+                            defaultModelExpandDepth: 2
+                        });
+                    };
+                </script>
+            </body>
+            </html>
+            HTML;
 
         $filename = "{$outputDir}/api-documentation-ui.html";
         File::put($filename, $htmlContent);
@@ -327,7 +331,7 @@ HTML;
     }
 
     /**
-     * Simple array to YAML conversion
+     * Simple array to YAML conversion.
      */
     private function arrayToYaml(array $array, int $indent = 0): string
     {
@@ -347,9 +351,11 @@ HTML;
     }
 
     /**
-     * Format value for YAML
+     * Format value for YAML.
+     *
+     * @param mixed $value
      */
-    private function yamlValue($value): string
+    private function yamlValue(mixed $value): string
     {
         if (is_string($value)) {
             return '"' . addslashes($value) . '"';
@@ -357,14 +363,15 @@ HTML;
         if (is_bool($value)) {
             return $value ? 'true' : 'false';
         }
-        if (is_null($value)) {
+        if ($value === null) {
             return 'null';
         }
+
         return (string) $value;
     }
 
     /**
-     * Check if module exists
+     * Check if module exists.
      */
     private function moduleExists(string $moduleName): bool
     {

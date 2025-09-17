@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Http\Controllers;
 
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\File;
 use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
 use TaiCrm\LaravelModularDdd\Documentation\SwaggerAnnotationScanner;
 
@@ -17,47 +16,51 @@ class SwaggerDocumentationController extends Controller
 {
     public function __construct(
         private ModuleManagerInterface $moduleManager,
-        private SwaggerAnnotationScanner $scanner
+        private SwaggerAnnotationScanner $scanner,
     ) {}
 
     /**
-     * Serve the main API documentation
+     * Serve the main API documentation.
      */
     public function index(Request $request): Response
     {
         $spec = $this->generateMainApiSpec();
+
         return $this->renderSwaggerUI($spec, 'API Documentation');
     }
 
     /**
-     * Serve version-specific API documentation
+     * Serve version-specific API documentation.
      */
     public function version(Request $request, string $version): Response
     {
         $spec = $this->generateVersionApiSpec($version);
+
         return $this->renderSwaggerUI($spec, "API Documentation - {$version}");
     }
 
     /**
-     * Serve module-specific API documentation
+     * Serve module-specific API documentation.
      */
     public function module(Request $request, string $module): Response
     {
         $spec = $this->generateModuleApiSpec($module);
+
         return $this->renderSwaggerUI($spec, "{$module} Module Documentation");
     }
 
     /**
-     * Serve version and module-specific API documentation
+     * Serve version and module-specific API documentation.
      */
     public function versionModule(Request $request, string $version, string $module): Response
     {
         $spec = $this->generateVersionModuleApiSpec($version, $module);
+
         return $this->renderSwaggerUI($spec, "{$module} Module Documentation - {$version}");
     }
 
     /**
-     * Get the OpenAPI specification as JSON
+     * Get the OpenAPI specification as JSON.
      */
     public function spec(Request $request): JsonResponse
     {
@@ -78,7 +81,7 @@ class SwaggerDocumentationController extends Controller
     }
 
     /**
-     * Generate main API specification
+     * Generate main API specification.
      */
     private function generateMainApiSpec(): array
     {
@@ -114,7 +117,7 @@ class SwaggerDocumentationController extends Controller
             $spec['paths'] = array_merge($spec['paths'], $modulePaths['paths']);
             $spec['components']['schemas'] = array_merge(
                 $spec['components']['schemas'],
-                $modulePaths['components']['schemas'] ?? []
+                $modulePaths['components']['schemas'] ?? [],
             );
         }
 
@@ -122,7 +125,7 @@ class SwaggerDocumentationController extends Controller
     }
 
     /**
-     * Generate version-specific API specification
+     * Generate version-specific API specification.
      */
     private function generateVersionApiSpec(string $version): array
     {
@@ -153,7 +156,7 @@ class SwaggerDocumentationController extends Controller
             $spec['paths'] = array_merge($spec['paths'], $modulePaths['paths']);
             $spec['components']['schemas'] = array_merge(
                 $spec['components']['schemas'],
-                $modulePaths['components']['schemas'] ?? []
+                $modulePaths['components']['schemas'] ?? [],
             );
         }
 
@@ -161,7 +164,7 @@ class SwaggerDocumentationController extends Controller
     }
 
     /**
-     * Generate module-specific API specification
+     * Generate module-specific API specification.
      */
     private function generateModuleApiSpec(string $module): array
     {
@@ -199,7 +202,7 @@ class SwaggerDocumentationController extends Controller
     }
 
     /**
-     * Generate version and module-specific API specification
+     * Generate version and module-specific API specification.
      */
     private function generateVersionModuleApiSpec(string $version, string $module): array
     {
@@ -237,13 +240,13 @@ class SwaggerDocumentationController extends Controller
     }
 
     /**
-     * Get servers configuration
+     * Get servers configuration.
      */
     private function getServers(?string $version = null): array
     {
         $baseUrl = Config::get('app.url');
 
-        $servers = [
+        return [
             [
                 'url' => $version
                     ? "{$baseUrl}/{$version}"
@@ -253,12 +256,10 @@ class SwaggerDocumentationController extends Controller
                     : 'Production server',
             ],
         ];
-
-        return $servers;
     }
 
     /**
-     * Get security schemes configuration
+     * Get security schemes configuration.
      */
     private function getSecuritySchemes(): array
     {
@@ -302,7 +303,7 @@ class SwaggerDocumentationController extends Controller
     }
 
     /**
-     * Get OAuth2 scopes for Passport
+     * Get OAuth2 scopes for Passport.
      */
     private function getOAuth2Scopes(): array
     {
@@ -315,7 +316,7 @@ class SwaggerDocumentationController extends Controller
     }
 
     /**
-     * Render Swagger UI
+     * Render Swagger UI.
      */
     private function renderSwaggerUI(array $spec, string $title): Response
     {

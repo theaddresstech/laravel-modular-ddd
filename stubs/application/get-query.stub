@@ -1,0 +1,24 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\{{ module }}\Application\Queries\Get{{ name }};
+
+readonly class Get{{ name }}Query
+{
+    public function __construct(
+        private string $id
+    ) {}
+
+    public function getId(): string
+    {
+        return $this->id;
+    }
+
+    public function toArray(): array
+    {
+        return [
+            'id' => $this->id,
+        ];
+    }
+}

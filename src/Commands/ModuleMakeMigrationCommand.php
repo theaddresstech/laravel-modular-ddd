@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace TaiCrm\LaravelModularDdd\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Str;
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\Str;
 
 class ModuleMakeMigrationCommand extends Command
 {
@@ -14,7 +14,7 @@ class ModuleMakeMigrationCommand extends Command
     protected $description = 'Create a new migration file for a module';
 
     public function __construct(
-        private Filesystem $files
+        private Filesystem $files,
     ) {
         parent::__construct();
     }
@@ -28,6 +28,7 @@ class ModuleMakeMigrationCommand extends Command
 
         if (!$this->moduleExists($moduleName)) {
             $this->error("Module '{$moduleName}' does not exist.");
+
             return 1;
         }
 
@@ -91,7 +92,7 @@ class ModuleMakeMigrationCommand extends Command
     private function ensureDirectoryExists(string $directory): void
     {
         if (!$this->files->isDirectory($directory)) {
-            $this->files->makeDirectory($directory, 0755, true);
+            $this->files->makeDirectory($directory, 0o755, true);
         }
     }
 
@@ -118,111 +119,111 @@ class ModuleMakeMigrationCommand extends Command
     private function getCreateTableTemplate(): string
     {
         return <<<'PHP'
-<?php
+            <?php
 
-declare(strict_types=1);
+            declare(strict_types=1);
 
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
+            use Illuminate\Database\Migrations\Migration;
+            use Illuminate\Database\Schema\Blueprint;
+            use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
-    public function up(): void
-    {
-        Schema::create('{{ table }}', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->timestamps();
+            return new class extends Migration
+            {
+                public function up(): void
+                {
+                    Schema::create('{{ table }}', function (Blueprint $table) {
+                        $table->uuid('id')->primary();
+                        $table->timestamps();
 
-            // Add your columns here
+                        // Add your columns here
 
-            // Add indexes for better query performance
-            $table->index(['created_at']);
-        });
-    }
+                        // Add indexes for better query performance
+                        $table->index(['created_at']);
+                    });
+                }
 
-    public function down(): void
-    {
-        Schema::dropIfExists('{{ table }}');
-    }
-};
-PHP;
+                public function down(): void
+                {
+                    Schema::dropIfExists('{{ table }}');
+                }
+            };
+            PHP;
     }
 
     private function getModifyTableTemplate(): string
     {
         return <<<'PHP'
-<?php
+            <?php
 
-declare(strict_types=1);
+            declare(strict_types=1);
 
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
+            use Illuminate\Database\Migrations\Migration;
+            use Illuminate\Database\Schema\Blueprint;
+            use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
-    public function up(): void
-    {
-        Schema::table('{{ table }}', function (Blueprint $table) {
-            // Add your column modifications here
-            // $table->string('new_column')->nullable();
-        });
-    }
+            return new class extends Migration
+            {
+                public function up(): void
+                {
+                    Schema::table('{{ table }}', function (Blueprint $table) {
+                        // Add your column modifications here
+                        // $table->string('new_column')->nullable();
+                    });
+                }
 
-    public function down(): void
-    {
-        Schema::table('{{ table }}', function (Blueprint $table) {
-            // Reverse your column modifications here
-            // $table->dropColumn('new_column');
-        });
-    }
-};
-PHP;
+                public function down(): void
+                {
+                    Schema::table('{{ table }}', function (Blueprint $table) {
+                        // Reverse your column modifications here
+                        // $table->dropColumn('new_column');
+                    });
+                }
+            };
+            PHP;
     }
 
     private function getGenericMigrationTemplate(): string
     {
         return <<<'PHP'
-<?php
+            <?php
 
-declare(strict_types=1);
+            declare(strict_types=1);
 
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
+            use Illuminate\Database\Migrations\Migration;
+            use Illuminate\Database\Schema\Blueprint;
+            use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
-    public function up(): void
-    {
-        // Add your migration logic here
+            return new class extends Migration
+            {
+                public function up(): void
+                {
+                    // Add your migration logic here
 
-        // Example: Create table
-        // Schema::create('{{ table }}', function (Blueprint $table) {
-        //     $table->uuid('id')->primary();
-        //     $table->timestamps();
-        // });
+                    // Example: Create table
+                    // Schema::create('{{ table }}', function (Blueprint $table) {
+                    //     $table->uuid('id')->primary();
+                    //     $table->timestamps();
+                    // });
 
-        // Example: Modify table
-        // Schema::table('{{ table }}', function (Blueprint $table) {
-        //     $table->string('new_column')->nullable();
-        // });
-    }
+                    // Example: Modify table
+                    // Schema::table('{{ table }}', function (Blueprint $table) {
+                    //     $table->string('new_column')->nullable();
+                    // });
+                }
 
-    public function down(): void
-    {
-        // Reverse your migration logic here
+                public function down(): void
+                {
+                    // Reverse your migration logic here
 
-        // Example: Drop table
-        // Schema::dropIfExists('{{ table }}');
+                    // Example: Drop table
+                    // Schema::dropIfExists('{{ table }}');
 
-        // Example: Remove column
-        // Schema::table('{{ table }}', function (Blueprint $table) {
-        //     $table->dropColumn('new_column');
-        // });
-    }
-};
-PHP;
+                    // Example: Remove column
+                    // Schema::table('{{ table }}', function (Blueprint $table) {
+                    //     $table->dropColumn('new_column');
+                    // });
+                }
+            };
+            PHP;
     }
 }

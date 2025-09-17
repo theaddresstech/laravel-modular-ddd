@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Commands;
 
-use TaiCrm\LaravelModularDdd\Visualization\DependencyGraphGenerator;
 use Illuminate\Console\Command;
+use InvalidArgumentException;
+use RuntimeException;
+use TaiCrm\LaravelModularDdd\Visualization\DependencyGraphGenerator;
 
 class ModuleVisualizationCommand extends Command
 {
@@ -19,11 +21,10 @@ class ModuleVisualizationCommand extends Command
                             {--installation-order : Show recommended installation order}
                             {--export-html : Export interactive HTML visualization}
                             {--serve : Start local server for interactive visualization}';
-
     protected $description = 'Generate visualizations of module dependencies and relationships';
 
     public function __construct(
-        private DependencyGraphGenerator $generator
+        private DependencyGraphGenerator $generator,
     ) {
         parent::__construct();
     }
@@ -90,6 +91,7 @@ class ModuleVisualizationCommand extends Command
 
         if (empty($tree)) {
             $this->warn('No modules found or no dependencies detected.');
+
             return 0;
         }
 
@@ -112,6 +114,7 @@ class ModuleVisualizationCommand extends Command
 
         if (empty($cycles)) {
             $this->info('✓ No circular dependencies found!');
+
             return 0;
         }
 
@@ -123,7 +126,7 @@ class ModuleVisualizationCommand extends Command
                 '<error>Cycle %d:</error> %s → %s',
                 $i + 1,
                 implode(' → ', $cycle),
-                $cycle[0] // Complete the cycle
+                $cycle[0], // Complete the cycle
             ));
         }
 
@@ -149,6 +152,7 @@ class ModuleVisualizationCommand extends Command
 
             if (empty($order)) {
                 $this->warn('No modules found.');
+
                 return 0;
             }
 
@@ -159,7 +163,7 @@ class ModuleVisualizationCommand extends Command
                 $this->line(sprintf(
                     '<comment>%2d.</comment> %s',
                     $i + 1,
-                    $moduleName
+                    $moduleName,
                 ));
             }
 
@@ -170,11 +174,11 @@ class ModuleVisualizationCommand extends Command
                 file_put_contents($outputFile, json_encode($order, JSON_PRETTY_PRINT));
                 $this->info("Installation order exported to: {$outputFile}");
             }
-
-        } catch (\RuntimeException $e) {
+        } catch (RuntimeException $e) {
             $this->error('Cannot determine installation order: ' . $e->getMessage());
             $this->line('This usually indicates circular dependencies.');
             $this->line('Run with --find-cycles to identify problematic dependencies.');
+
             return 1;
         }
 
@@ -241,9 +245,9 @@ class ModuleVisualizationCommand extends Command
                 file_put_contents($outputFile, json_encode($analysis, JSON_PRETTY_PRINT));
                 $this->info("Module analysis exported to: {$outputFile}");
             }
-
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             $this->error($e->getMessage());
+
             return 1;
         }
 
@@ -290,7 +294,7 @@ class ModuleVisualizationCommand extends Command
             $request = socket_read($client, 1024);
             $response = "HTTP/1.1 200 OK\r\n";
             $response .= "Content-Type: text/html\r\n";
-            $response .= "Content-Length: " . strlen($html) . "\r\n";
+            $response .= 'Content-Length: ' . strlen($html) . "\r\n";
             $response .= "Connection: close\r\n\r\n";
             $response .= $html;
 
@@ -308,16 +312,19 @@ class ModuleVisualizationCommand extends Command
         switch ($format) {
             case 'json':
                 $this->line(json_encode($visualization, JSON_PRETTY_PRINT));
+
                 break;
 
             case 'dot':
             case 'mermaid':
                 $this->line($visualization);
+
                 break;
 
             case 'cytoscape':
                 $this->info('Cytoscape.js format generated. Use --output to save or --export-html for interactive view.');
                 $this->line(json_encode($visualization, JSON_PRETTY_PRINT));
+
                 break;
 
             default:
@@ -356,7 +363,7 @@ class ModuleVisualizationCommand extends Command
             $this->line('');
             $this->info('Hub Modules (High Impact):');
             foreach ($metrics['hub_modules'] as $hub) {
-                $this->line("  • {$hub['name']} ({$hub['dependent_count']} dependents, score: " . number_format($hub['criticality_score'], 2) . ")");
+                $this->line("  • {$hub['name']} ({$hub['dependent_count']} dependents, score: " . number_format($hub['criticality_score'], 2) . ')');
             }
         }
 
@@ -364,8 +371,8 @@ class ModuleVisualizationCommand extends Command
             $this->line('');
             $this->info('Module Clusters:');
             foreach ($graph['clusters'] as $cluster) {
-                $this->line("  • Cluster {$cluster['id']}: {$cluster['size']} modules (density: " . number_format($cluster['interconnection_density'], 2) . ")");
-                $this->line("    Modules: " . implode(', ', $cluster['modules']));
+                $this->line("  • Cluster {$cluster['id']}: {$cluster['size']} modules (density: " . number_format($cluster['interconnection_density'], 2) . ')');
+                $this->line('    Modules: ' . implode(', ', $cluster['modules']));
             }
         }
     }
@@ -412,90 +419,90 @@ class ModuleVisualizationCommand extends Command
         $layoutJson = json_encode($graph['layout']);
 
         return <<<HTML
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Module Dependencies Visualization</title>
-    <script src="https://unpkg.com/cytoscape@3.19.0/dist/cytoscape.min.js"></script>
-    <script src="https://unpkg.com/dagre@0.8.5/dist/dagre.min.js"></script>
-    <script src="https://unpkg.com/cytoscape-dagre@2.3.2/cytoscape-dagre.js"></script>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
-        #cy { width: 100%; height: 80vh; border: 1px solid #ccc; }
-        .controls { margin: 10px 0; }
-        .controls button { margin: 0 5px; padding: 5px 10px; }
-        .info { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 4px; }
-    </style>
-</head>
-<body>
-    <h1>Module Dependencies Visualization</h1>
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Module Dependencies Visualization</title>
+                <script src="https://unpkg.com/cytoscape@3.19.0/dist/cytoscape.min.js"></script>
+                <script src="https://unpkg.com/dagre@0.8.5/dist/dagre.min.js"></script>
+                <script src="https://unpkg.com/cytoscape-dagre@2.3.2/cytoscape-dagre.js"></script>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+                    #cy { width: 100%; height: 80vh; border: 1px solid #ccc; }
+                    .controls { margin: 10px 0; }
+                    .controls button { margin: 0 5px; padding: 5px 10px; }
+                    .info { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 4px; }
+                </style>
+            </head>
+            <body>
+                <h1>Module Dependencies Visualization</h1>
 
-    <div class="info">
-        <strong>Instructions:</strong>
-        <ul>
-            <li>Green nodes: Modules with satisfied dependencies</li>
-            <li>Red nodes: Modules with unsatisfied dependencies</li>
-            <li>Gray nodes: Disabled modules</li>
-            <li>Solid edges: Satisfied dependencies</li>
-            <li>Dashed edges: Unsatisfied dependencies</li>
-        </ul>
-    </div>
+                <div class="info">
+                    <strong>Instructions:</strong>
+                    <ul>
+                        <li>Green nodes: Modules with satisfied dependencies</li>
+                        <li>Red nodes: Modules with unsatisfied dependencies</li>
+                        <li>Gray nodes: Disabled modules</li>
+                        <li>Solid edges: Satisfied dependencies</li>
+                        <li>Dashed edges: Unsatisfied dependencies</li>
+                    </ul>
+                </div>
 
-    <div class="controls">
-        <button onclick="cy.fit()">Fit to Screen</button>
-        <button onclick="cy.center()">Center</button>
-        <button onclick="resetLayout()">Reset Layout</button>
-        <button onclick="toggleLabels()">Toggle Labels</button>
-    </div>
+                <div class="controls">
+                    <button onclick="cy.fit()">Fit to Screen</button>
+                    <button onclick="cy.center()">Center</button>
+                    <button onclick="resetLayout()">Reset Layout</button>
+                    <button onclick="toggleLabels()">Toggle Labels</button>
+                </div>
 
-    <div id="cy"></div>
+                <div id="cy"></div>
 
-    <script>
-        cytoscape.use(cytoscapeDagre);
+                <script>
+                    cytoscape.use(cytoscapeDagre);
 
-        var cy = cytoscape({
-            container: document.getElementById('cy'),
-            elements: {$elementsJson},
-            style: {$stylesJson},
-            layout: {$layoutJson}
-        });
+                    var cy = cytoscape({
+                        container: document.getElementById('cy'),
+                        elements: {$elementsJson},
+                        style: {$stylesJson},
+                        layout: {$layoutJson}
+                    });
 
-        // Event handlers
-        cy.on('tap', 'node', function(evt) {
-            var node = evt.target;
-            console.log('Clicked node:', node.data());
+                    // Event handlers
+                    cy.on('tap', 'node', function(evt) {
+                        var node = evt.target;
+                        console.log('Clicked node:', node.data());
 
-            // Highlight connected edges
-            var connectedEdges = node.connectedEdges();
-            cy.elements().removeClass('highlighted');
-            node.addClass('highlighted');
-            connectedEdges.addClass('highlighted');
-        });
+                        // Highlight connected edges
+                        var connectedEdges = node.connectedEdges();
+                        cy.elements().removeClass('highlighted');
+                        node.addClass('highlighted');
+                        connectedEdges.addClass('highlighted');
+                    });
 
-        cy.on('tap', function(evt) {
-            if (evt.target === cy) {
-                cy.elements().removeClass('highlighted');
-            }
-        });
+                    cy.on('tap', function(evt) {
+                        if (evt.target === cy) {
+                            cy.elements().removeClass('highlighted');
+                        }
+                    });
 
-        // Helper functions
-        function resetLayout() {
-            cy.layout({$layoutJson}).run();
-        }
+                    // Helper functions
+                    function resetLayout() {
+                        cy.layout({$layoutJson}).run();
+                    }
 
-        var labelsVisible = true;
-        function toggleLabels() {
-            if (labelsVisible) {
-                cy.style().selector('node').style('content', '').update();
-                labelsVisible = false;
-            } else {
-                cy.style().selector('node').style('content', 'data(label)').update();
-                labelsVisible = true;
-            }
-        }
-    </script>
-</body>
-</html>
-HTML;
+                    var labelsVisible = true;
+                    function toggleLabels() {
+                        if (labelsVisible) {
+                            cy.style().selector('node').style('content', '').update();
+                            labelsVisible = false;
+                        } else {
+                            cy.style().selector('node').style('content', 'data(label)').update();
+                            labelsVisible = true;
+                        }
+                    }
+                </script>
+            </body>
+            </html>
+            HTML;
     }
 }

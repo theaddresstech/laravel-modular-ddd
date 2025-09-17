@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Monitoring;
 
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Cache\Events\CacheHit;
 use Illuminate\Cache\Events\CacheMissed;
-use Illuminate\Cache\Events\KeyWritten;
 use Illuminate\Cache\Events\KeyDeleted;
+use Illuminate\Cache\Events\KeyWritten;
+use Illuminate\Support\Facades\Cache;
 
 class CachePerformanceMonitor
 {
@@ -49,6 +48,7 @@ class CachePerformanceMonitor
     {
         $report = $this->generateReport();
         $this->disable();
+
         return $report;
     }
 
@@ -60,6 +60,7 @@ class CachePerformanceMonitor
     public function getHitRate(): float
     {
         $total = $this->metrics['hits'] + $this->metrics['misses'];
+
         return $total > 0 ? ($this->metrics['hits'] / $total) * 100 : 0;
     }
 
@@ -71,12 +72,14 @@ class CachePerformanceMonitor
     public function getTopMissedKeys(int $limit = 10): array
     {
         arsort($this->metrics['missed_keys']);
+
         return array_slice($this->metrics['missed_keys'], 0, $limit, true);
     }
 
     public function getTopHitKeys(int $limit = 10): array
     {
         arsort($this->metrics['hit_keys']);
+
         return array_slice($this->metrics['hit_keys'], 0, $limit, true);
     }
 
@@ -109,7 +112,7 @@ class CachePerformanceMonitor
     {
         $moduleKeys = array_filter(
             array_keys($this->metrics['hit_keys']),
-            fn($key) => str_starts_with($key, "module:{$moduleId}:")
+            static fn ($key) => str_starts_with($key, "module:{$moduleId}:"),
         );
 
         $hits = array_sum(array_intersect_key($this->metrics['hit_keys'], array_flip($moduleKeys)));
@@ -129,7 +132,7 @@ class CachePerformanceMonitor
     {
         $queryKeys = array_filter(
             array_keys($this->metrics['hit_keys']),
-            fn($key) => str_contains($key, 'query:') || str_contains($key, 'sql:')
+            static fn ($key) => str_contains($key, 'query:') || str_contains($key, 'sql:'),
         );
 
         $hits = array_sum(array_intersect_key($this->metrics['hit_keys'], array_flip($queryKeys)));
@@ -178,13 +181,11 @@ class CachePerformanceMonitor
 
     public function trackCacheEfficiency(): array
     {
-        $efficiency = [
+        return [
             'memory_efficiency' => $this->calculateMemoryEfficiency(),
             'time_efficiency' => $this->calculateTimeEfficiency(),
             'storage_efficiency' => $this->calculateStorageEfficiency(),
         ];
-
-        return $efficiency;
     }
 
     private function registerEventListeners(): void
@@ -194,19 +195,19 @@ class CachePerformanceMonitor
         }
 
         // Listen for cache events
-        app('events')->listen(CacheHit::class, function (CacheHit $event) {
+        app('events')->listen(CacheHit::class, function (CacheHit $event): void {
             $this->handleCacheHit($event);
         });
 
-        app('events')->listen(CacheMissed::class, function (CacheMissed $event) {
+        app('events')->listen(CacheMissed::class, function (CacheMissed $event): void {
             $this->handleCacheMiss($event);
         });
 
-        app('events')->listen(KeyWritten::class, function (KeyWritten $event) {
+        app('events')->listen(KeyWritten::class, function (KeyWritten $event): void {
             $this->handleKeyWritten($event);
         });
 
-        app('events')->listen(KeyDeleted::class, function (KeyDeleted $event) {
+        app('events')->listen(KeyDeleted::class, function (KeyDeleted $event): void {
             $this->handleKeyDeleted($event);
         });
     }
@@ -287,7 +288,7 @@ class CachePerformanceMonitor
         // Analyze common key prefixes
         $allKeys = array_merge(
             array_keys($this->metrics['hit_keys']),
-            array_keys($this->metrics['missed_keys'])
+            array_keys($this->metrics['missed_keys']),
         );
 
         foreach ($allKeys as $key) {
@@ -322,6 +323,7 @@ class CachePerformanceMonitor
     {
         // Extract meaningful prefix from cache key
         $parts = explode(':', $key);
+
         return $parts[0] ?? $key;
     }
 
@@ -417,7 +419,7 @@ class CachePerformanceMonitor
         // Penalty for too many one-time keys (poor storage utilization)
         $oneTimeKeys = array_filter(
             array_merge($this->metrics['hit_keys'], $this->metrics['missed_keys']),
-            fn($count) => $count <= 1
+            static fn ($count) => $count <= 1,
         );
 
         if (count($oneTimeKeys) > $uniqueKeys * 0.3) { // More than 30% one-time keys

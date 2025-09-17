@@ -4,22 +4,24 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\ModuleManager;
 
-use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
-use TaiCrm\LaravelModularDdd\Contracts\ModuleDiscoveryInterface;
-use TaiCrm\LaravelModularDdd\Contracts\DependencyResolverInterface;
-use TaiCrm\LaravelModularDdd\ValueObjects\ModuleInfo;
-use TaiCrm\LaravelModularDdd\ValueObjects\ModuleState;
-use TaiCrm\LaravelModularDdd\Exceptions\ModuleNotFoundException;
-use TaiCrm\LaravelModularDdd\Exceptions\DependencyException;
-use TaiCrm\LaravelModularDdd\Exceptions\ModuleInstallationException;
-use Illuminate\Support\Collection;
+use Exception;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Contracts\Events\Dispatcher;
-use Psr\Log\LoggerInterface;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Filesystem\Filesystem;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Routing\Router;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Artisan;
+use InvalidArgumentException;
+use Psr\Log\LoggerInterface;
+use TaiCrm\LaravelModularDdd\Contracts\DependencyResolverInterface;
+use TaiCrm\LaravelModularDdd\Contracts\ModuleDiscoveryInterface;
+use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
+use TaiCrm\LaravelModularDdd\Exceptions\DependencyException;
+use TaiCrm\LaravelModularDdd\Exceptions\ModuleInstallationException;
+use TaiCrm\LaravelModularDdd\Exceptions\ModuleNotFoundException;
+use TaiCrm\LaravelModularDdd\ValueObjects\ModuleInfo;
+use TaiCrm\LaravelModularDdd\ValueObjects\ModuleState;
 
 class ModuleManager implements ModuleManagerInterface
 {
@@ -35,7 +37,7 @@ class ModuleManager implements ModuleManagerInterface
         private ModuleRegistry $registry,
         private Application $app,
         private Filesystem $files,
-        private Router $router
+        private Router $router,
     ) {}
 
     public function list(): Collection
@@ -45,9 +47,7 @@ class ModuleManager implements ModuleManagerInterface
             return $this->discovery->discover();
         }
 
-        return $this->cache->remember(self::CACHE_KEY, self::CACHE_TTL, function () {
-            return $this->discovery->discover();
-        });
+        return $this->cache->remember(self::CACHE_KEY, self::CACHE_TTL, fn () => $this->discovery->discover());
     }
 
     public function install(string $moduleName): bool
@@ -88,10 +88,11 @@ class ModuleManager implements ModuleManagerInterface
             $this->events->dispatch('module.installed', ['module' => $moduleName]);
 
             $this->logger->info("Module {$moduleName} installed successfully");
-            return true;
 
-        } catch (\Exception $e) {
+            return true;
+        } catch (Exception $e) {
             $this->logger->error("Failed to install module {$moduleName}: " . $e->getMessage());
+
             throw $e;
         }
     }
@@ -129,10 +130,11 @@ class ModuleManager implements ModuleManagerInterface
             $this->events->dispatch('module.enabled', ['module' => $moduleName]);
 
             $this->logger->info("Module {$moduleName} enabled successfully");
-            return true;
 
-        } catch (\Exception $e) {
+            return true;
+        } catch (Exception $e) {
             $this->logger->error("Failed to enable module {$moduleName}: " . $e->getMessage());
+
             throw $e;
         }
     }
@@ -149,11 +151,11 @@ class ModuleManager implements ModuleManagerInterface
             // Check for dependents
             $dependents = $this->getDependents($moduleName);
             if ($dependents->isNotEmpty()) {
-                $enabledDependents = $dependents->filter(fn($dep) => $this->isEnabled($dep));
+                $enabledDependents = $dependents->filter(fn ($dep) => $this->isEnabled($dep));
                 if ($enabledDependents->isNotEmpty()) {
                     throw ModuleInstallationException::cannotDisable(
                         $moduleName,
-                        'Module has enabled dependents: ' . $enabledDependents->implode(', ')
+                        'Module has enabled dependents: ' . $enabledDependents->implode(', '),
                     );
                 }
             }
@@ -168,10 +170,11 @@ class ModuleManager implements ModuleManagerInterface
             $this->events->dispatch('module.disabled', ['module' => $moduleName]);
 
             $this->logger->info("Module {$moduleName} disabled successfully");
-            return true;
 
-        } catch (\Exception $e) {
+            return true;
+        } catch (Exception $e) {
             $this->logger->error("Failed to disable module {$moduleName}: " . $e->getMessage());
+
             throw $e;
         }
     }
@@ -193,11 +196,11 @@ class ModuleManager implements ModuleManagerInterface
             // Check for dependents
             $dependents = $this->getDependents($moduleName);
             if ($dependents->isNotEmpty()) {
-                $installedDependents = $dependents->filter(fn($dep) => $this->isInstalled($dep));
+                $installedDependents = $dependents->filter(fn ($dep) => $this->isInstalled($dep));
                 if ($installedDependents->isNotEmpty()) {
                     throw ModuleInstallationException::cannotRemove(
                         $moduleName,
-                        'Module has installed dependents: ' . $installedDependents->implode(', ')
+                        'Module has installed dependents: ' . $installedDependents->implode(', '),
                     );
                 }
             }
@@ -212,10 +215,11 @@ class ModuleManager implements ModuleManagerInterface
             $this->events->dispatch('module.removed', ['module' => $moduleName]);
 
             $this->logger->info("Module {$moduleName} removed successfully");
-            return true;
 
-        } catch (\Exception $e) {
+            return true;
+        } catch (Exception $e) {
             $this->logger->error("Failed to remove module {$moduleName}: " . $e->getMessage());
+
             throw $e;
         }
     }
@@ -255,10 +259,11 @@ class ModuleManager implements ModuleManagerInterface
             $this->events->dispatch('module.updated', ['module' => $moduleName, 'version' => $version]);
 
             $this->logger->info("Module {$moduleName} updated successfully");
-            return true;
 
-        } catch (\Exception $e) {
+            return true;
+        } catch (Exception $e) {
             $this->logger->error("Failed to update module {$moduleName}: " . $e->getMessage());
+
             throw $e;
         }
     }
@@ -296,15 +301,42 @@ class ModuleManager implements ModuleManagerInterface
     public function getDependents(string $moduleName): Collection
     {
         $allModules = $this->list();
-        return $allModules->filter(function (ModuleInfo $module) use ($moduleName) {
-            return $module->hasDependency($moduleName);
-        })->pluck('name');
+
+        return $allModules->filter(static fn (ModuleInfo $module) => $module->hasDependency($moduleName))->pluck('name');
     }
 
     public function validateDependencies(string $moduleName): bool
     {
-        return $this->validateDependenciesAvailable($moduleName) &&
-               $this->validateDependenciesInstalled($moduleName);
+        return $this->validateDependenciesAvailable($moduleName)
+               && $this->validateDependenciesInstalled($moduleName);
+    }
+
+    public function clearCache(): void
+    {
+        $this->cache->forget(self::CACHE_KEY);
+    }
+
+    public function rebuildCache(): void
+    {
+        $this->clearCache();
+        $this->list();
+    }
+
+    public function get(string $moduleName): ?ModuleInfo
+    {
+        return $this->getInfo($moduleName);
+    }
+
+    public function getActiveModules(): array
+    {
+        $modules = $this->list();
+
+        return $modules->filter(fn (ModuleInfo $module) => $this->isEnabled($module->name))->map(static fn (ModuleInfo $module) => [
+            'name' => $module->name,
+            'path' => $module->path,
+            'namespace' => $module->namespace ?? ('Modules\\' . $module->name),
+            'dependencies' => $module->dependencies,
+        ])->values()->toArray();
     }
 
     private function validateDependenciesAvailable(string $moduleName): bool
@@ -346,37 +378,6 @@ class ModuleManager implements ModuleManagerInterface
         return true;
     }
 
-    public function clearCache(): void
-    {
-        $this->cache->forget(self::CACHE_KEY);
-    }
-
-    public function rebuildCache(): void
-    {
-        $this->clearCache();
-        $this->list();
-    }
-
-    public function get(string $moduleName): ?ModuleInfo
-    {
-        return $this->getInfo($moduleName);
-    }
-
-    public function getActiveModules(): array
-    {
-        $modules = $this->list();
-        return $modules->filter(function (ModuleInfo $module) {
-            return $this->isEnabled($module->name);
-        })->map(function (ModuleInfo $module) {
-            return [
-                'name' => $module->name,
-                'path' => $module->path,
-                'namespace' => $module->namespace ?? ('Modules\\' . $module->name),
-                'dependencies' => $module->dependencies,
-            ];
-        })->values()->toArray();
-    }
-
     private function performInstallation(ModuleInfo $module): void
     {
         $moduleName = $module->name;
@@ -399,11 +400,11 @@ class ModuleManager implements ModuleManagerInterface
             $this->executeInstallationHooks($moduleName, $modulePath);
 
             $this->logger->info("Module {$moduleName} installation completed successfully");
-
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error("Module {$moduleName} installation failed: " . $e->getMessage());
             // Rollback installation
             $this->rollbackInstallation($moduleName, $modulePath);
+
             throw $e;
         }
     }
@@ -437,9 +438,9 @@ class ModuleManager implements ModuleManagerInterface
             $this->executeEnablingHooks($moduleName, $modulePath);
 
             $this->logger->info("Module {$moduleName} enabled successfully");
-
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error("Failed to enable module {$moduleName}: " . $e->getMessage());
+
             throw $e;
         }
     }
@@ -466,9 +467,9 @@ class ModuleManager implements ModuleManagerInterface
             $this->removeModuleFromContainer($moduleName);
 
             $this->logger->info("Module {$moduleName} disabled successfully");
-
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error("Failed to disable module {$moduleName}: " . $e->getMessage());
+
             throw $e;
         }
     }
@@ -502,9 +503,9 @@ class ModuleManager implements ModuleManagerInterface
             $this->registry->removeModule($moduleName);
 
             $this->logger->info("Module {$moduleName} removed successfully");
-
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error("Failed to remove module {$moduleName}: " . $e->getMessage());
+
             throw $e;
         }
     }
@@ -517,12 +518,14 @@ class ModuleManager implements ModuleManagerInterface
 
         if (!$this->files->isDirectory($migrationsPath)) {
             $this->logger->info("No migrations directory found for module {$moduleName}");
+
             return;
         }
 
         $migrationFiles = $this->files->glob($migrationsPath . '/*.php');
         if (empty($migrationFiles)) {
             $this->logger->info("No migration files found for module {$moduleName}");
+
             return;
         }
 
@@ -533,8 +536,9 @@ class ModuleManager implements ModuleManagerInterface
             ]);
 
             $this->logger->info("Migrations completed successfully for module {$moduleName}");
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error("Migration failed for module {$moduleName}: " . $e->getMessage());
+
             throw $e;
         }
     }
@@ -554,7 +558,7 @@ class ModuleManager implements ModuleManagerInterface
             ]);
 
             $this->logger->info("Migrations rolled back successfully for module {$moduleName}");
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->warning("Migration rollback failed for module {$moduleName}: " . $e->getMessage());
         }
     }
@@ -567,7 +571,7 @@ class ModuleManager implements ModuleManagerInterface
         if ($this->files->isDirectory($assetsPath)) {
             $publicAssetsPath = public_path("modules/{$moduleName}");
             if (!$this->files->exists($publicAssetsPath)) {
-                $this->files->makeDirectory($publicAssetsPath, 0755, true);
+                $this->files->makeDirectory($publicAssetsPath, 0o755, true);
             }
             $this->files->copyDirectory($assetsPath, $publicAssetsPath);
         }
@@ -578,7 +582,7 @@ class ModuleManager implements ModuleManagerInterface
                 $targetPath = config_path("modules/{$moduleName}/" . $file->getFilename());
                 $targetDir = dirname($targetPath);
                 if (!$this->files->exists($targetDir)) {
-                    $this->files->makeDirectory($targetDir, 0755, true);
+                    $this->files->makeDirectory($targetDir, 0o755, true);
                 }
                 $this->files->copy($file->getPathname(), $targetPath);
             }
@@ -599,19 +603,20 @@ class ModuleManager implements ModuleManagerInterface
             try {
                 if (!class_exists($providerClass)) {
                     $this->logger->warning("Service provider class not found: {$providerClass}");
+
                     continue;
                 }
 
                 // Check if provider is already registered
                 if ($this->isServiceProviderRegistered($providerClass)) {
                     $this->logger->info("Service provider already registered: {$providerClass}");
+
                     continue;
                 }
 
                 $this->app->register($providerClass);
                 $this->logger->info("Successfully registered service provider: {$providerClass}");
-
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->error("Failed to register service provider {$providerClass}: " . $e->getMessage(), [
                     'provider' => $providerClass,
                     'module' => $moduleName,
@@ -643,8 +648,8 @@ class ModuleManager implements ModuleManagerInterface
             $this->router->group([
                 'middleware' => 'web',
                 'prefix' => strtolower($moduleName),
-                'namespace' => $this->getModuleNamespace($moduleName) . '\\Http\\Controllers'
-            ], function () use ($webRoutesFile) {
+                'namespace' => $this->getModuleNamespace($moduleName) . '\\Http\\Controllers',
+            ], function () use ($webRoutesFile): void {
                 require $webRoutesFile;
             });
         }
@@ -653,8 +658,8 @@ class ModuleManager implements ModuleManagerInterface
             $this->router->group([
                 'middleware' => 'api',
                 'prefix' => 'api/' . strtolower($moduleName),
-                'namespace' => $this->getModuleNamespace($moduleName) . '\\Http\\Controllers'
-            ], function () use ($apiRoutesFile) {
+                'namespace' => $this->getModuleNamespace($moduleName) . '\\Http\\Controllers',
+            ], function () use ($apiRoutesFile): void {
                 require $apiRoutesFile;
             });
         }
@@ -708,7 +713,7 @@ class ModuleManager implements ModuleManagerInterface
         if ($this->files->exists($hookFile)) {
             try {
                 require $hookFile;
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->error("Installation hook failed for module {$moduleName}: " . $e->getMessage());
             }
         }
@@ -720,7 +725,7 @@ class ModuleManager implements ModuleManagerInterface
         if ($this->files->exists($hookFile)) {
             try {
                 require $hookFile;
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->error("Enabling hook failed for module {$moduleName}: " . $e->getMessage());
             }
         }
@@ -737,7 +742,7 @@ class ModuleManager implements ModuleManagerInterface
         if ($this->files->exists($hookFile)) {
             try {
                 require $hookFile;
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->error("Disabling hook failed for module {$moduleName}: " . $e->getMessage());
             }
         }
@@ -749,7 +754,7 @@ class ModuleManager implements ModuleManagerInterface
         if ($this->files->exists($hookFile)) {
             try {
                 require $hookFile;
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->error("Removal hook failed for module {$moduleName}: " . $e->getMessage());
             }
         }
@@ -781,13 +786,13 @@ class ModuleManager implements ModuleManagerInterface
         $cacheKeys = [
             "module.{$moduleName}.*",
             "modules.{$moduleName}.*",
-            strtolower($moduleName) . ".*"
+            strtolower($moduleName) . '.*',
         ];
 
         foreach ($cacheKeys as $pattern) {
             try {
                 $this->cache->forget($pattern);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->warning("Failed to clear cache pattern {$pattern}: " . $e->getMessage());
             }
         }
@@ -819,7 +824,7 @@ class ModuleManager implements ModuleManagerInterface
         $storagePaths = [
             storage_path("modules/{$moduleName}"),
             storage_path("app/modules/{$moduleName}"),
-            storage_path("framework/cache/modules/{$moduleName}")
+            storage_path("framework/cache/modules/{$moduleName}"),
         ];
 
         foreach ($storagePaths as $path) {
@@ -835,7 +840,7 @@ class ModuleManager implements ModuleManagerInterface
             $this->rollbackModuleMigrations($moduleName, $modulePath);
             $this->removePublishedAssets($moduleName, $modulePath);
             $this->cleanupModuleStorage($moduleName);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error("Failed to rollback installation for module {$moduleName}: " . $e->getMessage());
         }
     }
@@ -847,7 +852,7 @@ class ModuleManager implements ModuleManagerInterface
         $backupDir = "{$backupPath}/{$timestamp}";
 
         if (!$this->files->exists($backupDir)) {
-            $this->files->makeDirectory($backupDir, 0755, true);
+            $this->files->makeDirectory($backupDir, 0o755, true);
         }
 
         $this->files->copyDirectory($module->path, $backupDir);
@@ -888,15 +893,14 @@ class ModuleManager implements ModuleManagerInterface
             $this->clearModuleCaches($moduleName);
 
             $this->logger->info("Successfully updated module {$moduleName} to version {$targetVersion}");
-
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error("Module update failed for {$moduleName}: " . $e->getMessage());
 
             // Attempt rollback
             try {
                 $this->rollbackModuleUpdate($moduleName, $currentVersion);
                 $this->logger->info("Rollback completed for module {$moduleName}");
-            } catch (\Exception $rollbackException) {
+            } catch (Exception $rollbackException) {
                 $this->logger->critical("Rollback failed for module {$moduleName}: " . $rollbackException->getMessage());
             }
 
@@ -910,6 +914,7 @@ class ModuleManager implements ModuleManagerInterface
         if (str_starts_with($absolutePath, $basePath)) {
             return substr($absolutePath, strlen($basePath) + 1);
         }
+
         return $absolutePath;
     }
 
@@ -945,8 +950,9 @@ class ModuleManager implements ModuleManagerInterface
     {
         try {
             $manifest = $this->loadManifestFromPath($modulePath);
+
             return $manifest['providers'] ?? [];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return [];
         }
     }
@@ -966,13 +972,13 @@ class ModuleManager implements ModuleManagerInterface
 
         // Security: Limit manifest file size (max 1MB)
         if (strlen($content) > 1024 * 1024) {
-            throw new \InvalidArgumentException("Manifest file too large: exceeds 1MB limit");
+            throw new InvalidArgumentException('Manifest file too large: exceeds 1MB limit');
         }
 
         $manifest = json_decode($content, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new \InvalidArgumentException("Invalid JSON in manifest file: " . json_last_error_msg());
+            throw new InvalidArgumentException('Invalid JSON in manifest file: ' . json_last_error_msg());
         }
 
         // Security: Validate and sanitize manifest data
@@ -1037,20 +1043,20 @@ class ModuleManager implements ModuleManagerInterface
 
             // Basic validation - check if the file contains the expected class
             $escapedClassName = preg_quote($expectedClassName, '/');
-            $pattern = "/class\s+{$escapedClassName}\s+extends\s+ServiceProvider/";
+            $pattern = "/class\\s+{$escapedClassName}\\s+extends\\s+ServiceProvider/";
             if (!preg_match($pattern, $content)) {
                 return false;
             }
 
             // Validate service provider structure
             return $this->validateServiceProviderStructure($content, $expectedClassName);
-
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->warning("Failed to validate service provider class: {$filePath}", [
                 'file' => $filePath,
                 'expected_class' => $expectedClassName,
                 'exception' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
@@ -1058,6 +1064,7 @@ class ModuleManager implements ModuleManagerInterface
     private function isServiceProviderRegistered(string $providerClass): bool
     {
         $registeredProviders = $this->app->getLoadedProviders();
+
         return isset($registeredProviders[$providerClass]);
     }
 
@@ -1075,7 +1082,8 @@ class ModuleManager implements ModuleManagerInterface
         // Simple version increment for demo purposes
         $parts = explode('.', $module->version);
         if (count($parts) >= 3) {
-            $parts[2] = (string)((int)$parts[2] + 1);
+            $parts[2] = (string) ((int) $parts[2] + 1);
+
             return implode('.', $parts);
         }
 
@@ -1107,8 +1115,8 @@ class ModuleManager implements ModuleManagerInterface
 
     private function checkForBreakingChanges(ModuleInfo $module, string $targetVersion): void
     {
-        $currentMajor = (int)explode('.', $module->version)[0];
-        $targetMajor = (int)explode('.', $targetVersion)[0];
+        $currentMajor = (int) explode('.', $module->version)[0];
+        $targetMajor = (int) explode('.', $targetVersion)[0];
 
         if ($targetMajor > $currentMajor) {
             $this->logger->warning("Major version update detected for {$module->name}: {$module->version} -> {$targetVersion}. Please review breaking changes.");
@@ -1122,7 +1130,7 @@ class ModuleManager implements ModuleManagerInterface
         $updatePath = storage_path("module-updates/{$moduleName}/{$version}");
 
         if (!$this->files->exists($updatePath)) {
-            $this->files->makeDirectory($updatePath, 0755, true);
+            $this->files->makeDirectory($updatePath, 0o755, true);
             $this->logger->info("Created update directory: {$updatePath}");
         }
 
@@ -1144,8 +1152,9 @@ class ModuleManager implements ModuleManagerInterface
             try {
                 $this->logger->info("Executing pre-update hook for {$moduleName}");
                 require_once $hookFile;
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->error("Pre-update hook failed for {$moduleName}: " . $e->getMessage());
+
                 throw $e;
             }
         }
@@ -1157,6 +1166,7 @@ class ModuleManager implements ModuleManagerInterface
 
         if (!$this->files->isDirectory($updateMigrationsPath)) {
             $this->logger->info("No update migrations directory found for {$moduleName}");
+
             return;
         }
 
@@ -1165,6 +1175,7 @@ class ModuleManager implements ModuleManagerInterface
 
         if (empty($migrationFiles)) {
             $this->logger->info("No update migrations found for {$moduleName}");
+
             return;
         }
 
@@ -1175,8 +1186,9 @@ class ModuleManager implements ModuleManagerInterface
                     '--path' => $this->getRelativePath(dirname($migrationFile)),
                     '--force' => true,
                 ]);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->error("Update migration failed: {$migrationFile}");
+
                 throw $e;
             }
         }
@@ -1222,12 +1234,12 @@ class ModuleManager implements ModuleManagerInterface
             // Copy new files
             $this->files->copyDirectory($updatePath, $modulePath);
 
-            $this->logger->info("Module files replaced successfully");
-
-        } catch (\Exception $e) {
+            $this->logger->info('Module files replaced successfully');
+        } catch (Exception $e) {
             // Restore from backup on failure
             $this->files->deleteDirectory($modulePath);
             $this->files->moveDirectory($backupPath, $modulePath);
+
             throw $e;
         }
 
@@ -1246,6 +1258,7 @@ class ModuleManager implements ModuleManagerInterface
             foreach ($preservePaths as $preservePath) {
                 if (str_starts_with($relativePath, $preservePath)) {
                     $shouldPreserve = true;
+
                     break;
                 }
             }
@@ -1279,7 +1292,7 @@ class ModuleManager implements ModuleManagerInterface
             try {
                 $this->logger->info("Executing post-update hook for {$moduleName}");
                 require_once $hookFile;
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->error("Post-update hook failed for {$moduleName}: " . $e->getMessage());
                 // Don't throw here - update was successful, hook failure is not critical
             }
@@ -1308,6 +1321,7 @@ class ModuleManager implements ModuleManagerInterface
                     $this->updateModuleRegistry($moduleName, $previousVersion);
 
                     $this->logger->info("Rollback completed for {$moduleName}");
+
                     return;
                 }
             }
@@ -1325,12 +1339,12 @@ class ModuleManager implements ModuleManagerInterface
         $realBasePath = realpath($allowedBasePath);
 
         if (!$realFilePath || !$realBasePath) {
-            throw new \InvalidArgumentException("Invalid file path or base path");
+            throw new InvalidArgumentException('Invalid file path or base path');
         }
 
         // Ensure the file path is within the allowed base path
         if (!str_starts_with($realFilePath, $realBasePath)) {
-            throw new \InvalidArgumentException("File path is outside allowed directory");
+            throw new InvalidArgumentException('File path is outside allowed directory');
         }
     }
 
@@ -1358,13 +1372,13 @@ class ModuleManager implements ModuleManagerInterface
         $allowedFields = [
             'name', 'display_name', 'description', 'version', 'author',
             'dependencies', 'optional_dependencies', 'conflicts', 'provides',
-            'providers', 'config', 'license', 'keywords', 'homepage'
+            'providers', 'config', 'license', 'keywords', 'homepage',
         ];
 
         // Check required fields
         foreach ($requiredFields as $field) {
             if (!isset($manifest[$field])) {
-                throw new \InvalidArgumentException("Required field '{$field}' is missing from manifest");
+                throw new InvalidArgumentException("Required field '{$field}' is missing from manifest");
             }
         }
 
@@ -1382,19 +1396,19 @@ class ModuleManager implements ModuleManagerInterface
 
         // Module name must be alphanumeric with underscores/hyphens only
         if (!preg_match('/^[a-zA-Z0-9_-]+$/', $name)) {
-            throw new \InvalidArgumentException("Invalid module name: {$name}");
+            throw new InvalidArgumentException("Invalid module name: {$name}");
         }
 
         // Must not be too long
         if (strlen($name) > 50) {
-            throw new \InvalidArgumentException("Module name too long: {$name}");
+            throw new InvalidArgumentException("Module name too long: {$name}");
         }
 
         // Must not start with reserved prefixes
         $reservedPrefixes = ['laravel', 'illuminate', 'symfony', 'system', 'admin', 'core'];
         foreach ($reservedPrefixes as $prefix) {
             if (str_starts_with(strtolower($name), $prefix)) {
-                throw new \InvalidArgumentException("Module name cannot start with reserved prefix: {$prefix}");
+                throw new InvalidArgumentException("Module name cannot start with reserved prefix: {$prefix}");
             }
         }
     }
@@ -1407,19 +1421,19 @@ class ModuleManager implements ModuleManagerInterface
 
         foreach ($manifest['providers'] as $provider) {
             if (!is_string($provider)) {
-                throw new \InvalidArgumentException("Service provider must be a string");
+                throw new InvalidArgumentException('Service provider must be a string');
             }
 
             // Validate class name format
             if (!preg_match('/^[a-zA-Z_\\\\][a-zA-Z0-9_\\\\]*$/', $provider)) {
-                throw new \InvalidArgumentException("Invalid service provider class name: {$provider}");
+                throw new InvalidArgumentException("Invalid service provider class name: {$provider}");
             }
 
             // Must not contain dangerous patterns
             $dangerousPatterns = ['..', '/', '<', '>', '`', '$', '{', '}'];
             foreach ($dangerousPatterns as $pattern) {
                 if (str_contains($provider, $pattern)) {
-                    throw new \InvalidArgumentException("Service provider contains dangerous pattern: {$provider}");
+                    throw new InvalidArgumentException("Service provider contains dangerous pattern: {$provider}");
                 }
             }
         }
@@ -1436,17 +1450,17 @@ class ModuleManager implements ModuleManagerInterface
 
             foreach ($manifest[$field] as $dependency) {
                 if (!is_string($dependency)) {
-                    throw new \InvalidArgumentException("Dependency must be a string in {$field}");
+                    throw new InvalidArgumentException("Dependency must be a string in {$field}");
                 }
 
                 // Validate dependency name format
                 if (!preg_match('/^[a-zA-Z0-9_-]+$/', $dependency)) {
-                    throw new \InvalidArgumentException("Invalid dependency name: {$dependency}");
+                    throw new InvalidArgumentException("Invalid dependency name: {$dependency}");
                 }
 
                 // Must not be too long
                 if (strlen($dependency) > 50) {
-                    throw new \InvalidArgumentException("Dependency name too long: {$dependency}");
+                    throw new InvalidArgumentException("Dependency name too long: {$dependency}");
                 }
             }
         }
@@ -1475,7 +1489,7 @@ class ModuleManager implements ModuleManagerInterface
 
         foreach ($suspiciousPatterns as $pattern) {
             if (preg_match($pattern, $manifestString)) {
-                throw new \InvalidArgumentException("Manifest contains suspicious content");
+                throw new InvalidArgumentException('Manifest contains suspicious content');
             }
         }
 
@@ -1484,12 +1498,11 @@ class ModuleManager implements ModuleManagerInterface
         foreach ($stringFields as $field) {
             if (isset($manifest[$field]) && is_string($manifest[$field])) {
                 if (strlen($manifest[$field]) > 1000) {
-                    throw new \InvalidArgumentException("Field '{$field}' is too long");
+                    throw new InvalidArgumentException("Field '{$field}' is too long");
                 }
             }
         }
     }
-
 
     private function validatePhpFileContent(string $content): void
     {
@@ -1497,12 +1510,12 @@ class ModuleManager implements ModuleManagerInterface
         $dangerousFunctions = [
             'eval', 'exec', 'system', 'shell_exec', 'passthru', 'proc_open',
             'file_get_contents', 'file_put_contents', 'fopen', 'fwrite',
-            'curl_exec', 'curl_init', 'mail', 'base64_decode'
+            'curl_exec', 'curl_init', 'mail', 'base64_decode',
         ];
 
         foreach ($dangerousFunctions as $function) {
             if (preg_match('/\b' . preg_quote($function, '/') . '\s*\(/', $content)) {
-                throw new \InvalidArgumentException("Service provider contains dangerous function: {$function}");
+                throw new InvalidArgumentException("Service provider contains dangerous function: {$function}");
             }
         }
 
@@ -1519,7 +1532,7 @@ class ModuleManager implements ModuleManagerInterface
 
         foreach ($suspiciousPatterns as $pattern) {
             if (preg_match($pattern, $content)) {
-                throw new \InvalidArgumentException("Service provider contains suspicious global variable access");
+                throw new InvalidArgumentException('Service provider contains suspicious global variable access');
             }
         }
     }
@@ -1528,18 +1541,14 @@ class ModuleManager implements ModuleManagerInterface
     {
         // Check that the class extends ServiceProvider
         $escapedClassName = preg_quote($className, '/');
-        $pattern = "/class\s+{$escapedClassName}\s+extends\s+ServiceProvider/";
+        $pattern = "/class\\s+{$escapedClassName}\\s+extends\\s+ServiceProvider/";
 
         if (!preg_match($pattern, $content)) {
             return false;
         }
 
         // Check for required methods (register or boot)
-        if (!preg_match('/public\s+function\s+register\s*\(/', $content) &&
-            !preg_match('/public\s+function\s+boot\s*\(/', $content)) {
-            return false;
-        }
-
-        return true;
+        return !(!preg_match('/public\s+function\s+register\s*\(/', $content)
+            && !preg_match('/public\s+function\s+boot\s*\(/', $content));
     }
 }

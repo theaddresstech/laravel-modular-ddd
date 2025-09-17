@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 namespace Modules\ProductCatalog\Domain\Models;
 
-use Modules\ProductCatalog\Domain\ValueObjects\ProductId;
-use Modules\ProductCatalog\Domain\ValueObjects\CategoryId;
-use Modules\ProductCatalog\Domain\ValueObjects\Money;
-use Modules\ProductCatalog\Domain\ValueObjects\ProductStatus;
+use DateTimeImmutable;
 use Modules\ProductCatalog\Domain\Events\ProductCreated;
-use Modules\ProductCatalog\Domain\Events\ProductUpdated;
 use Modules\ProductCatalog\Domain\Events\ProductPriceChanged;
 use Modules\ProductCatalog\Domain\Events\ProductPublished;
+use Modules\ProductCatalog\Domain\Events\ProductUpdated;
 use Modules\ProductCatalog\Domain\Exceptions\ProductAlreadyPublishedException;
+use Modules\ProductCatalog\Domain\ValueObjects\CategoryId;
+use Modules\ProductCatalog\Domain\ValueObjects\Money;
+use Modules\ProductCatalog\Domain\ValueObjects\ProductId;
+use Modules\ProductCatalog\Domain\ValueObjects\ProductStatus;
 use TaiCrm\LaravelModularDdd\Foundation\AggregateRoot;
 
 class Product extends AggregateRoot
@@ -26,9 +27,9 @@ class Product extends AggregateRoot
         private ?CategoryId $categoryId = null,
         private array $images = [],
         private array $attributes = [],
-        private \DateTimeImmutable $createdAt = new \DateTimeImmutable(),
-        private ?\DateTimeImmutable $updatedAt = null,
-        private ?\DateTimeImmutable $publishedAt = null
+        private DateTimeImmutable $createdAt = new DateTimeImmutable(),
+        private ?DateTimeImmutable $updatedAt = null,
+        private ?DateTimeImmutable $publishedAt = null,
     ) {
         parent::__construct();
     }
@@ -38,7 +39,7 @@ class Product extends AggregateRoot
         string $name,
         string $description,
         Money $price,
-        ?CategoryId $categoryId = null
+        ?CategoryId $categoryId = null,
     ): self {
         $product = new self(
             $id,
@@ -49,7 +50,7 @@ class Product extends AggregateRoot
             $categoryId,
             [],
             [],
-            new \DateTimeImmutable()
+            new DateTimeImmutable(),
         );
 
         $product->recordEvent(new ProductCreated(
@@ -58,7 +59,7 @@ class Product extends AggregateRoot
             $description,
             $price,
             $categoryId,
-            $product->createdAt
+            $product->createdAt,
         ));
 
         return $product;
@@ -73,9 +74,9 @@ class Product extends AggregateRoot
         ?CategoryId $categoryId = null,
         array $images = [],
         array $attributes = [],
-        \DateTimeImmutable $createdAt = new \DateTimeImmutable(),
-        ?\DateTimeImmutable $updatedAt = null,
-        ?\DateTimeImmutable $publishedAt = null
+        DateTimeImmutable $createdAt = new DateTimeImmutable(),
+        ?DateTimeImmutable $updatedAt = null,
+        ?DateTimeImmutable $publishedAt = null,
     ): self {
         return new self(
             $id,
@@ -88,7 +89,7 @@ class Product extends AggregateRoot
             $attributes,
             $createdAt,
             $updatedAt,
-            $publishedAt
+            $publishedAt,
         );
     }
 
@@ -103,15 +104,15 @@ class Product extends AggregateRoot
 
         $this->name = $name;
         $this->description = $description;
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->updatedAt = new DateTimeImmutable();
 
         $this->recordEvent(new ProductUpdated(
             $this->id,
-            $oldName,
-            $name,
-            $oldDescription,
-            $description,
-            $this->updatedAt
+            [
+                'name' => ['old' => $oldName, 'new' => $name],
+                'description' => ['old' => $oldDescription, 'new' => $description],
+            ],
+            $this->updatedAt,
         ));
     }
 
@@ -123,13 +124,13 @@ class Product extends AggregateRoot
 
         $oldPrice = $this->price;
         $this->price = $newPrice;
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->updatedAt = new DateTimeImmutable();
 
         $this->recordEvent(new ProductPriceChanged(
             $this->id,
             $oldPrice,
             $newPrice,
-            $this->updatedAt
+            $this->updatedAt,
         ));
     }
 
@@ -140,7 +141,7 @@ class Product extends AggregateRoot
         }
 
         $this->categoryId = $categoryId;
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->updatedAt = new DateTimeImmutable();
     }
 
     public function removeFromCategory(): void
@@ -150,7 +151,7 @@ class Product extends AggregateRoot
         }
 
         $this->categoryId = null;
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->updatedAt = new DateTimeImmutable();
     }
 
     public function addImage(string $imageUrl, bool $isPrimary = false): void
@@ -158,8 +159,8 @@ class Product extends AggregateRoot
         // If this is the primary image, mark others as non-primary
         if ($isPrimary) {
             $this->images = array_map(
-                fn($image) => ['url' => $image['url'], 'is_primary' => false],
-                $this->images
+                static fn ($image) => ['url' => $image['url'], 'is_primary' => false],
+                $this->images,
             );
         }
 
@@ -168,34 +169,34 @@ class Product extends AggregateRoot
             'is_primary' => $isPrimary || empty($this->images),
         ];
 
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->updatedAt = new DateTimeImmutable();
     }
 
     public function removeImage(string $imageUrl): void
     {
-        $this->images = array_filter(
+        $this->images = array_values(array_filter(
             $this->images,
-            fn($image) => $image['url'] !== $imageUrl
-        );
+            static fn ($image) => $image['url'] !== $imageUrl,
+        ));
 
         // If we removed the primary image, make the first remaining image primary
         if (!empty($this->images) && !$this->hasPrimaryImage()) {
             $this->images[0]['is_primary'] = true;
         }
 
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->updatedAt = new DateTimeImmutable();
     }
 
     public function setAttribute(string $name, mixed $value): void
     {
         $this->attributes[$name] = $value;
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->updatedAt = new DateTimeImmutable();
     }
 
     public function removeAttribute(string $name): void
     {
         unset($this->attributes[$name]);
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->updatedAt = new DateTimeImmutable();
     }
 
     public function publish(): void
@@ -205,12 +206,12 @@ class Product extends AggregateRoot
         }
 
         $this->status = ProductStatus::Published;
-        $this->publishedAt = new \DateTimeImmutable();
+        $this->publishedAt = new DateTimeImmutable();
         $this->updatedAt = $this->publishedAt;
 
         $this->recordEvent(new ProductPublished(
             $this->id,
-            $this->publishedAt
+            $this->publishedAt,
         ));
     }
 
@@ -222,13 +223,13 @@ class Product extends AggregateRoot
 
         $this->status = ProductStatus::Draft;
         $this->publishedAt = null;
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->updatedAt = new DateTimeImmutable();
     }
 
     public function archive(): void
     {
         $this->status = ProductStatus::Archived;
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->updatedAt = new DateTimeImmutable();
     }
 
     public function isPublished(): bool
@@ -250,18 +251,10 @@ class Product extends AggregateRoot
     {
         $primaryImage = array_filter(
             $this->images,
-            fn($image) => $image['is_primary'] ?? false
+            static fn ($image) => $image['is_primary'] ?? false,
         );
 
         return !empty($primaryImage) ? array_values($primaryImage)[0]['url'] : null;
-    }
-
-    private function hasPrimaryImage(): bool
-    {
-        return !empty(array_filter(
-            $this->images,
-            fn($image) => $image['is_primary'] ?? false
-        ));
     }
 
     // Getters
@@ -310,17 +303,17 @@ class Product extends AggregateRoot
         return $this->attributes[$name] ?? $default;
     }
 
-    public function getCreatedAt(): \DateTimeImmutable
+    public function getCreatedAt(): DateTimeImmutable
     {
         return $this->createdAt;
     }
 
-    public function getUpdatedAt(): ?\DateTimeImmutable
+    public function getUpdatedAt(): ?DateTimeImmutable
     {
         return $this->updatedAt;
     }
 
-    public function getPublishedAt(): ?\DateTimeImmutable
+    public function getPublishedAt(): ?DateTimeImmutable
     {
         return $this->publishedAt;
     }
@@ -328,7 +321,7 @@ class Product extends AggregateRoot
     public function toArray(): array
     {
         return [
-            'id' => $this->id->toString(),
+            'id' => $this->id->getValue(),
             'name' => $this->name,
             'description' => $this->description,
             'price' => [
@@ -336,12 +329,20 @@ class Product extends AggregateRoot
                 'currency' => $this->price->getCurrency(),
             ],
             'status' => $this->status->value,
-            'category_id' => $this->categoryId?->toString(),
+            'category_id' => $this->categoryId?->getValue(),
             'images' => $this->images,
             'attributes' => $this->attributes,
             'created_at' => $this->createdAt->format('Y-m-d H:i:s'),
             'updated_at' => $this->updatedAt?->format('Y-m-d H:i:s'),
             'published_at' => $this->publishedAt?->format('Y-m-d H:i:s'),
         ];
+    }
+
+    private function hasPrimaryImage(): bool
+    {
+        return !empty(array_filter(
+            $this->images,
+            static fn ($image) => $image['is_primary'] ?? false,
+        ));
     }
 }

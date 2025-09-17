@@ -7,7 +7,7 @@ namespace Modules\{{ module }}\Application\Commands\{{ name }};
 use Modules\{{ module }}\Domain\Models\{{ aggregate }};
 use Modules\{{ module }}\Domain\ValueObjects\{{ aggregate }}Id;
 use Modules\{{ module }}\Domain\Repositories\{{ aggregate }}RepositoryInterface;
-use TaiCrm\LaravelModularDdd\Communication\EventBus;
+use TaiCrm\LaravelModularDdd\Foundation\EventBus;
 use Psr\Log\LoggerInterface;
 
 readonly class {{ name }}Handler
@@ -18,33 +18,42 @@ readonly class {{ name }}Handler
         private LoggerInterface $logger
     ) {}
 
-    public function handle({{ name }}Command $command): string
+    public function handle({{ name }}Command $command): {{ aggregate }}
     {
         try {
-            $this->logger->debug('Handling {{ name }}Command', $command->toArray());
+            $this->logger->debug('Handling {{ name }}Command', [
+                'command_type' => get_class($command),
+                'command_data' => $command->toArray()
+            ]);
 
             ${{ aggregateSnake }}Id = {{ aggregate }}Id::generate();
 
             ${{ aggregateSnake }} = {{ aggregate }}::create(
                 ${{ aggregateSnake }}Id,
-                $command->name
+                $command->getName(),
+                $command->getDescription() ?? ''
             );
 
             $this->{{ aggregateSnake }}Repository->save(${{ aggregateSnake }});
 
             // Dispatch domain events
-            $this->eventBus->dispatchMany(${{ aggregateSnake }}->releaseEvents());
+            $events = ${{ aggregateSnake }}->releaseEvents();
+            if (!empty($events)) {
+                $this->eventBus->dispatchMany($events);
+            }
 
             $this->logger->info('{{ name }}Command handled successfully', [
                 '{{ aggregateSnake }}_id' => ${{ aggregateSnake }}Id->toString(),
-                'name' => $command->name,
+                'name' => $command->getName(),
+                'description' => $command->getDescription(),
             ]);
 
-            return ${{ aggregateSnake }}Id->toString();
+            return ${{ aggregateSnake }};
 
         } catch (\Exception $e) {
             $this->logger->error('Failed to handle {{ name }}Command', [
-                'command' => $command->toArray(),
+                'command_type' => get_class($command),
+                'command_data' => $command->toArray(),
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);

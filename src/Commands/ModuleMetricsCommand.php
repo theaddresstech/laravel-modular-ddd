@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Commands;
 
-use TaiCrm\LaravelModularDdd\Monitoring\ModulePerformanceMonitor;
 use Illuminate\Console\Command;
+use TaiCrm\LaravelModularDdd\Monitoring\ModulePerformanceMonitor;
 
 class ModuleMetricsCommand extends Command
 {
@@ -17,11 +17,10 @@ class ModuleMetricsCommand extends Command
                             {--system : Show system-wide metrics}
                             {--health : Show module health overview}
                             {--clear : Clear metrics for operation or all if no operation specified}';
-
     protected $description = 'Display and manage module performance metrics';
 
     public function __construct(
-        private ModulePerformanceMonitor $monitor
+        private ModulePerformanceMonitor $monitor,
     ) {
         parent::__construct();
     }
@@ -77,6 +76,7 @@ class ModuleMetricsCommand extends Command
 
         if ($health->isEmpty()) {
             $this->warn('No modules found or no metrics available.');
+
             return 0;
         }
 
@@ -148,6 +148,7 @@ class ModuleMetricsCommand extends Command
 
         if (empty($aggregated)) {
             $this->warn("No metrics found for operation: {$operation}");
+
             return 1;
         }
 
@@ -177,6 +178,7 @@ class ModuleMetricsCommand extends Command
 
         if (empty($metrics['operations_summary'])) {
             $this->warn('No metrics available.');
+
             return 0;
         }
 
@@ -290,6 +292,7 @@ class ModuleMetricsCommand extends Command
                 $csv .= "{$key},{$value}\n";
             }
         }
+
         return $csv;
     }
 }

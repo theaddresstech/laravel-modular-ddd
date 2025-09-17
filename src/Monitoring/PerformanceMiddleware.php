@@ -12,7 +12,7 @@ use Symfony\Component\HttpFoundation\Response as BaseResponse;
 class PerformanceMiddleware
 {
     public function __construct(
-        private ModulePerformanceMonitor $monitor
+        private ModulePerformanceMonitor $monitor,
     ) {}
 
     public function handle(Request $request, Closure $next): BaseResponse
@@ -25,7 +25,7 @@ class PerformanceMiddleware
                 'url' => $request->url(),
                 'ip' => $request->ip(),
                 'user_agent' => $request->userAgent(),
-            ]
+            ],
         );
 
         $response = $next($request);

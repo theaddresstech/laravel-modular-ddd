@@ -14,25 +14,32 @@ class {{ name }} extends AggregateRoot
     private function __construct(
         private {{ name }}Id $id,
         private string $name,
+        private string $description,
+        private bool $status,
         private \DateTimeImmutable $createdAt,
-        private ?\DateTimeImmutable $updatedAt = null
+        private ?\DateTimeImmutable $updatedAt = null,
+        private bool $isDeleted = false
     ) {
         parent::__construct();
     }
 
     public static function create(
         {{ name }}Id $id,
-        string $name
+        string $name,
+        string $description = ''
     ): self {
         ${{ nameSnake }} = new self(
             $id,
             $name,
+            $description,
+            true,
             new \DateTimeImmutable()
         );
 
         ${{ nameSnake }}->recordEvent(new {{ name }}Created(
             $id,
             $name,
+            $description,
             ${{ nameSnake }}->createdAt
         ));
 
@@ -42,13 +49,15 @@ class {{ name }} extends AggregateRoot
     public static function reconstitute(
         {{ name }}Id $id,
         string $name,
+        string $description,
+        bool $status,
         \DateTimeImmutable $createdAt,
         ?\DateTimeImmutable $updatedAt = null
     ): self {
-        return new self($id, $name, $createdAt, $updatedAt);
+        return new self($id, $name, $description, $status, $createdAt, $updatedAt);
     }
 
-    public function changeName(string $newName): void
+    public function updateName(string $newName): void
     {
         if ($this->name === $newName) {
             return;
@@ -66,6 +75,39 @@ class {{ name }} extends AggregateRoot
         ));
     }
 
+    public function updateDescription(string $newDescription): void
+    {
+        if ($this->description === $newDescription) {
+            return;
+        }
+
+        $this->description = $newDescription;
+        $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    public function updateStatus(bool $newStatus): void
+    {
+        if ($this->status === $newStatus) {
+            return;
+        }
+
+        $this->status = $newStatus;
+        $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    public function markAsDeleted(): void
+    {
+        if ($this->isDeleted) {
+            return;
+        }
+
+        $this->isDeleted = true;
+        $this->updatedAt = new \DateTimeImmutable();
+
+        // Record deletion event if needed
+        // $this->recordEvent(new {{ name }}Deleted($this->id, $this->updatedAt));
+    }
+
     // Getters
     public function getId(): {{ name }}Id
     {
@@ -75,6 +117,21 @@ class {{ name }} extends AggregateRoot
     public function getName(): string
     {
         return $this->name;
+    }
+
+    public function getDescription(): string
+    {
+        return $this->description;
+    }
+
+    public function getStatus(): bool
+    {
+        return $this->status;
+    }
+
+    public function isDeleted(): bool
+    {
+        return $this->isDeleted;
     }
 
     public function getCreatedAt(): \DateTimeImmutable
@@ -92,6 +149,9 @@ class {{ name }} extends AggregateRoot
         return [
             'id' => $this->id->toString(),
             'name' => $this->name,
+            'description' => $this->description,
+            'status' => $this->status,
+            'is_deleted' => $this->isDeleted,
             'created_at' => $this->createdAt->format('Y-m-d H:i:s'),
             'updated_at' => $this->updatedAt?->format('Y-m-d H:i:s'),
         ];

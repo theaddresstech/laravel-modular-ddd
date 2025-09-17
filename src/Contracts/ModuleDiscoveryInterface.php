@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Contracts;
 
-use TaiCrm\LaravelModularDdd\ValueObjects\ModuleInfo;
 use Illuminate\Support\Collection;
+use TaiCrm\LaravelModularDdd\ValueObjects\ModuleInfo;
 
 interface ModuleDiscoveryInterface
 {

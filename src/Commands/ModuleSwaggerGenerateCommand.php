@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace TaiCrm\LaravelModularDdd\Commands;
 
 use Illuminate\Console\Command;
-use TaiCrm\LaravelModularDdd\Documentation\SwaggerDocumentationGenerator;
-use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
 use Illuminate\Support\Facades\File;
+use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
+use TaiCrm\LaravelModularDdd\Documentation\SwaggerDocumentationGenerator;
 
 class ModuleSwaggerGenerateCommand extends Command
 {
@@ -20,12 +20,11 @@ class ModuleSwaggerGenerateCommand extends Command
                             {--ui : Generate Swagger UI HTML files}
                             {--serve : Start local server to serve documentation}
                             {--port=8080 : Port for local server}';
-
     protected $description = 'Generate comprehensive Swagger documentation files';
 
     public function __construct(
         private SwaggerDocumentationGenerator $generator,
-        private ModuleManagerInterface $moduleManager
+        private ModuleManagerInterface $moduleManager,
     ) {
         parent::__construct();
     }
@@ -58,6 +57,7 @@ class ModuleSwaggerGenerateCommand extends Command
             // Generate for specific module
             if (!$this->moduleExists($moduleName)) {
                 $this->error("Module '{$moduleName}' does not exist.");
+
                 return 1;
             }
 
@@ -71,6 +71,7 @@ class ModuleSwaggerGenerateCommand extends Command
 
         if (empty($generatedFiles)) {
             $this->warn('No documentation files were generated.');
+
             return 0;
         }
 
@@ -81,11 +82,12 @@ class ModuleSwaggerGenerateCommand extends Command
         }
 
         $this->info('✅ Documentation generation completed!');
+
         return 0;
     }
 
     /**
-     * Generate documentation for a specific module
+     * Generate documentation for a specific module.
      */
     private function generateModuleDocumentation(string $moduleName, string $outputDir, string $format, bool $individual, bool $withUI): array
     {
@@ -97,6 +99,7 @@ class ModuleSwaggerGenerateCommand extends Command
 
         if (empty($documentation)) {
             $this->warn("No documentation found for module '{$moduleName}'");
+
             return $files;
         }
 
@@ -114,7 +117,7 @@ class ModuleSwaggerGenerateCommand extends Command
     }
 
     /**
-     * Generate documentation for all modules
+     * Generate documentation for all modules.
      */
     private function generateAllModulesDocumentation(string $outputDir, string $format, bool $individual, bool $combined, bool $withUI): array
     {
@@ -131,6 +134,7 @@ class ModuleSwaggerGenerateCommand extends Command
             if (!$module->isEnabled()) {
                 $progressBar->setMessage("Skipping disabled: {$module->name}");
                 $progressBar->advance();
+
                 continue;
             }
 
@@ -176,7 +180,7 @@ class ModuleSwaggerGenerateCommand extends Command
     }
 
     /**
-     * Save documentation to file
+     * Save documentation to file.
      */
     private function saveDocumentation(string $name, array $documentation, string $outputDir, string $format): string
     {
@@ -196,7 +200,7 @@ class ModuleSwaggerGenerateCommand extends Command
     }
 
     /**
-     * Generate combined Swagger UI
+     * Generate combined Swagger UI.
      */
     private function generateCombinedSwaggerUI(string $outputDir): string
     {
@@ -205,52 +209,52 @@ class ModuleSwaggerGenerateCommand extends Command
         $jsonUrl = '/api-documentation.json';
 
         $htmlContent = <<<HTML
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>{$title} - Complete API Documentation</title>
-    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css" />
-    <style>
-        html { box-sizing: border-box; overflow: -moz-scrollbars-vertical; overflow-y: scroll; }
-        *, *:before, *:after { box-sizing: inherit; }
-        body { margin:0; background: #fafafa; }
-        .swagger-ui .info .title { color: #3b4151; font-size: 36px; margin: 0; }
-        .swagger-ui .info .description { margin: 15px 0; }
-    </style>
-</head>
-<body>
-    <div id="swagger-ui"></div>
-    <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js"></script>
-    <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-standalone-preset.js"></script>
-    <script>
-        window.onload = function() {
-            const ui = SwaggerUIBundle({
-                url: '{$jsonUrl}',
-                dom_id: '#swagger-ui',
-                deepLinking: true,
-                presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
-                plugins: [SwaggerUIBundle.plugins.DownloadUrl],
-                layout: "StandaloneLayout",
-                tryItOutEnabled: true,
-                supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch'],
-                persistAuthorization: true,
-                displayRequestDuration: true,
-                docExpansion: 'list',
-                filter: true,
-                showExtensions: true,
-                showCommonExtensions: true,
-                defaultModelsExpandDepth: 2,
-                defaultModelExpandDepth: 2,
-                onComplete: function() {
-                    console.log('Combined API documentation loaded');
-                }
-            });
-        };
-    </script>
-</body>
-</html>
-HTML;
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <title>{$title} - Complete API Documentation</title>
+                <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css" />
+                <style>
+                    html { box-sizing: border-box; overflow: -moz-scrollbars-vertical; overflow-y: scroll; }
+                    *, *:before, *:after { box-sizing: inherit; }
+                    body { margin:0; background: #fafafa; }
+                    .swagger-ui .info .title { color: #3b4151; font-size: 36px; margin: 0; }
+                    .swagger-ui .info .description { margin: 15px 0; }
+                </style>
+            </head>
+            <body>
+                <div id="swagger-ui"></div>
+                <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js"></script>
+                <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-standalone-preset.js"></script>
+                <script>
+                    window.onload = function() {
+                        const ui = SwaggerUIBundle({
+                            url: '{$jsonUrl}',
+                            dom_id: '#swagger-ui',
+                            deepLinking: true,
+                            presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+                            plugins: [SwaggerUIBundle.plugins.DownloadUrl],
+                            layout: "StandaloneLayout",
+                            tryItOutEnabled: true,
+                            supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch'],
+                            persistAuthorization: true,
+                            displayRequestDuration: true,
+                            docExpansion: 'list',
+                            filter: true,
+                            showExtensions: true,
+                            showCommonExtensions: true,
+                            defaultModelsExpandDepth: 2,
+                            defaultModelExpandDepth: 2,
+                            onComplete: function() {
+                                console.log('Combined API documentation loaded');
+                            }
+                        });
+                    };
+                </script>
+            </body>
+            </html>
+            HTML;
 
         $filename = "{$outputDir}/api-documentation-ui.html";
         File::put($filename, $htmlContent);
@@ -259,7 +263,7 @@ HTML;
     }
 
     /**
-     * Convert array to YAML format
+     * Convert array to YAML format.
      */
     private function convertToYaml(array $data): string
     {
@@ -269,44 +273,44 @@ HTML;
     }
 
     /**
-     * Display generated files
+     * Display generated files.
      */
     private function displayGeneratedFiles(array $files): void
     {
         $this->newLine();
         $this->info('📁 Generated Files:');
 
-        $jsonFiles = array_filter($files, fn($file) => str_ends_with($file, '.json'));
-        $yamlFiles = array_filter($files, fn($file) => str_ends_with($file, '.yaml'));
-        $htmlFiles = array_filter($files, fn($file) => str_ends_with($file, '.html'));
+        $jsonFiles = array_filter($files, static fn ($file) => str_ends_with($file, '.json'));
+        $yamlFiles = array_filter($files, static fn ($file) => str_ends_with($file, '.yaml'));
+        $htmlFiles = array_filter($files, static fn ($file) => str_ends_with($file, '.html'));
 
         if (!empty($jsonFiles)) {
             $this->line('📄 JSON Documentation:');
             foreach ($jsonFiles as $file) {
-                $this->line("  ├─ " . basename($file) . " (" . $this->formatFileSize($file) . ")");
+                $this->line('  ├─ ' . basename($file) . ' (' . $this->formatFileSize($file) . ')');
             }
         }
 
         if (!empty($yamlFiles)) {
             $this->line('📄 YAML Documentation:');
             foreach ($yamlFiles as $file) {
-                $this->line("  ├─ " . basename($file) . " (" . $this->formatFileSize($file) . ")");
+                $this->line('  ├─ ' . basename($file) . ' (' . $this->formatFileSize($file) . ')');
             }
         }
 
         if (!empty($htmlFiles)) {
             $this->line('🌐 Swagger UI Files:');
             foreach ($htmlFiles as $file) {
-                $this->line("  ├─ " . basename($file));
+                $this->line('  ├─ ' . basename($file));
             }
         }
 
         $this->newLine();
-        $this->line("📍 Output directory: " . dirname($files[0]));
+        $this->line('📍 Output directory: ' . dirname($files[0]));
     }
 
     /**
-     * Format file size
+     * Format file size.
      */
     private function formatFileSize(string $filepath): string
     {
@@ -317,19 +321,19 @@ HTML;
         $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
         $pow = min($pow, count($units) - 1);
 
-        $bytes /= pow(1024, $pow);
+        $bytes /= 1024 ** $pow;
 
         return round($bytes, 2) . ' ' . $units[$pow];
     }
 
     /**
-     * Serve documentation with built-in PHP server
+     * Serve documentation with built-in PHP server.
      */
     private function serveDocumentation(string $outputDir, string $port): void
     {
         $this->info("🚀 Starting documentation server on http://localhost:{$port}");
         $this->line("📍 Serving from: {$outputDir}");
-        $this->line("🛑 Press Ctrl+C to stop the server");
+        $this->line('🛑 Press Ctrl+C to stop the server');
         $this->newLine();
 
         // Check if there's an index file to serve
@@ -339,6 +343,7 @@ HTML;
         foreach ($indexFiles as $file) {
             if (File::exists("{$outputDir}/{$file}")) {
                 $indexFile = $file;
+
                 break;
             }
         }
@@ -351,25 +356,25 @@ HTML;
         $command = sprintf(
             'php -S localhost:%s -t %s',
             escapeshellarg($port),
-            escapeshellarg($outputDir)
+            escapeshellarg($outputDir),
         );
 
         passthru($command);
     }
 
     /**
-     * Ensure output directory exists
+     * Ensure output directory exists.
      */
     private function ensureOutputDirectory(string $outputDir): void
     {
         if (!File::exists($outputDir)) {
-            File::makeDirectory($outputDir, 0755, true);
+            File::makeDirectory($outputDir, 0o755, true);
             $this->line("📁 Created output directory: {$outputDir}");
         }
     }
 
     /**
-     * Check if module exists
+     * Check if module exists.
      */
     private function moduleExists(string $moduleName): bool
     {

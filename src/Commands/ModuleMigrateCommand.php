@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Commands;
 
-use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
-use TaiCrm\LaravelModularDdd\Exceptions\ModuleNotFoundException;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Database\Migrations\Migrator;
 use Illuminate\Filesystem\Filesystem;
+use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
+use TaiCrm\LaravelModularDdd\Exceptions\ModuleNotFoundException;
 
 class ModuleMigrateCommand extends Command
 {
@@ -18,13 +19,12 @@ class ModuleMigrateCommand extends Command
                             {--rollback : Rollback migrations}
                             {--step=1 : Number of steps to rollback}
                             {--force : Force migration in production}';
-
     protected $description = 'Run migrations for modules';
 
     public function __construct(
         private ModuleManagerInterface $moduleManager,
         private Migrator $migrator,
-        private Filesystem $files
+        private Filesystem $files,
     ) {
         parent::__construct();
     }
@@ -38,6 +38,7 @@ class ModuleMigrateCommand extends Command
         $moduleName = $this->argument('module');
         if (!$moduleName) {
             $this->error('Please specify a module name or use --all flag');
+
             return self::FAILURE;
         }
 
@@ -47,10 +48,11 @@ class ModuleMigrateCommand extends Command
     private function migrateAllModules(): int
     {
         $modules = $this->moduleManager->list()
-            ->filter(fn($module) => $module->isEnabled());
+            ->filter(static fn ($module) => $module->isEnabled());
 
         if ($modules->isEmpty()) {
             $this->info('No enabled modules found.');
+
             return self::SUCCESS;
         }
 
@@ -81,19 +83,20 @@ class ModuleMigrateCommand extends Command
 
             if (!$module->isEnabled()) {
                 $this->warn("⚠️  Module '{$moduleName}' is not enabled. Enable it first with: php artisan module:enable {$moduleName}");
+
                 return self::FAILURE;
             }
 
             $this->info("🔄 Running migrations for module: {$moduleName}");
 
             return $this->runModuleMigrations($moduleName, $module->path);
-
         } catch (ModuleNotFoundException $e) {
-            $this->error("❌ " . $e->getMessage());
-            return self::FAILURE;
+            $this->error('❌ ' . $e->getMessage());
 
-        } catch (\Exception $e) {
-            $this->error("❌ Migration failed: " . $e->getMessage());
+            return self::FAILURE;
+        } catch (Exception $e) {
+            $this->error('❌ Migration failed: ' . $e->getMessage());
+
             return self::FAILURE;
         }
     }
@@ -103,26 +106,28 @@ class ModuleMigrateCommand extends Command
         $migrationsPath = $modulePath . '/Database/Migrations';
 
         if (!$this->files->isDirectory($migrationsPath)) {
-            $this->line("   📁 No migrations directory found, skipping.");
+            $this->line('   📁 No migrations directory found, skipping.');
+
             return self::SUCCESS;
         }
 
         $migrationFiles = $this->files->glob($migrationsPath . '/*.php');
 
         if (empty($migrationFiles)) {
-            $this->line("   📁 No migration files found, skipping.");
+            $this->line('   📁 No migration files found, skipping.');
+
             return self::SUCCESS;
         }
 
         try {
             if ($this->option('rollback')) {
                 return $this->rollbackMigrations($migrationsPath);
-            } else {
-                return $this->runMigrations($migrationsPath);
             }
 
-        } catch (\Exception $e) {
-            $this->error("   ❌ Migration error: " . $e->getMessage());
+            return $this->runMigrations($migrationsPath);
+        } catch (Exception $e) {
+            $this->error('   ❌ Migration error: ' . $e->getMessage());
+
             return self::FAILURE;
         }
     }
@@ -136,7 +141,7 @@ class ModuleMigrateCommand extends Command
         ]);
 
         if ($exitCode === 0) {
-            $this->line("   ✅ Migrations completed successfully");
+            $this->line('   ✅ Migrations completed successfully');
         }
 
         return $exitCode;
@@ -152,7 +157,7 @@ class ModuleMigrateCommand extends Command
         ]);
 
         if ($exitCode === 0) {
-            $this->line("   ✅ Migrations rolled back successfully");
+            $this->line('   ✅ Migrations rolled back successfully');
         }
 
         return $exitCode;

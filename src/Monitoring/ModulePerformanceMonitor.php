@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Monitoring;
 
-use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
-use Illuminate\Support\Collection;
+use Exception;
 use Illuminate\Cache\CacheManager;
+use Illuminate\Support\Collection;
+use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
+use SimpleXMLElement;
+use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
 
 class ModulePerformanceMonitor
 {
@@ -17,7 +20,7 @@ class ModulePerformanceMonitor
     public function __construct(
         private ModuleManagerInterface $moduleManager,
         private CacheManager $cache,
-        private LoggerInterface $logger
+        private LoggerInterface $logger,
     ) {}
 
     public function startTimer(string $operation, array $context = []): string
@@ -37,7 +40,7 @@ class ModulePerformanceMonitor
     public function endTimer(string $timerId): array
     {
         if (!isset($this->timers[$timerId])) {
-            throw new \InvalidArgumentException("Timer {$timerId} not found");
+            throw new InvalidArgumentException("Timer {$timerId} not found");
         }
 
         $timer = $this->timers[$timerId];
@@ -79,9 +82,10 @@ class ModulePerformanceMonitor
 
         // Log slow operations
         $threshold = 1.0; // Default threshold
+
         try {
             $threshold = config('modular-ddd.monitoring.slow_operation_threshold', 1.0);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Fallback for unit tests where config is not available
         }
 
@@ -90,11 +94,12 @@ class ModulePerformanceMonitor
         }
     }
 
-    public function getMetrics(string $operation = null, int $limit = 100): Collection
+    public function getMetrics(?string $operation = null, int $limit = 100): Collection
     {
         if ($operation) {
             $cacheKey = $this->getCacheKey($operation);
             $metrics = $this->cache->store()->get($cacheKey, []);
+
             return collect($metrics)->take($limit);
         }
 
@@ -155,15 +160,23 @@ class ModulePerformanceMonitor
         $operations = $this->getAllOperations();
 
         foreach ($operations as $operation) {
-            $allMetrics[$operation] = $this->getAggregatedMetrics($operation, '1hour');
+            $metrics = $this->getAggregatedMetrics($operation, '1hour');
+            if ($metrics !== null) {
+                $allMetrics[$operation] = $metrics;
+            }
         }
+
+        $modules = $this->moduleManager->list() ?? collect();
+
+        // Filter out null values for calculations
+        $validMetrics = array_filter($allMetrics, static fn ($m) => $m !== null);
 
         return [
             'timestamp' => now(),
-            'total_modules' => $this->moduleManager->list()->count(),
-            'enabled_modules' => $this->moduleManager->list()->filter->isEnabled()->count(),
-            'total_operations' => array_sum(array_column($allMetrics, 'total_operations')),
-            'average_response_time' => $this->calculateOverallAverage($allMetrics, 'average_duration'),
+            'total_modules' => $modules->count(),
+            'enabled_modules' => $modules->filter(static fn ($m) => $m && method_exists($m, 'isEnabled') ? $m->isEnabled() : false)->count(),
+            'total_operations' => array_sum(array_column($validMetrics, 'total_operations')),
+            'average_response_time' => $this->calculateOverallAverage($validMetrics, 'average_duration'),
             'memory_usage' => [
                 'current' => memory_get_usage(true),
                 'peak' => memory_get_peak_usage(true),
@@ -173,7 +186,7 @@ class ModulePerformanceMonitor
         ];
     }
 
-    public function exportMetrics(string $format = 'json', string $operation = null): string
+    public function exportMetrics(string $format = 'json', ?string $operation = null): string
     {
         $metrics = $operation
             ? $this->getMetrics($operation, 1000)->toArray()
@@ -183,11 +196,11 @@ class ModulePerformanceMonitor
             'json' => json_encode($metrics, JSON_PRETTY_PRINT),
             'csv' => $this->metricsToCSV($metrics),
             'xml' => $this->metricsToXML($metrics),
-            default => throw new \InvalidArgumentException("Unsupported format: {$format}")
+            default => throw new InvalidArgumentException("Unsupported format: {$format}")
         };
     }
 
-    public function clearMetrics(string $operation = null): void
+    public function clearMetrics(?string $operation = null): void
     {
         if ($operation) {
             $cacheKey = $this->getCacheKey($operation);
@@ -276,9 +289,7 @@ class ModulePerformanceMonitor
             default => now()->subHour(),
         };
 
-        return array_filter($metrics, function ($metric) use ($cutoff) {
-            return isset($metric['timestamp']) && $metric['timestamp'] >= $cutoff;
-        });
+        return array_filter($metrics, static fn ($metric) => isset($metric['timestamp']) && $metric['timestamp'] >= $cutoff);
     }
 
     private function calculateAverage(array $metrics, string $field): float
@@ -288,6 +299,7 @@ class ModulePerformanceMonitor
         }
 
         $values = array_column($metrics, $field);
+
         return array_sum($values) / count($values);
     }
 
@@ -297,7 +309,7 @@ class ModulePerformanceMonitor
             return 0;
         }
 
-        $timestamps = array_map(fn($m) => $m['timestamp']->timestamp, $metrics);
+        $timestamps = array_map(static fn ($m) => $m['timestamp']->timestamp, $metrics);
         $duration = max($timestamps) - min($timestamps);
 
         return $duration > 0 ? count($metrics) / $duration : 0;
@@ -314,10 +326,10 @@ class ModulePerformanceMonitor
         $count = count($values);
 
         return [
-            'p50' => $values[(int)($count * 0.5)] ?? 0,
-            'p90' => $values[(int)($count * 0.9)] ?? 0,
-            'p95' => $values[(int)($count * 0.95)] ?? 0,
-            'p99' => $values[(int)($count * 0.99)] ?? 0,
+            'p50' => $values[(int) ($count * 0.5)] ?? 0,
+            'p90' => $values[(int) ($count * 0.9)] ?? 0,
+            'p95' => $values[(int) ($count * 0.95)] ?? 0,
+            'p99' => $values[(int) ($count * 0.99)] ?? 0,
         ];
     }
 
@@ -329,20 +341,21 @@ class ModulePerformanceMonitor
         }
 
         $errors = $metrics->where('context.error', true)->count();
+
         return $errors / $total;
     }
 
     private function calculateOverallAverage(array $allMetrics, string $field): float
     {
         $values = array_column($allMetrics, $field);
-        $nonZeroValues = array_filter($values, fn($v) => $v > 0);
+        $nonZeroValues = array_filter($values, static fn ($v) => $v > 0);
 
         return empty($nonZeroValues) ? 0 : array_sum($nonZeroValues) / count($nonZeroValues);
     }
 
     private function getAllOperations(): array
     {
-        $pattern = "module_performance_metrics:*";
+        $pattern = 'module_performance_metrics:*';
 
         try {
             $store = $this->cache->store();
@@ -359,10 +372,10 @@ class ModulePerformanceMonitor
             }
 
             return array_map(
-                fn($key) => str_replace('module_performance_metrics:', '', $key),
-                $keys
+                static fn ($key) => str_replace('module_performance_metrics:', '', $key),
+                $keys,
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Return empty array if cache operations fail
             return [];
         }
@@ -383,7 +396,7 @@ class ModulePerformanceMonitor
                     $operation,
                     $data['average_duration'] ?? 0,
                     $data['average_memory'] ?? 0,
-                    now()->toDateTimeString()
+                    now()->toDateTimeString(),
                 );
             }
         }
@@ -393,7 +406,7 @@ class ModulePerformanceMonitor
 
     private function metricsToXML(array $metrics): string
     {
-        $xml = new \SimpleXMLElement('<metrics/>');
+        $xml = new SimpleXMLElement('<metrics/>');
         $xml->addAttribute('timestamp', now()->toISOString());
 
         $this->arrayToXML($metrics, $xml);
@@ -401,14 +414,14 @@ class ModulePerformanceMonitor
         return $xml->asXML();
     }
 
-    private function arrayToXML(array $data, \SimpleXMLElement $xml): void
+    private function arrayToXML(array $data, SimpleXMLElement $xml): void
     {
         foreach ($data as $key => $value) {
             if (is_array($value)) {
                 $subNode = $xml->addChild($key);
                 $this->arrayToXML($value, $subNode);
             } else {
-                $xml->addChild($key, htmlspecialchars((string)$value));
+                $xml->addChild($key, htmlspecialchars((string) $value));
             }
         }
     }
@@ -433,15 +446,15 @@ class ModulePerformanceMonitor
                 ->get();
 
             return array_map(
-                fn($entry) => str_replace('module_performance_metrics:', '', $entry->key),
-                $cacheEntries->toArray()
+                static fn ($entry) => str_replace('module_performance_metrics:', '', $entry->key),
+                $cacheEntries->toArray(),
             );
-
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->warning('Failed to retrieve database cache keys', [
                 'pattern' => $pattern,
                 'exception' => $e->getMessage(),
             ]);
+
             return [];
         }
     }

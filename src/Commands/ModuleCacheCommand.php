@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Commands;
 
-use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
+use Exception;
 use Illuminate\Console\Command;
+use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
 
 class ModuleCacheCommand extends Command
 {
     protected $signature = 'module:cache {action=rebuild : Action to perform (clear|rebuild)}';
-
     protected $description = 'Manage module cache (clear or rebuild)';
 
     public function __construct(
-        private ModuleManagerInterface $moduleManager
+        private ModuleManagerInterface $moduleManager,
     ) {
         parent::__construct();
     }
@@ -40,9 +40,9 @@ class ModuleCacheCommand extends Command
             $this->info('✅ Module cache cleared successfully.');
 
             return self::SUCCESS;
+        } catch (Exception $e) {
+            $this->error('❌ Failed to clear cache: ' . $e->getMessage());
 
-        } catch (\Exception $e) {
-            $this->error("❌ Failed to clear cache: " . $e->getMessage());
             return self::FAILURE;
         }
     }
@@ -58,16 +58,16 @@ class ModuleCacheCommand extends Command
             // Then rebuild by loading modules
             $modules = $this->moduleManager->list();
 
-            $this->info("✅ Module cache rebuilt successfully.");
+            $this->info('✅ Module cache rebuilt successfully.');
             $this->line("   Cached {$modules->count()} modules");
 
             // Show summary
             $this->displayCacheSummary($modules);
 
             return self::SUCCESS;
+        } catch (Exception $e) {
+            $this->error('❌ Failed to rebuild cache: ' . $e->getMessage());
 
-        } catch (\Exception $e) {
-            $this->error("❌ Failed to rebuild cache: " . $e->getMessage());
             return self::FAILURE;
         }
     }
@@ -81,7 +81,7 @@ class ModuleCacheCommand extends Command
         $this->newLine();
         $this->line('📊 <comment>Cache Summary:</comment>');
 
-        $states = $modules->groupBy(fn($module) => $module->state->value);
+        $states = $modules->groupBy(static fn ($module) => $module->state->value);
 
         foreach ($states as $state => $moduleGroup) {
             $count = $moduleGroup->count();
@@ -90,13 +90,14 @@ class ModuleCacheCommand extends Command
         }
 
         $this->newLine();
-        $this->line("Cache includes module manifests, dependencies, and metadata.");
+        $this->line('Cache includes module manifests, dependencies, and metadata.');
     }
 
     private function invalidAction(string $action): int
     {
         $this->error("❌ Invalid action: {$action}");
         $this->line('Available actions: clear, rebuild');
+
         return self::FAILURE;
     }
 }

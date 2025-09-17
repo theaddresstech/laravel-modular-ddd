@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Commands;
 
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Str;
@@ -18,13 +19,12 @@ class ModuleMakeTestCommand extends Command
                             {--integration : Create an integration test}
                             {--class= : The class being tested}
                             {--force : Overwrite existing test}';
-
     protected $description = 'Create a new test for a module';
 
     public function __construct(
         private Filesystem $files,
         private string $modulesPath,
-        private string $stubPath
+        private string $stubPath,
     ) {
         parent::__construct();
     }
@@ -39,6 +39,7 @@ class ModuleMakeTestCommand extends Command
 
         if (!$this->files->exists($modulePath)) {
             $this->error("Module '{$moduleName}' does not exist. Create it first using module:make");
+
             return self::FAILURE;
         }
 
@@ -47,6 +48,7 @@ class ModuleMakeTestCommand extends Command
 
         if ($this->files->exists($testPath) && !$this->option('force')) {
             $this->error("Test '{$testName}' already exists in module '{$moduleName}'. Use --force to overwrite.");
+
             return self::FAILURE;
         }
 
@@ -56,9 +58,9 @@ class ModuleMakeTestCommand extends Command
             $this->displayNextSteps($moduleName, $testName, $testType);
 
             return self::SUCCESS;
+        } catch (Exception $e) {
+            $this->error('❌ Failed to create test: ' . $e->getMessage());
 
-        } catch (\Exception $e) {
-            $this->error("❌ Failed to create test: " . $e->getMessage());
             return self::FAILURE;
         }
     }
@@ -99,6 +101,7 @@ class ModuleMakeTestCommand extends Command
 
         if (!$this->files->exists($stubPath)) {
             $this->createTestFromTemplate($testPath, $moduleName, $testName, $testType, $className);
+
             return;
         }
 
@@ -111,7 +114,7 @@ class ModuleMakeTestCommand extends Command
 
         $testDir = dirname($testPath);
         if (!$this->files->exists($testDir)) {
-            $this->files->makeDirectory($testDir, 0755, true);
+            $this->files->makeDirectory($testDir, 0o755, true);
         }
 
         $this->files->put($testPath, $content);
@@ -130,7 +133,7 @@ declare(strict_types=1);
 namespace {$namespace};
 
 use {$baseTestClass};
-" . ($className ? "use Modules\\{$moduleName}\\Domain\\Models\\{$className};\n" : "") . "
+" . ($className ? "use Modules\\{$moduleName}\\Domain\\Models\\{$className};\n" : '') . "
 class {$testName} extends " . class_basename($baseTestClass) . "
 {
 {$testMethods}
@@ -139,7 +142,7 @@ class {$testName} extends " . class_basename($baseTestClass) . "
 
         $testDir = dirname($testPath);
         if (!$this->files->exists($testDir)) {
-            $this->files->makeDirectory($testDir, 0755, true);
+            $this->files->makeDirectory($testDir, 0o755, true);
         }
 
         $this->files->put($testPath, $content);
@@ -169,10 +172,10 @@ class {$testName} extends " . class_basename($baseTestClass) . "
             return $this->generateIntegrationTestMethods($testName);
         }
 
-        return "    public function test_example(): void
+        return '    public function test_example(): void
     {
-        \$this->assertTrue(true);
-    }";
+        $this->assertTrue(true);
+    }';
     }
 
     private function generateUnitTestMethods(string $className): string
@@ -249,17 +252,17 @@ class {$testName} extends " . class_basename($baseTestClass) . "
 
     private function generateIntegrationTestMethods(string $testName): string
     {
-        return "    public function test_integration_between_components(): void
+        return '    public function test_integration_between_components(): void
     {
         // Test integration between different parts of the system
-        \$this->assertTrue(true);
+        $this->assertTrue(true);
     }
 
     public function test_external_service_integration(): void
     {
         // Test integration with external services
-        \$this->assertTrue(true);
-    }";
+        $this->assertTrue(true);
+    }';
     }
 
     private function getReplacements(string $moduleName, string $testName, string $testType, ?string $className): array
@@ -277,7 +280,7 @@ class {$testName} extends " . class_basename($baseTestClass) . "
     private function displayNextSteps(string $moduleName, string $testName, string $testType): void
     {
         $this->newLine();
-        $this->line("📋 <comment>Next steps:</comment>");
+        $this->line('📋 <comment>Next steps:</comment>');
         $this->line("1. Implement test logic in: modules/{$moduleName}/Tests/{$testType}/{$testName}.php");
         $this->line("2. Run the test: <info>php artisan test modules/{$moduleName}/Tests/{$testType}/{$testName}.php</info>");
 
@@ -286,10 +289,10 @@ class {$testName} extends " . class_basename($baseTestClass) . "
         }
 
         if ($testType === 'Feature') {
-            $this->line("3. Add test database setup and user authentication as needed");
+            $this->line('3. Add test database setup and user authentication as needed');
         }
 
-        $this->line("4. Add more test methods to cover different scenarios");
+        $this->line('4. Add more test methods to cover different scenarios');
         $this->newLine();
     }
 }

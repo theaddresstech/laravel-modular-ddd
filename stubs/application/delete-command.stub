@@ -1,0 +1,24 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\{{ module }}\Application\Commands\Delete{{ name }};
+
+readonly class Delete{{ name }}Command
+{
+    public function __construct(
+        private string $id
+    ) {}
+
+    public function getId(): string
+    {
+        return $this->id;
+    }
+
+    public function toArray(): array
+    {
+        return [
+            'id' => $this->id,
+        ];
+    }
+}

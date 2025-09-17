@@ -2,42 +2,59 @@
 
 declare(strict_types=1);
 
-namespace {{NAMESPACE_MODULE}}\Application\Listeners;
+namespace Modules\{{ module }}\Application\Listeners;
 
-use {{NAMESPACE_MODULE}}\Domain\Events\{{EVENT}};
+use Modules\{{ module }}\Domain\Events\{{ event }};
 use Psr\Log\LoggerInterface;
 
-final class {{LISTENER}}
+final class {{ name }}
 {
     public function __construct(
         private LoggerInterface $logger
     ) {}
 
-    public function handle({{EVENT}} ${{EVENT_VARIABLE}}): void
+    public function handle({{ event }} ${{ eventVariable }}): void
     {
-        $this->logger->info('{{LISTENER}} handling event', [
-            'event_id' => ${{EVENT_VARIABLE}}->getEventId(),
-            'event_type' => ${{EVENT_VARIABLE}}->getEventType(),
+        $this->logger->info('{{ name }} handling event', [
+            'event_id' => ${{ eventVariable }}->getEventId(),
+            'event_type' => ${{ eventVariable }}->getEventType(),
+            'aggregate_id' => ${{ eventVariable }}->getAggregateId()->toString(),
         ]);
 
         try {
-            // TODO: Implement your event handling logic here
-            $this->process{{EVENT}}(${{EVENT_VARIABLE}});
+            $this->process{{ event }}(${{ eventVariable }});
+
+            $this->logger->info('{{ name }} successfully processed event', [
+                'event_id' => ${{ eventVariable }}->getEventId(),
+                'aggregate_id' => ${{ eventVariable }}->getAggregateId()->toString(),
+            ]);
 
         } catch (\Exception $e) {
-            $this->logger->error('Error in {{LISTENER}}', [
-                'event_id' => ${{EVENT_VARIABLE}}->getEventId(),
+            $this->logger->error('Error in {{ name }}', [
+                'event_id' => ${{ eventVariable }}->getEventId(),
+                'aggregate_id' => ${{ eventVariable }}->getAggregateId()->toString(),
                 'error' => $e->getMessage(),
-                'exception' => $e,
+                'trace' => $e->getTraceAsString(),
             ]);
 
             throw $e;
         }
     }
 
-    private function process{{EVENT}}({{EVENT}} ${{EVENT_VARIABLE}}): void
+    private function process{{ event }}({{ event }} ${{ eventVariable }}): void
     {
         // Implement your business logic here
-        // Example: Send email, update database, call external API, etc.
+        // Examples:
+        // - Send email notifications
+        // - Update read models
+        // - Call external APIs
+        // - Update cache
+        // - Trigger other domain events
+
+        $payload = ${{ eventVariable }}->getPayload();
+
+        $this->logger->debug('Processing {{ event }} with payload', $payload);
+
+        // Your implementation here...
     }
 }

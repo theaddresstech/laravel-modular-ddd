@@ -21,6 +21,7 @@ class ModuleMakeCommandCommand extends Command
 
         if (!$this->moduleExists($moduleName)) {
             $this->error("Module '{$moduleName}' does not exist.");
+
             return 1;
         }
 
@@ -50,8 +51,8 @@ class ModuleMakeCommandCommand extends Command
             '{{COMMAND_NAME}}' => $commandName,
             '{{COMMAND_VARIABLE}}' => Str::camel($commandName),
             '{{AGGREGATE_NAME}}' => $aggregateName ?? 'Example',
-            '{{VALIDATION_RULES}}' => $withValidation ? $this->getValidationRulesExample() : "return [];",
-            '{{VALIDATION_MESSAGES}}' => $withValidation ? $this->getValidationMessagesExample() : "return [];",
+            '{{VALIDATION_RULES}}' => $withValidation ? $this->getValidationRulesExample() : 'return [];',
+            '{{VALIDATION_MESSAGES}}' => $withValidation ? $this->getValidationMessagesExample() : 'return [];',
             '{{PROPERTIES}}' => $this->getPropertiesExample($aggregateName),
             '{{CONSTRUCTOR_PARAMS}}' => $this->getConstructorParamsExample($aggregateName),
             '{{CONSTRUCTOR_ASSIGNMENTS}}' => $this->getConstructorAssignmentsExample($aggregateName),
@@ -85,103 +86,106 @@ class ModuleMakeCommandCommand extends Command
     private function ensureDirectoryExists(string $directory): void
     {
         if (!is_dir($directory)) {
-            mkdir($directory, 0755, true);
+            mkdir($directory, 0o755, true);
         }
     }
 
     private function getCommandTemplate(): string
     {
         return <<<'PHP'
-<?php
+            <?php
 
-declare(strict_types=1);
+            declare(strict_types=1);
 
-namespace {{MODULE_NAMESPACE}}\Application\Commands;
+            namespace {{MODULE_NAMESPACE}}\Application\Commands;
 
-use TaiCrm\LaravelModularDdd\Foundation\Command;
+            use TaiCrm\LaravelModularDdd\Foundation\Command;
 
-class {{COMMAND_NAME}} extends Command
-{
-{{PROPERTIES}}
+            class {{COMMAND_NAME}} extends Command
+            {
+            {{PROPERTIES}}
 
-    public function __construct({{CONSTRUCTOR_PARAMS}})
-    {
-{{CONSTRUCTOR_ASSIGNMENTS}}
-        parent::__construct();
-    }
+                public function __construct({{CONSTRUCTOR_PARAMS}})
+                {
+            {{CONSTRUCTOR_ASSIGNMENTS}}
+                    parent::__construct();
+                }
 
-    public function getValidationRules(): array
-    {
-        {{VALIDATION_RULES}}
-    }
+                public function getValidationRules(): array
+                {
+                    {{VALIDATION_RULES}}
+                }
 
-    public function getValidationMessages(): array
-    {
-        {{VALIDATION_MESSAGES}}
-    }
+                public function getValidationMessages(): array
+                {
+                    {{VALIDATION_MESSAGES}}
+                }
 
-    protected function toArray(): array
-    {
-        return [
-{{TO_ARRAY_CONTENT}}
-        ];
-    }
-}
-PHP;
+                protected function toArray(): array
+                {
+                    return [
+            {{TO_ARRAY_CONTENT}}
+                    ];
+                }
+            }
+            PHP;
     }
 
     private function getCommandHandlerTemplate(): string
     {
         return <<<'PHP'
-<?php
+            <?php
 
-declare(strict_types=1);
+            declare(strict_types=1);
 
-namespace {{MODULE_NAMESPACE}}\Application\Handlers\Commands;
+            namespace {{MODULE_NAMESPACE}}\Application\Handlers\Commands;
 
-use {{MODULE_NAMESPACE}}\Application\Commands\{{COMMAND_NAME}};
-use TaiCrm\LaravelModularDdd\Foundation\Contracts\CommandHandlerInterface;
+            use {{MODULE_NAMESPACE}}\Application\Commands\{{COMMAND_NAME}};
+            use TaiCrm\LaravelModularDdd\Foundation\Contracts\CommandHandlerInterface;
 
-class {{HANDLER_NAME}} implements CommandHandlerInterface
-{
-    public function handle({{COMMAND_NAME}} $command): mixed
-    {
-        // TODO: Implement command handling logic
-        // Example: Create or update {{AGGREGATE_NAME}} aggregate
+            class {{HANDLER_NAME}} implements CommandHandlerInterface
+            {
+                public function handle({{COMMAND_NAME}} $command): mixed
+                {
+                    // TODO: Implement command handling logic
+                    // Example: Create or update {{AGGREGATE_NAME}} aggregate
 
-        return true;
-    }
-}
-PHP;
+                    return true;
+                }
+            }
+            PHP;
     }
 
     private function getPropertiesExample(?string $aggregateName): string
     {
         if (!$aggregateName) {
-            return "    private string \$exampleProperty;";
+            return '    private string $exampleProperty;';
         }
 
         $variable = Str::camel($aggregateName);
+
         return "    private string \${$variable}Id;\n    private array \$data;";
     }
 
     private function getConstructorParamsExample(?string $aggregateName): string
     {
         if (!$aggregateName) {
-            return "string \$exampleProperty";
+            return 'string $exampleProperty';
         }
 
         $variable = Str::camel($aggregateName);
+
         return "string \${$variable}Id, array \$data";
     }
 
     private function getConstructorAssignmentsExample(?string $aggregateName): string
     {
         if (!$aggregateName) {
-            return "        \$this->exampleProperty = \$exampleProperty;";
+            return '        $this->exampleProperty = $exampleProperty;';
         }
 
         $variable = Str::camel($aggregateName);
+
         return "        \$this->{$variable}Id = \${$variable}Id;\n        \$this->data = \$data;";
     }
 
@@ -193,26 +197,27 @@ PHP;
 
         $variable = Str::camel($aggregateName);
         $snakeCase = Str::snake($aggregateName);
+
         return "            '{$snakeCase}_id' => \$this->{$variable}Id,\n            'data' => \$this->data,";
     }
 
     private function getValidationRulesExample(): string
     {
         return <<<'PHP'
-return [
-            'example_property' => 'required|string|max:255',
-            'data' => 'array',
-        ];
-PHP;
+            return [
+                        'example_property' => 'required|string|max:255',
+                        'data' => 'array',
+                    ];
+            PHP;
     }
 
     private function getValidationMessagesExample(): string
     {
         return <<<'PHP'
-return [
-            'example_property.required' => 'The example property is required.',
-            'example_property.string' => 'The example property must be a string.',
-        ];
-PHP;
+            return [
+                        'example_property.required' => 'The example property is required.',
+                        'example_property.string' => 'The example property must be a string.',
+                    ];
+            PHP;
     }
 }

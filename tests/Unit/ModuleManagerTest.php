@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace TaiCrm\LaravelModularDdd\Tests\Unit;
 
 use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
-use TaiCrm\LaravelModularDdd\ValueObjects\ModuleState;
-use TaiCrm\LaravelModularDdd\Exceptions\ModuleNotFoundException;
 use TaiCrm\LaravelModularDdd\Exceptions\DependencyException;
+use TaiCrm\LaravelModularDdd\Exceptions\ModuleNotFoundException;
 use TaiCrm\LaravelModularDdd\Tests\TestCase;
+use TaiCrm\LaravelModularDdd\ValueObjects\ModuleState;
 
 class ModuleManagerTest extends TestCase
 {
@@ -20,14 +20,14 @@ class ModuleManagerTest extends TestCase
         $this->moduleManager = $this->app->make(ModuleManagerInterface::class);
     }
 
-    public function test_list_returns_empty_collection_when_no_modules(): void
+    public function testListReturnsEmptyCollectionWhenNoModules(): void
     {
         $modules = $this->moduleManager->list();
 
         $this->assertEmpty($modules);
     }
 
-    public function test_list_returns_discovered_modules(): void
+    public function testListReturnsDiscoveredModules(): void
     {
         $this->createTestModule('TestModule');
         $this->createTestModule('AnotherModule');
@@ -39,7 +39,7 @@ class ModuleManagerTest extends TestCase
         $this->assertTrue($modules->has('AnotherModule'));
     }
 
-    public function test_can_install_module(): void
+    public function testCanInstallModule(): void
     {
         $this->createTestModule('TestModule');
 
@@ -47,17 +47,17 @@ class ModuleManagerTest extends TestCase
 
         $this->assertTrue($result);
         $this->assertTrue($this->moduleManager->isInstalled('TestModule'));
-        $this->assertEquals(ModuleState::Installed, $this->moduleManager->getState('TestModule'));
+        $this->assertSame(ModuleState::Installed, $this->moduleManager->getState('TestModule'));
     }
 
-    public function test_cannot_install_nonexistent_module(): void
+    public function testCannotInstallNonexistentModule(): void
     {
         $this->expectException(ModuleNotFoundException::class);
 
         $this->moduleManager->install('NonexistentModule');
     }
 
-    public function test_can_enable_installed_module(): void
+    public function testCanEnableInstalledModule(): void
     {
         $this->createTestModule('TestModule');
         $this->moduleManager->install('TestModule');
@@ -66,10 +66,10 @@ class ModuleManagerTest extends TestCase
 
         $this->assertTrue($result);
         $this->assertTrue($this->moduleManager->isEnabled('TestModule'));
-        $this->assertEquals(ModuleState::Enabled, $this->moduleManager->getState('TestModule'));
+        $this->assertSame(ModuleState::Enabled, $this->moduleManager->getState('TestModule'));
     }
 
-    public function test_can_disable_enabled_module(): void
+    public function testCanDisableEnabledModule(): void
     {
         $this->createTestModule('TestModule');
         $this->moduleManager->install('TestModule');
@@ -79,10 +79,10 @@ class ModuleManagerTest extends TestCase
 
         $this->assertTrue($result);
         $this->assertFalse($this->moduleManager->isEnabled('TestModule'));
-        $this->assertEquals(ModuleState::Disabled, $this->moduleManager->getState('TestModule'));
+        $this->assertSame(ModuleState::Disabled, $this->moduleManager->getState('TestModule'));
     }
 
-    public function test_can_remove_installed_module(): void
+    public function testCanRemoveInstalledModule(): void
     {
         $this->createTestModule('TestModule');
         $this->moduleManager->install('TestModule');
@@ -91,13 +91,13 @@ class ModuleManagerTest extends TestCase
 
         $this->assertTrue($result);
         $this->assertFalse($this->moduleManager->isInstalled('TestModule'));
-        $this->assertEquals(ModuleState::NotInstalled, $this->moduleManager->getState('TestModule'));
+        $this->assertSame(ModuleState::NotInstalled, $this->moduleManager->getState('TestModule'));
     }
 
-    public function test_validates_dependencies_before_installation(): void
+    public function testValidatesDependenciesBeforeInstallation(): void
     {
         $this->createTestModule('DependentModule', [
-            'dependencies' => ['MissingModule']
+            'dependencies' => ['MissingModule'],
         ]);
 
         $this->expectException(DependencyException::class);
@@ -106,11 +106,11 @@ class ModuleManagerTest extends TestCase
         $this->moduleManager->install('DependentModule');
     }
 
-    public function test_installs_dependencies_automatically(): void
+    public function testInstallsDependenciesAutomatically(): void
     {
         $this->createTestModule('DependencyModule');
         $this->createTestModule('MainModule', [
-            'dependencies' => ['DependencyModule']
+            'dependencies' => ['DependencyModule'],
         ]);
 
         $result = $this->moduleManager->install('MainModule');
@@ -120,10 +120,10 @@ class ModuleManagerTest extends TestCase
         $this->assertTrue($this->moduleManager->isInstalled('MainModule'));
     }
 
-    public function test_gets_module_dependencies(): void
+    public function testGetsModuleDependencies(): void
     {
         $this->createTestModule('TestModule', [
-            'dependencies' => ['Dependency1', 'Dependency2']
+            'dependencies' => ['Dependency1', 'Dependency2'],
         ]);
 
         $dependencies = $this->moduleManager->getDependencies('TestModule');
@@ -133,14 +133,14 @@ class ModuleManagerTest extends TestCase
         $this->assertContains('Dependency2', $dependencies);
     }
 
-    public function test_gets_module_dependents(): void
+    public function testGetsModuleDependents(): void
     {
         $this->createTestModule('BaseModule');
         $this->createTestModule('DependentModule1', [
-            'dependencies' => ['BaseModule']
+            'dependencies' => ['BaseModule'],
         ]);
         $this->createTestModule('DependentModule2', [
-            'dependencies' => ['BaseModule']
+            'dependencies' => ['BaseModule'],
         ]);
 
         $dependents = $this->moduleManager->getDependents('BaseModule');
@@ -150,22 +150,22 @@ class ModuleManagerTest extends TestCase
         $this->assertContains('DependentModule2', $dependents);
     }
 
-    public function test_gets_module_info(): void
+    public function testGetsModuleInfo(): void
     {
         $this->createTestModule('TestModule', [
             'display_name' => 'Test Module',
-            'version' => '2.0.0'
+            'version' => '2.0.0',
         ]);
 
         $moduleInfo = $this->moduleManager->getInfo('TestModule');
 
         $this->assertNotNull($moduleInfo);
-        $this->assertEquals('TestModule', $moduleInfo->name);
-        $this->assertEquals('Test Module', $moduleInfo->displayName);
-        $this->assertEquals('2.0.0', $moduleInfo->version);
+        $this->assertSame('TestModule', $moduleInfo->name);
+        $this->assertSame('Test Module', $moduleInfo->displayName);
+        $this->assertSame('2.0.0', $moduleInfo->version);
     }
 
-    public function test_returns_null_for_nonexistent_module_info(): void
+    public function testReturnsNullForNonexistentModuleInfo(): void
     {
         $moduleInfo = $this->moduleManager->getInfo('NonexistentModule');
 

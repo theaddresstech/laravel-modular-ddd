@@ -4,18 +4,17 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Commands;
 
+use Illuminate\Console\Command;
 use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
 use TaiCrm\LaravelModularDdd\ValueObjects\ModuleInfo;
-use Illuminate\Console\Command;
 
 class ModuleListCommand extends Command
 {
     protected $signature = 'module:list {--enabled : Show only enabled modules} {--disabled : Show only disabled modules}';
-
     protected $description = 'List all available modules';
 
     public function __construct(
-        private ModuleManagerInterface $moduleManager
+        private ModuleManagerInterface $moduleManager,
     ) {
         parent::__construct();
     }
@@ -26,14 +25,15 @@ class ModuleListCommand extends Command
 
         if ($modules->isEmpty()) {
             $this->info('No modules found.');
+
             return self::SUCCESS;
         }
 
         // Filter modules based on options
         if ($this->option('enabled')) {
-            $modules = $modules->filter(fn(ModuleInfo $module) => $module->isEnabled());
+            $modules = $modules->filter(static fn (ModuleInfo $module) => $module->isEnabled());
         } elseif ($this->option('disabled')) {
-            $modules = $modules->filter(fn(ModuleInfo $module) => !$module->isEnabled());
+            $modules = $modules->filter(static fn (ModuleInfo $module) => !$module->isEnabled());
         }
 
         $this->displayModules($modules);
@@ -59,10 +59,10 @@ class ModuleListCommand extends Command
         $this->table($headers, $rows);
 
         $this->newLine();
-        $this->info("Total modules: " . $modules->count());
+        $this->info('Total modules: ' . $modules->count());
 
         // Show state counts
-        $states = $modules->groupBy(fn(ModuleInfo $module) => $module->state->value);
+        $states = $modules->groupBy(static fn (ModuleInfo $module) => $module->state->value);
         foreach ($states as $state => $moduleGroup) {
             $count = $moduleGroup->count();
             $displayState = ucwords(str_replace('_', ' ', $state));

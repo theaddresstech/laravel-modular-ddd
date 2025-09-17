@@ -14,15 +14,42 @@ class {{ name }}Request extends FormRequest
 {
     public function authorize(): bool
     {
-        return true; // Implement your authorization logic here
+        // Check if user is authenticated
+        if (!auth()->check()) {
+            return false;
+        }
+
+        // Check module-specific permissions based on HTTP method
+        $user = auth()->user();
+        $method = $this->getMethod();
+
+        switch ($method) {
+            case 'POST':
+                return $user->hasModulePermission('{{ moduleKebab }}', '{{ nameKebab }}.create');
+            case 'PUT':
+            case 'PATCH':
+                return $user->hasModulePermission('{{ moduleKebab }}', '{{ nameKebab }}.update');
+            default:
+                return $user->hasModulePermission('{{ moduleKebab }}', '{{ nameKebab }}.view');
+        }
     }
 
     public function rules(): array
     {
-        return [
-            'name' => ['required', 'string', 'max:255'],
+        $rules = [
+            'name' => ['required', 'string', 'max:255', 'min:2'],
             'description' => ['nullable', 'string', 'max:1000'],
+            'status' => ['nullable', 'boolean'],
         ];
+
+        // Additional validation for updates
+        if ($this->isMethod('PUT') || $this->isMethod('PATCH')) {
+            $rules['name'][] = 'unique:{{ tableSnake }},name,' . $this->route('{{ nameSnake }}');
+        } else {
+            $rules['name'][] = 'unique:{{ tableSnake }},name';
+        }
+
+        return $rules;
     }
 
     public function messages(): array
@@ -30,9 +57,12 @@ class {{ name }}Request extends FormRequest
         return [
             'name.required' => 'The name field is required.',
             'name.string' => 'The name must be a string.',
+            'name.min' => 'The name must be at least 2 characters.',
             'name.max' => 'The name may not be greater than 255 characters.',
+            'name.unique' => 'The name has already been taken.',
             'description.string' => 'The description must be a string.',
             'description.max' => 'The description may not be greater than 1000 characters.',
+            'status.boolean' => 'The status must be true or false.',
         ];
     }
 

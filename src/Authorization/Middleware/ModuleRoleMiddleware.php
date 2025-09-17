@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Authorization\Middleware;
 
-use TaiCrm\LaravelModularDdd\Authorization\ModuleAuthorizationManager;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use InvalidArgumentException;
 use Symfony\Component\HttpFoundation\Response;
+use TaiCrm\LaravelModularDdd\Authorization\ModuleAuthorizationManager;
 
 class ModuleRoleMiddleware
 {
     public function __construct(
-        private ModuleAuthorizationManager $authManager
-    ) {
-    }
+        private ModuleAuthorizationManager $authManager,
+    ) {}
 
     /**
      * Handle an incoming request.
@@ -38,6 +38,7 @@ class ModuleRoleMiddleware
 
             if ($this->authManager->hasRole($user, $moduleId, $roleName)) {
                 $hasRequiredRole = true;
+
                 break;
             }
         }
@@ -57,7 +58,7 @@ class ModuleRoleMiddleware
         $parts = explode('.', $role, 2);
 
         if (count($parts) !== 2) {
-            throw new \InvalidArgumentException("Invalid role format: {$role}. Expected format: 'module.role'");
+            throw new InvalidArgumentException("Invalid role format: {$role}. Expected format: 'module.role'");
         }
 
         return $parts;

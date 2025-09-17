@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Http\Compatibility;
 
+use DateTime;
+use Exception;
 use TaiCrm\LaravelModularDdd\Http\Compatibility\Contracts\ResponseTransformerInterface;
 
 abstract class BaseResponseTransformer implements ResponseTransformerInterface
@@ -76,7 +78,7 @@ abstract class BaseResponseTransformer implements ResponseTransformerInterface
                 return $this->transformValue(
                     $data,
                     $transformation['field'],
-                    $transformation['transformer']
+                    $transformation['transformer'],
                 );
 
             case 'restructure':
@@ -269,7 +271,7 @@ abstract class BaseResponseTransformer implements ResponseTransformerInterface
 
         foreach ($path as $key) {
             if (!isset($current[$key])) {
-                return null;
+                return;
             }
             $current = $current[$key];
         }
@@ -320,9 +322,10 @@ abstract class BaseResponseTransformer implements ResponseTransformerInterface
     protected function formatDate(string $date, string $format): string
     {
         try {
-            $dateTime = new \DateTime($date);
+            $dateTime = new DateTime($date);
+
             return $dateTime->format($format);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return $date; // Return original if parsing fails
         }
     }

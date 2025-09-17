@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Communication;
 
-use TaiCrm\LaravelModularDdd\Communication\Contracts\ServiceRegistryInterface;
-use TaiCrm\LaravelModularDdd\Communication\EventBus;
 use Illuminate\Support\ServiceProvider;
+use InvalidArgumentException;
+use TaiCrm\LaravelModularDdd\Communication\Contracts\ServiceRegistryInterface;
 
 abstract class ModuleServiceProvider extends ServiceProvider
 {
@@ -26,6 +26,14 @@ abstract class ModuleServiceProvider extends ServiceProvider
         $this->registerInServiceRegistry();
         $this->registerEventListeners();
         $this->bootModule();
+    }
+
+    public function provides(): array
+    {
+        return array_merge(
+            array_keys($this->contracts),
+            is_array($this->services) ? array_keys($this->services) : $this->services,
+        );
     }
 
     protected function registerContracts(): void
@@ -103,11 +111,11 @@ abstract class ModuleServiceProvider extends ServiceProvider
                     return $instance($event);
                 }
 
-                throw new \InvalidArgumentException("Event listener {$listener} must have handle() or __invoke() method");
+                throw new InvalidArgumentException("Event listener {$listener} must have handle() or __invoke() method");
             };
         }
 
-        throw new \InvalidArgumentException("Invalid event listener: " . print_r($listener, true));
+        throw new InvalidArgumentException('Invalid event listener: ' . print_r($listener, true));
     }
 
     protected function bootModule(): void
@@ -123,14 +131,7 @@ abstract class ModuleServiceProvider extends ServiceProvider
 
         // Extract module name from provider class name
         $className = class_basename(static::class);
-        return str_replace('ServiceProvider', '', $className);
-    }
 
-    public function provides(): array
-    {
-        return array_merge(
-            array_keys($this->contracts),
-            is_array($this->services) ? array_keys($this->services) : $this->services
-        );
+        return str_replace('ServiceProvider', '', $className);
     }
 }

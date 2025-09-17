@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace TaiCrm\LaravelModularDdd\Commands;
 
 use Illuminate\Console\Command;
-use TaiCrm\LaravelModularDdd\Documentation\SwaggerAnnotationScanner;
-use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
 use Illuminate\Support\Facades\File;
+use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
+use TaiCrm\LaravelModularDdd\Documentation\SwaggerAnnotationScanner;
 
 class ModuleSwaggerValidateCommand extends Command
 {
@@ -16,15 +16,13 @@ class ModuleSwaggerValidateCommand extends Command
                             {--strict : Enable strict validation mode}
                             {--fix : Automatically fix common issues}
                             {--report= : Generate validation report file}';
-
     protected $description = 'Validate Swagger documentation quality and completeness';
-
     private array $validationResults = [];
     private array $issues = [];
 
     public function __construct(
         private SwaggerAnnotationScanner $scanner,
-        private ModuleManagerInterface $moduleManager
+        private ModuleManagerInterface $moduleManager,
     ) {
         parent::__construct();
     }
@@ -54,20 +52,23 @@ class ModuleSwaggerValidateCommand extends Command
 
         if ($hasErrors) {
             $this->error('❌ Validation failed with errors');
+
             return 1;
         }
 
         $this->info('✅ All validations passed!');
+
         return 0;
     }
 
     /**
-     * Validate a specific module
+     * Validate a specific module.
      */
     private function validateModule(string $moduleName, bool $strict, bool $fix): void
     {
         if (!$this->moduleExists($moduleName)) {
             $this->error("Module '{$moduleName}' does not exist.");
+
             return;
         }
 
@@ -78,7 +79,7 @@ class ModuleSwaggerValidateCommand extends Command
     }
 
     /**
-     * Validate all modules
+     * Validate all modules.
      */
     private function validateAllModules(bool $strict, bool $fix): void
     {
@@ -93,6 +94,7 @@ class ModuleSwaggerValidateCommand extends Command
             if (!$module->isEnabled()) {
                 $progressBar->setMessage("Skipping disabled: {$module->name}");
                 $progressBar->advance();
+
                 continue;
             }
 
@@ -110,7 +112,7 @@ class ModuleSwaggerValidateCommand extends Command
     }
 
     /**
-     * Validate module documentation
+     * Validate module documentation.
      */
     private function validateModuleDocumentation(string $moduleName, array $documentation, bool $strict, bool $fix): void
     {
@@ -170,7 +172,7 @@ class ModuleSwaggerValidateCommand extends Command
         // Check for security documentation
         if ($this->hasSecurityDocumentation($documentation)) {
             $moduleValidations['has_security'] = true;
-        } else if ($strict) {
+        } elseif ($strict) {
             $moduleIssues[] = [
                 'type' => 'warning',
                 'message' => 'No security schemes documented',
@@ -189,7 +191,7 @@ class ModuleSwaggerValidateCommand extends Command
     }
 
     /**
-     * Validate paths documentation
+     * Validate paths documentation.
      */
     private function validatePaths(array $paths, array &$issues, bool $strict): void
     {
@@ -251,7 +253,7 @@ class ModuleSwaggerValidateCommand extends Command
     }
 
     /**
-     * Validate responses
+     * Validate responses.
      */
     private function validateResponses(array $responses, string $path, string $method, array &$issues, bool $strict): void
     {
@@ -299,7 +301,7 @@ class ModuleSwaggerValidateCommand extends Command
     }
 
     /**
-     * Validate parameters
+     * Validate parameters.
      */
     private function validateParameters(array $parameters, string $path, string $method, array &$issues, bool $strict): void
     {
@@ -327,7 +329,7 @@ class ModuleSwaggerValidateCommand extends Command
     }
 
     /**
-     * Validate schemas
+     * Validate schemas.
      */
     private function validateSchemas(array $schemas, array &$issues, bool $strict): void
     {
@@ -362,7 +364,7 @@ class ModuleSwaggerValidateCommand extends Command
     }
 
     /**
-     * Check if documentation has security schemes
+     * Check if documentation has security schemes.
      */
     private function hasSecurityDocumentation(array $documentation): bool
     {
@@ -379,11 +381,11 @@ class ModuleSwaggerValidateCommand extends Command
     }
 
     /**
-     * Apply automatic fixes
+     * Apply automatic fixes.
      */
     private function applyFixes(string $moduleName, array $issues): void
     {
-        $fixableIssues = array_filter($issues, fn($issue) => $issue['fixable'] ?? false);
+        $fixableIssues = array_filter($issues, static fn ($issue) => $issue['fixable'] ?? false);
 
         if (empty($fixableIssues)) {
             return;
@@ -399,7 +401,7 @@ class ModuleSwaggerValidateCommand extends Command
     }
 
     /**
-     * Display validation results
+     * Display validation results.
      */
     private function displayValidationResults(): void
     {
@@ -408,6 +410,7 @@ class ModuleSwaggerValidateCommand extends Command
 
         if (empty($this->validationResults)) {
             $this->warn('No modules were validated.');
+
             return;
         }
 
@@ -442,8 +445,8 @@ class ModuleSwaggerValidateCommand extends Command
 
         // Summary
         $this->newLine();
-        $this->line("📈 Summary:");
-        $this->line("  - Modules validated: " . count($this->validationResults));
+        $this->line('📈 Summary:');
+        $this->line('  - Modules validated: ' . count($this->validationResults));
         $this->line("  - Modules with issues: {$modulesWithIssues}");
         $this->line("  - Total issues: {$totalIssues}");
 
@@ -454,12 +457,12 @@ class ModuleSwaggerValidateCommand extends Command
     }
 
     /**
-     * Get module status based on validations and issues
+     * Get module status based on validations and issues.
      */
     private function getModuleStatus(array $validations, array $issues): string
     {
-        $errorCount = count(array_filter($issues, fn($issue) => $issue['type'] === 'error'));
-        $warningCount = count(array_filter($issues, fn($issue) => $issue['type'] === 'warning'));
+        $errorCount = count(array_filter($issues, static fn ($issue) => $issue['type'] === 'error'));
+        $warningCount = count(array_filter($issues, static fn ($issue) => $issue['type'] === 'warning'));
 
         if ($errorCount > 0) {
             return "❌ {$errorCount} errors";
@@ -477,7 +480,7 @@ class ModuleSwaggerValidateCommand extends Command
     }
 
     /**
-     * Display detailed issues
+     * Display detailed issues.
      */
     private function displayDetailedIssues(): void
     {
@@ -503,7 +506,7 @@ class ModuleSwaggerValidateCommand extends Command
     }
 
     /**
-     * Check if there are any errors
+     * Check if there are any errors.
      */
     private function hasErrors(): bool
     {
@@ -519,7 +522,7 @@ class ModuleSwaggerValidateCommand extends Command
     }
 
     /**
-     * Generate validation report
+     * Generate validation report.
      */
     private function generateValidationReport(string $reportFile): void
     {
@@ -528,7 +531,7 @@ class ModuleSwaggerValidateCommand extends Command
             'summary' => [
                 'modules_validated' => count($this->validationResults),
                 'total_issues' => array_sum(array_map('count', $this->issues)),
-                'modules_with_issues' => count(array_filter($this->issues, fn($issues) => !empty($issues))),
+                'modules_with_issues' => count(array_filter($this->issues, static fn ($issues) => !empty($issues))),
             ],
             'results' => $this->validationResults,
             'issues' => $this->issues,
@@ -539,7 +542,7 @@ class ModuleSwaggerValidateCommand extends Command
     }
 
     /**
-     * Check if module exists
+     * Check if module exists.
      */
     private function moduleExists(string $moduleName): bool
     {

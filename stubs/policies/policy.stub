@@ -1,0 +1,71 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\{{ module }}\Policies;
+
+use Modules\{{ module }}\Domain\Models\{{ name }};
+use Modules\{{ module }}\Infrastructure\Persistence\Eloquent\Models\{{ name }}Model;
+use Illuminate\Auth\Access\HandlesAuthorization;
+use Illuminate\Foundation\Auth\User;
+
+class {{ name }}Policy
+{
+    use HandlesAuthorization;
+
+    /**
+     * Determine whether the user can view any {{ nameSnake }}s.
+     */
+    public function viewAny(User $user): bool
+    {
+        return $user->hasModulePermission('{{ moduleKebab }}', '{{ nameKebab }}.view');
+    }
+
+    /**
+     * Determine whether the user can view the {{ nameSnake }}.
+     */
+    public function view(User $user, {{ name }}Model ${{ nameSnake }}): bool
+    {
+        return $user->hasModulePermission('{{ moduleKebab }}', '{{ nameKebab }}.view');
+    }
+
+    /**
+     * Determine whether the user can create {{ nameSnake }}s.
+     */
+    public function create(User $user): bool
+    {
+        return $user->hasModulePermission('{{ moduleKebab }}', '{{ nameKebab }}.create');
+    }
+
+    /**
+     * Determine whether the user can update the {{ nameSnake }}.
+     */
+    public function update(User $user, {{ name }}Model ${{ nameSnake }}): bool
+    {
+        return $user->hasModulePermission('{{ moduleKebab }}', '{{ nameKebab }}.update');
+    }
+
+    /**
+     * Determine whether the user can delete the {{ nameSnake }}.
+     */
+    public function delete(User $user, {{ name }}Model ${{ nameSnake }}): bool
+    {
+        return $user->hasModulePermission('{{ moduleKebab }}', '{{ nameKebab }}.delete');
+    }
+
+    /**
+     * Determine whether the user can restore the {{ nameSnake }}.
+     */
+    public function restore(User $user, {{ name }}Model ${{ nameSnake }}): bool
+    {
+        return $user->hasModulePermission('{{ moduleKebab }}', '{{ nameKebab }}.restore');
+    }
+
+    /**
+     * Determine whether the user can permanently delete the {{ nameSnake }}.
+     */
+    public function forceDelete(User $user, {{ name }}Model ${{ nameSnake }}): bool
+    {
+        return $user->hasModulePermission('{{ moduleKebab }}', '{{ nameKebab }}.force-delete');
+    }
+}

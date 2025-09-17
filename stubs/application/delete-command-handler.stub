@@ -1,0 +1,63 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\{{ module }}\Application\Commands\Delete{{ name }};
+
+use Modules\{{ module }}\Domain\Models\{{ name }};
+use Modules\{{ module }}\Domain\ValueObjects\{{ name }}Id;
+use Modules\{{ module }}\Domain\Repositories\{{ name }}RepositoryInterface;
+use TaiCrm\LaravelModularDdd\Foundation\EventBus;
+use Psr\Log\LoggerInterface;
+
+readonly class Delete{{ name }}Handler
+{
+    public function __construct(
+        private {{ name }}RepositoryInterface ${{ nameSnake }}Repository,
+        private EventBus $eventBus,
+        private LoggerInterface $logger
+    ) {}
+
+    public function handle(Delete{{ name }}Command $command): void
+    {
+        try {
+            $this->logger->debug('Handling Delete{{ name }}Command', [
+                'command_type' => get_class($command),
+                'command_data' => $command->toArray()
+            ]);
+
+            ${{ nameSnake }}Id = {{ name }}Id::fromString($command->getId());
+            ${{ nameSnake }} = $this->{{ nameSnake }}Repository->findById(${{ nameSnake }}Id);
+
+            if (!${{ nameSnake }}) {
+                throw new \DomainException('{{ name }} not found with ID: ' . $command->getId());
+            }
+
+            // Mark the aggregate as deleted (soft delete)
+            ${{ nameSnake }}->markAsDeleted();
+
+            // Remove from repository
+            $this->{{ nameSnake }}Repository->remove(${{ nameSnake }}Id);
+
+            // Dispatch domain events
+            $events = ${{ nameSnake }}->releaseEvents();
+            if (!empty($events)) {
+                $this->eventBus->dispatchMany($events);
+            }
+
+            $this->logger->info('Delete{{ name }}Command handled successfully', [
+                '{{ nameSnake }}_id' => ${{ nameSnake }}Id->toString(),
+            ]);
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to handle Delete{{ name }}Command', [
+                'command_type' => get_class($command),
+                'command_data' => $command->toArray(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            throw $e;
+        }
+    }
+}

@@ -4,20 +4,20 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Commands;
 
+use Exception;
+use Illuminate\Console\Command;
 use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
-use TaiCrm\LaravelModularDdd\Exceptions\ModuleNotFoundException;
 use TaiCrm\LaravelModularDdd\Exceptions\DependencyException;
 use TaiCrm\LaravelModularDdd\Exceptions\ModuleInstallationException;
-use Illuminate\Console\Command;
+use TaiCrm\LaravelModularDdd\Exceptions\ModuleNotFoundException;
 
 class ModuleEnableCommand extends Command
 {
     protected $signature = 'module:enable {name : The name of the module to enable} {--force : Force enable even if dependencies are missing}';
-
     protected $description = 'Enable a module';
 
     public function __construct(
-        private ModuleManagerInterface $moduleManager
+        private ModuleManagerInterface $moduleManager,
     ) {
         parent::__construct();
     }
@@ -29,7 +29,7 @@ class ModuleEnableCommand extends Command
         if (!$this->moduleManager->isInstalled($moduleName)) {
             $this->error("❌ Module '{$moduleName}' is not installed.");
 
-            if ($this->confirm("Would you like to install it first?", true)) {
+            if ($this->confirm('Would you like to install it first?', true)) {
                 return $this->call('module:install', ['name' => $moduleName]);
             }
 
@@ -38,6 +38,7 @@ class ModuleEnableCommand extends Command
 
         if ($this->moduleManager->isEnabled($moduleName)) {
             $this->info("✅ Module '{$moduleName}' is already enabled.");
+
             return self::SUCCESS;
         }
 
@@ -49,6 +50,7 @@ class ModuleEnableCommand extends Command
 
             if (!$this->option('force') && !$this->confirmEnabling($moduleName)) {
                 $this->info('Operation cancelled.');
+
                 return self::SUCCESS;
             }
 
@@ -65,23 +67,24 @@ class ModuleEnableCommand extends Command
                 $this->showModuleInfo($moduleName);
             } else {
                 $this->error("❌ Failed to enable module '{$moduleName}'.");
+
                 return self::FAILURE;
             }
-
         } catch (ModuleNotFoundException $e) {
-            $this->error("❌ " . $e->getMessage());
-            return self::FAILURE;
+            $this->error('❌ ' . $e->getMessage());
 
+            return self::FAILURE;
         } catch (DependencyException $e) {
-            $this->error("❌ Dependency error: " . $e->getMessage());
-            return self::FAILURE;
+            $this->error('❌ Dependency error: ' . $e->getMessage());
 
+            return self::FAILURE;
         } catch (ModuleInstallationException $e) {
-            $this->error("❌ Enable error: " . $e->getMessage());
-            return self::FAILURE;
+            $this->error('❌ Enable error: ' . $e->getMessage());
 
-        } catch (\Exception $e) {
-            $this->error("❌ Unexpected error: " . $e->getMessage());
+            return self::FAILURE;
+        } catch (Exception $e) {
+            $this->error('❌ Unexpected error: ' . $e->getMessage());
+
             return self::FAILURE;
         }
 
@@ -94,7 +97,7 @@ class ModuleEnableCommand extends Command
 
         if ($dependencies->isNotEmpty()) {
             $this->newLine();
-            $this->line("📋 <comment>Dependencies that will be enabled:</comment>");
+            $this->line('📋 <comment>Dependencies that will be enabled:</comment>');
 
             foreach ($dependencies as $dependency) {
                 $isEnabled = $this->moduleManager->isEnabled($dependency);
@@ -114,7 +117,7 @@ class ModuleEnableCommand extends Command
         try {
             $this->moduleManager->validateDependencies($moduleName);
         } catch (DependencyException $e) {
-            $this->warn("⚠️  " . $e->getMessage());
+            $this->warn('⚠️  ' . $e->getMessage());
 
             if (!$this->confirm('Do you want to continue anyway?', false)) {
                 throw $e;
@@ -130,7 +133,7 @@ class ModuleEnableCommand extends Command
             $this->newLine();
             $this->line("📦 <info>{$moduleInfo->displayName}</info> v{$moduleInfo->version}");
             $this->line("   {$moduleInfo->description}");
-            $this->line("   <comment>State:</comment> <info>Enabled</info>");
+            $this->line('   <comment>State:</comment> <info>Enabled</info>');
         }
     }
 }

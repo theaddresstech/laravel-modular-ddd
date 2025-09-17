@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Tests\Unit\Http;
 
-use PHPUnit\Framework\TestCase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
-use TaiCrm\LaravelModularDdd\Http\VersionNegotiator;
+use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 use TaiCrm\LaravelModularDdd\Exceptions\UnsupportedApiVersionException;
+use TaiCrm\LaravelModularDdd\Http\VersionNegotiator;
 
 class VersionNegotiatorTest extends TestCase
 {
@@ -49,44 +50,44 @@ class VersionNegotiatorTest extends TestCase
             ->andReturn('v2');
     }
 
-    public function test_negotiates_version_from_url(): void
+    public function testNegotiatesVersionFromUrl(): void
     {
         $request = Request::create('/api/v2/users');
 
         $version = $this->negotiator->negotiate($request);
 
-        $this->assertEquals('v2', $version);
+        $this->assertSame('v2', $version);
     }
 
-    public function test_negotiates_version_from_header(): void
+    public function testNegotiatesVersionFromHeader(): void
     {
         $request = Request::create('/api/users');
         $request->headers->set('Accept-Version', 'v2');
 
         $version = $this->negotiator->negotiate($request);
 
-        $this->assertEquals('v2', $version);
+        $this->assertSame('v2', $version);
     }
 
-    public function test_negotiates_version_from_query_parameter(): void
+    public function testNegotiatesVersionFromQueryParameter(): void
     {
         $request = Request::create('/api/users?api_version=v2');
 
         $version = $this->negotiator->negotiate($request);
 
-        $this->assertEquals('v2', $version);
+        $this->assertSame('v2', $version);
     }
 
-    public function test_falls_back_to_default_version(): void
+    public function testFallsBackToDefaultVersion(): void
     {
         $request = Request::create('/api/users');
 
         $version = $this->negotiator->negotiate($request);
 
-        $this->assertEquals('v2', $version);
+        $this->assertSame('v2', $version);
     }
 
-    public function test_throws_exception_for_unsupported_version(): void
+    public function testThrowsExceptionForUnsupportedVersion(): void
     {
         $request = Request::create('/api/v99/users');
 
@@ -96,37 +97,37 @@ class VersionNegotiatorTest extends TestCase
         $this->negotiator->negotiate($request);
     }
 
-    public function test_url_version_takes_priority_over_header(): void
+    public function testUrlVersionTakesPriorityOverHeader(): void
     {
         $request = Request::create('/api/v1/users');
         $request->headers->set('Accept-Version', 'v2');
 
         $version = $this->negotiator->negotiate($request);
 
-        $this->assertEquals('v1', $version);
+        $this->assertSame('v1', $version);
     }
 
-    public function test_header_version_takes_priority_over_query(): void
+    public function testHeaderVersionTakesPriorityOverQuery(): void
     {
         $request = Request::create('/api/users?api_version=v1');
         $request->headers->set('Accept-Version', 'v2');
 
         $version = $this->negotiator->negotiate($request);
 
-        $this->assertEquals('v2', $version);
+        $this->assertSame('v2', $version);
     }
 
-    public function test_normalizes_version_format(): void
+    public function testNormalizesVersionFormat(): void
     {
         $request = Request::create('/api/users');
         $request->headers->set('Accept-Version', '2');
 
         $version = $this->negotiator->negotiate($request);
 
-        $this->assertEquals('v2', $version);
+        $this->assertSame('v2', $version);
     }
 
-    public function test_validates_version_format(): void
+    public function testValidatesVersionFormat(): void
     {
         $this->assertTrue($this->invokeMethod($this->negotiator, 'isValidVersionFormat', ['v1']));
         $this->assertTrue($this->invokeMethod($this->negotiator, 'isValidVersionFormat', ['v1.0']));
@@ -136,31 +137,31 @@ class VersionNegotiatorTest extends TestCase
         $this->assertFalse($this->invokeMethod($this->negotiator, 'isValidVersionFormat', ['v1.0.0']));
     }
 
-    public function test_gets_version_info(): void
+    public function testGetsVersionInfo(): void
     {
         $info = $this->negotiator->getVersionInfo('v1');
 
         $this->assertIsArray($info);
-        $this->assertEquals('v1', $info['version']);
+        $this->assertSame('v1', $info['version']);
         $this->assertTrue($info['is_supported']);
         $this->assertFalse($info['is_latest']);
-        $this->assertEquals(['v1', 'v2'], $info['supported_versions']);
-        $this->assertEquals('v2', $info['latest_version']);
+        $this->assertSame(['v1', 'v2'], $info['supported_versions']);
+        $this->assertSame('v2', $info['latest_version']);
     }
 
-    public function test_parses_accept_header_with_version(): void
+    public function testParsesAcceptHeaderWithVersion(): void
     {
         $request = Request::create('/api/users');
         $request->headers->set('Accept', 'application/vnd.api+json;version=2');
 
         $version = $this->negotiator->getVersionFromHeaders($request);
 
-        $this->assertEquals('v2', $version);
+        $this->assertSame('v2', $version);
     }
 
     private function invokeMethod(object $object, string $methodName, array $parameters = []): mixed
     {
-        $reflection = new \ReflectionClass(get_class($object));
+        $reflection = new ReflectionClass($object::class);
         $method = $reflection->getMethod($methodName);
         $method->setAccessible(true);
 

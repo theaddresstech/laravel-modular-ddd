@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Http\Compatibility;
 
-use Illuminate\Http\Request;
+use Exception;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use TaiCrm\LaravelModularDdd\Http\Compatibility\Contracts\RequestTransformerInterface;
@@ -17,7 +18,7 @@ class VersionTransformer
     private array $responseTransformers = [];
 
     public function __construct(
-        private TransformationRegistry $registry
+        private TransformationRegistry $registry,
     ) {
         $this->loadTransformers();
     }
@@ -61,7 +62,7 @@ class VersionTransformer
 
         try {
             $transformedResponse = response()->json($transformedData, $response->getStatusCode());
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Fallback for unit tests where response() helper is not available
             $transformedResponse = new JsonResponse($transformedData, $response->getStatusCode());
         }
@@ -94,12 +95,14 @@ class VersionTransformer
     public function hasRequestTransformer(string $fromVersion, string $toVersion): bool
     {
         $key = $this->getTransformerKey($fromVersion, $toVersion);
+
         return isset($this->requestTransformers[$key]);
     }
 
     public function hasResponseTransformer(string $fromVersion, string $toVersion): bool
     {
         $key = $this->getTransformerKey($fromVersion, $toVersion);
+
         return isset($this->responseTransformers[$key]);
     }
 
@@ -116,8 +119,8 @@ class VersionTransformer
         return [
             'request' => $this->hasRequestTransformer($fromVersion, $toVersion),
             'response' => $this->hasResponseTransformer($fromVersion, $toVersion),
-            'bidirectional' => $this->hasRequestTransformer($fromVersion, $toVersion) &&
-                              $this->hasResponseTransformer($toVersion, $fromVersion),
+            'bidirectional' => $this->hasRequestTransformer($fromVersion, $toVersion)
+                              && $this->hasResponseTransformer($toVersion, $fromVersion),
         ];
     }
 
@@ -131,13 +134,13 @@ class VersionTransformer
                 $this->registerRequestTransformer(
                     $transformer['from_version'],
                     $transformer['to_version'],
-                    $transformer['instance']
+                    $transformer['instance'],
                 );
             } elseif ($transformer['type'] === 'response') {
                 $this->registerResponseTransformer(
                     $transformer['from_version'],
                     $transformer['to_version'],
-                    $transformer['instance']
+                    $transformer['instance'],
                 );
             }
         }
@@ -145,27 +148,29 @@ class VersionTransformer
 
     private function shouldTransformRequest(string $fromVersion, string $toVersion): bool
     {
-        return Config::get('modular-ddd.api.compatibility.request_transformation', true) &&
-               $fromVersion !== $toVersion &&
-               $this->hasRequestTransformer($fromVersion, $toVersion);
+        return Config::get('modular-ddd.api.compatibility.request_transformation', true)
+               && $fromVersion !== $toVersion
+               && $this->hasRequestTransformer($fromVersion, $toVersion);
     }
 
     private function shouldTransformResponse(string $fromVersion, string $toVersion): bool
     {
-        return Config::get('modular-ddd.api.compatibility.response_transformation', true) &&
-               $fromVersion !== $toVersion &&
-               $this->hasResponseTransformer($fromVersion, $toVersion);
+        return Config::get('modular-ddd.api.compatibility.response_transformation', true)
+               && $fromVersion !== $toVersion
+               && $this->hasResponseTransformer($fromVersion, $toVersion);
     }
 
     private function getRequestTransformer(string $fromVersion, string $toVersion): ?RequestTransformerInterface
     {
         $key = $this->getTransformerKey($fromVersion, $toVersion);
+
         return $this->requestTransformers[$key] ?? null;
     }
 
     private function getResponseTransformer(string $fromVersion, string $toVersion): ?ResponseTransformerInterface
     {
         $key = $this->getTransformerKey($fromVersion, $toVersion);
+
         return $this->responseTransformers[$key] ?? null;
     }
 

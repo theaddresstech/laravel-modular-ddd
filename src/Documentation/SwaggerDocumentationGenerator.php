@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Documentation;
 
-use Illuminate\Support\Facades\File;
+use RuntimeException;
 use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
 
 class SwaggerDocumentationGenerator
 {
     public function __construct(
         private SwaggerAnnotationScanner $scanner,
-        private ModuleManagerInterface $moduleManager
+        private ModuleManagerInterface $moduleManager,
     ) {}
 
     /**
-     * Generate Swagger documentation for all modules
+     * Generate Swagger documentation for all modules.
      */
     public function generateAllModulesDocumentation(): array
     {
@@ -37,7 +37,7 @@ class SwaggerDocumentationGenerator
     }
 
     /**
-     * Generate Swagger documentation for a specific module
+     * Generate Swagger documentation for a specific module.
      */
     public function generateModuleDocumentation(string $moduleName): array
     {
@@ -45,9 +45,9 @@ class SwaggerDocumentationGenerator
     }
 
     /**
-     * Generate and save Swagger JSON files for all modules
+     * Generate and save Swagger JSON files for all modules.
      */
-    public function generateSwaggerFiles(string $outputPath = null): array
+    public function generateSwaggerFiles(?string $outputPath = null): array
     {
         $outputPath = $outputPath ?: base_path('public/api-docs');
         $this->ensureDirectoryExists($outputPath);
@@ -71,7 +71,7 @@ class SwaggerDocumentationGenerator
     }
 
     /**
-     * Generate combined documentation for all modules
+     * Generate combined documentation for all modules.
      */
     public function generateCombinedDocumentation(array $moduleDocs): array
     {
@@ -94,7 +94,7 @@ class SwaggerDocumentationGenerator
             if (isset($doc['components']['schemas'])) {
                 $combined['components']['schemas'] = array_merge(
                     $combined['components']['schemas'],
-                    $doc['components']['schemas']
+                    $doc['components']['schemas'],
                 );
             }
 
@@ -108,7 +108,37 @@ class SwaggerDocumentationGenerator
     }
 
     /**
-     * Get base OpenAPI documentation structure
+     * Generate Swagger UI HTML for a module.
+     */
+    public function generateSwaggerUI(string $moduleName, ?string $outputPath = null): string
+    {
+        $outputPath = $outputPath ?: base_path('public/api-docs');
+        $this->ensureDirectoryExists($outputPath);
+
+        $htmlContent = $this->getSwaggerUITemplate($moduleName);
+        $filename = "{$outputPath}/{$moduleName}-ui.html";
+        file_put_contents($filename, $htmlContent);
+
+        return $filename;
+    }
+
+    /**
+     * Generate comprehensive Swagger documentation with real-time scanning.
+     */
+    public function generateLiveDocumentation(): array
+    {
+        $allModules = $this->scanner->scanAllModules();
+        $documentation = [];
+
+        foreach ($allModules as $moduleName => $moduleData) {
+            $documentation[$moduleName] = $this->processModuleData($moduleData);
+        }
+
+        return $documentation;
+    }
+
+    /**
+     * Get base OpenAPI documentation structure.
      */
     private function getBaseDocumentation(): array
     {
@@ -171,7 +201,7 @@ class SwaggerDocumentationGenerator
     }
 
     /**
-     * Get common schema definitions
+     * Get common schema definitions.
      */
     private function getCommonSchemas(): array
     {
@@ -254,7 +284,7 @@ class SwaggerDocumentationGenerator
     }
 
     /**
-     * Get common response definitions
+     * Get common response definitions.
      */
     private function getCommonResponses(): array
     {
@@ -303,7 +333,7 @@ class SwaggerDocumentationGenerator
     }
 
     /**
-     * Get common parameter definitions
+     * Get common parameter definitions.
      */
     private function getCommonParameters(): array
     {
@@ -360,22 +390,7 @@ class SwaggerDocumentationGenerator
     }
 
     /**
-     * Generate Swagger UI HTML for a module
-     */
-    public function generateSwaggerUI(string $moduleName, string $outputPath = null): string
-    {
-        $outputPath = $outputPath ?: base_path('public/api-docs');
-        $this->ensureDirectoryExists($outputPath);
-
-        $htmlContent = $this->getSwaggerUITemplate($moduleName);
-        $filename = "{$outputPath}/{$moduleName}-ui.html";
-        file_put_contents($filename, $htmlContent);
-
-        return $filename;
-    }
-
-    /**
-     * Get Swagger UI HTML template
+     * Get Swagger UI HTML template.
      */
     private function getSwaggerUITemplate(string $moduleName): string
     {
@@ -383,83 +398,68 @@ class SwaggerDocumentationGenerator
         $jsonUrl = "/{$moduleName}.json";
 
         return <<<HTML
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>{$appName} - {$moduleName} API Documentation</title>
-    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css" />
-    <style>
-        html {
-            box-sizing: border-box;
-            overflow: -moz-scrollbars-vertical;
-            overflow-y: scroll;
-        }
-        *, *:before, *:after {
-            box-sizing: inherit;
-        }
-        body {
-            margin:0;
-            background: #fafafa;
-        }
-    </style>
-</head>
-<body>
-    <div id="swagger-ui"></div>
-    <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js"></script>
-    <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-standalone-preset.js"></script>
-    <script>
-        window.onload = function() {
-            const ui = SwaggerUIBundle({
-                url: '{$jsonUrl}',
-                dom_id: '#swagger-ui',
-                deepLinking: true,
-                presets: [
-                    SwaggerUIBundle.presets.apis,
-                    SwaggerUIStandalonePreset
-                ],
-                plugins: [
-                    SwaggerUIBundle.plugins.DownloadUrl
-                ],
-                layout: "StandaloneLayout",
-                tryItOutEnabled: true,
-                supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch'],
-                onComplete: function() {
-                    console.log('Swagger UI loaded for {$moduleName} module');
-                },
-                persistAuthorization: true,
-                displayRequestDuration: true,
-                docExpansion: 'list',
-                filter: true,
-                showExtensions: true,
-                showCommonExtensions: true,
-                defaultModelsExpandDepth: 2,
-                defaultModelExpandDepth: 2
-            });
-        };
-    </script>
-</body>
-</html>
-HTML;
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <title>{$appName} - {$moduleName} API Documentation</title>
+                <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css" />
+                <style>
+                    html {
+                        box-sizing: border-box;
+                        overflow: -moz-scrollbars-vertical;
+                        overflow-y: scroll;
+                    }
+                    *, *:before, *:after {
+                        box-sizing: inherit;
+                    }
+                    body {
+                        margin:0;
+                        background: #fafafa;
+                    }
+                </style>
+            </head>
+            <body>
+                <div id="swagger-ui"></div>
+                <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js"></script>
+                <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-standalone-preset.js"></script>
+                <script>
+                    window.onload = function() {
+                        const ui = SwaggerUIBundle({
+                            url: '{$jsonUrl}',
+                            dom_id: '#swagger-ui',
+                            deepLinking: true,
+                            presets: [
+                                SwaggerUIBundle.presets.apis,
+                                SwaggerUIStandalonePreset
+                            ],
+                            plugins: [
+                                SwaggerUIBundle.plugins.DownloadUrl
+                            ],
+                            layout: "StandaloneLayout",
+                            tryItOutEnabled: true,
+                            supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch'],
+                            onComplete: function() {
+                                console.log('Swagger UI loaded for {$moduleName} module');
+                            },
+                            persistAuthorization: true,
+                            displayRequestDuration: true,
+                            docExpansion: 'list',
+                            filter: true,
+                            showExtensions: true,
+                            showCommonExtensions: true,
+                            defaultModelsExpandDepth: 2,
+                            defaultModelExpandDepth: 2
+                        });
+                    };
+                </script>
+            </body>
+            </html>
+            HTML;
     }
 
     /**
-     * Generate comprehensive Swagger documentation with real-time scanning
-     */
-    public function generateLiveDocumentation(): array
-    {
-        $allModules = $this->scanner->scanAllModules();
-        $documentation = [];
-
-        foreach ($allModules as $moduleName => $moduleData) {
-            $documentation[$moduleName] = $this->processModuleData($moduleData);
-        }
-
-        return $documentation;
-    }
-
-    /**
-     * Process module data into OpenAPI format
+     * Process module data into OpenAPI format.
      */
     private function processModuleData(array $moduleData): array
     {
@@ -490,7 +490,7 @@ HTML;
     }
 
     /**
-     * Generate path operation from method data
+     * Generate path operation from method data.
      */
     private function generatePathOperation(array $method, string $methodName): array
     {
@@ -503,7 +503,7 @@ HTML;
     }
 
     /**
-     * Process response data
+     * Process response data.
      */
     private function processResponses(array $responses): array
     {
@@ -524,7 +524,7 @@ HTML;
     }
 
     /**
-     * Process parameter data
+     * Process parameter data.
      */
     private function processParameters(array $parameters): array
     {
@@ -545,7 +545,7 @@ HTML;
     }
 
     /**
-     * Process schema data
+     * Process schema data.
      */
     private function processSchemaData(array $schema): array
     {
@@ -557,7 +557,7 @@ HTML;
     }
 
     /**
-     * Map PHP types to OpenAPI types
+     * Map PHP types to OpenAPI types.
      */
     private function mapPhpTypeToOpenApi(string $phpType): string
     {
@@ -571,13 +571,13 @@ HTML;
     }
 
     /**
-     * Ensure directory exists
+     * Ensure directory exists.
      */
     private function ensureDirectoryExists(string $path): void
     {
         if (!is_dir($path)) {
-            if (!mkdir($path, 0755, true) && !is_dir($path)) {
-                throw new \RuntimeException(sprintf('Directory "%s" was not created', $path));
+            if (!mkdir($path, 0o755, true) && !is_dir($path)) {
+                throw new RuntimeException(sprintf('Directory "%s" was not created', $path));
             }
         }
     }

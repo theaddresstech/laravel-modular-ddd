@@ -1,0 +1,54 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\{{ module }}\Application\Queries\Get{{ name }};
+
+use Modules\{{ module }}\Domain\Models\{{ name }};
+use Modules\{{ module }}\Domain\ValueObjects\{{ name }}Id;
+use Modules\{{ module }}\Domain\Repositories\{{ name }}RepositoryInterface;
+use Psr\Log\LoggerInterface;
+
+readonly class Get{{ name }}Handler
+{
+    public function __construct(
+        private {{ name }}RepositoryInterface ${{ nameSnake }}Repository,
+        private LoggerInterface $logger
+    ) {}
+
+    public function handle(Get{{ name }}Query $query): ?{{ name }}
+    {
+        try {
+            $this->logger->debug('Handling Get{{ name }}Query', [
+                'query_type' => get_class($query),
+                'query_data' => $query->toArray()
+            ]);
+
+            ${{ nameSnake }}Id = {{ name }}Id::fromString($query->getId());
+            ${{ nameSnake }} = $this->{{ nameSnake }}Repository->findById(${{ nameSnake }}Id);
+
+            if (${{ nameSnake }}) {
+                $this->logger->debug('Get{{ name }}Query result found', [
+                    '{{ nameSnake }}_id' => ${{ nameSnake }}Id->toString(),
+                    'name' => ${{ nameSnake }}->getName(),
+                ]);
+            } else {
+                $this->logger->debug('Get{{ name }}Query result not found', [
+                    '{{ nameSnake }}_id' => ${{ nameSnake }}Id->toString(),
+                ]);
+            }
+
+            return ${{ nameSnake }};
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to handle Get{{ name }}Query', [
+                'query_type' => get_class($query),
+                'query_data' => $query->toArray(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            throw $e;
+        }
+    }
+}

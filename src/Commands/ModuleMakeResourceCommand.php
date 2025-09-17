@@ -21,6 +21,7 @@ class ModuleMakeResourceCommand extends Command
 
         if (!$this->moduleExists($moduleName)) {
             $this->error("Module '{$moduleName}' does not exist.");
+
             return 1;
         }
 
@@ -66,108 +67,108 @@ class ModuleMakeResourceCommand extends Command
     private function ensureDirectoryExists(string $directory): void
     {
         if (!is_dir($directory)) {
-            mkdir($directory, 0755, true);
+            mkdir($directory, 0o755, true);
         }
     }
 
     private function getResourceTemplate(): string
     {
         return <<<'PHP'
-<?php
+            <?php
 
-declare(strict_types=1);
+            declare(strict_types=1);
 
-namespace {{MODULE_NAMESPACE}}\Http\Resources;
+            namespace {{MODULE_NAMESPACE}}\Http\Resources;
 
-use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\JsonResource;
+            use Illuminate\Http\Request;
+            use Illuminate\Http\Resources\Json\JsonResource;
 
-class {{RESOURCE_NAME}} extends JsonResource
-{
-    /**
-     * Transform the resource into an array.
-     */
-    public function toArray(Request $request): array
-    {
-        return [
-{{RESOURCE_ATTRIBUTES}}
-        ];
-    }
+            class {{RESOURCE_NAME}} extends JsonResource
+            {
+                /**
+                 * Transform the resource into an array.
+                 */
+                public function toArray(Request $request): array
+                {
+                    return [
+            {{RESOURCE_ATTRIBUTES}}
+                    ];
+                }
 
-    /**
-     * Get additional data that should be returned with the resource array.
-     */
-    public function with(Request $request): array
-    {
-        return [
-            'meta' => [
-                'version' => '1.0.0',
-                'timestamp' => now()->toISOString(),
-            ],
-        ];
-    }
+                /**
+                 * Get additional data that should be returned with the resource array.
+                 */
+                public function with(Request $request): array
+                {
+                    return [
+                        'meta' => [
+                            'version' => '1.0.0',
+                            'timestamp' => now()->toISOString(),
+                        ],
+                    ];
+                }
 
-    /**
-     * Customize the outgoing response for the resource.
-     */
-    public function withResponse(Request $request, $response): void
-    {
-        // Add custom headers or modify response
-        $response->header('X-Resource-Type', '{{RESOURCE_NAME}}');
-    }
-}
-PHP;
+                /**
+                 * Customize the outgoing response for the resource.
+                 */
+                public function withResponse(Request $request, $response): void
+                {
+                    // Add custom headers or modify response
+                    $response->header('X-Resource-Type', '{{RESOURCE_NAME}}');
+                }
+            }
+            PHP;
     }
 
     private function getCollectionResourceTemplate(): string
     {
         return <<<'PHP'
-<?php
+            <?php
 
-declare(strict_types=1);
+            declare(strict_types=1);
 
-namespace {{MODULE_NAMESPACE}}\Http\Resources;
+            namespace {{MODULE_NAMESPACE}}\Http\Resources;
 
-use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\ResourceCollection;
+            use Illuminate\Http\Request;
+            use Illuminate\Http\Resources\Json\ResourceCollection;
 
-class {{RESOURCE_NAME}} extends ResourceCollection
-{
-    /**
-     * Transform the resource collection into an array.
-     */
-    public function toArray(Request $request): array
-    {
-        return [
-            'data' => $this->collection,
-{{COLLECTION_WRAPPER}}
-        ];
-    }
+            class {{RESOURCE_NAME}} extends ResourceCollection
+            {
+                /**
+                 * Transform the resource collection into an array.
+                 */
+                public function toArray(Request $request): array
+                {
+                    return [
+                        'data' => $this->collection,
+            {{COLLECTION_WRAPPER}}
+                    ];
+                }
 
-    /**
-     * Get additional data that should be returned with the resource array.
-     */
-    public function with(Request $request): array
-    {
-        return [
-            'meta' => [
-                'version' => '1.0.0',
-                'timestamp' => now()->toISOString(),
-                'total' => $this->collection->count(),
-            ],
-        ];
-    }
+                /**
+                 * Get additional data that should be returned with the resource array.
+                 */
+                public function with(Request $request): array
+                {
+                    return [
+                        'meta' => [
+                            'version' => '1.0.0',
+                            'timestamp' => now()->toISOString(),
+                            'total' => $this->collection->count(),
+                        ],
+                    ];
+                }
 
-    /**
-     * Customize the outgoing response for the resource.
-     */
-    public function withResponse(Request $request, $response): void
-    {
-        $response->header('X-Resource-Type', '{{RESOURCE_NAME}}Collection');
-        $response->header('X-Total-Count', $this->collection->count());
-    }
-}
-PHP;
+                /**
+                 * Customize the outgoing response for the resource.
+                 */
+                public function withResponse(Request $request, $response): void
+                {
+                    $response->header('X-Resource-Type', '{{RESOURCE_NAME}}Collection');
+                    $response->header('X-Total-Count', $this->collection->count());
+                }
+            }
+            PHP;
     }
 
     private function getResourceAttributes(?string $model, bool $isCollection): string
@@ -248,7 +249,7 @@ PHP;
                 }),
             ]";
 
-        return "            " . implode(",\n            ", $attributes);
+        return '            ' . implode(",\n            ", $attributes);
     }
 
     private function getCollectionWrapper(string $resourceName): string

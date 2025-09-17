@@ -21,6 +21,7 @@ class ModuleMakeQueryCommand extends Command
 
         if (!$this->moduleExists($moduleName)) {
             $this->error("Module '{$moduleName}' does not exist.");
+
             return 1;
         }
 
@@ -85,103 +86,106 @@ class ModuleMakeQueryCommand extends Command
     private function ensureDirectoryExists(string $directory): void
     {
         if (!is_dir($directory)) {
-            mkdir($directory, 0755, true);
+            mkdir($directory, 0o755, true);
         }
     }
 
     private function getQueryTemplate(): string
     {
         return <<<'PHP'
-<?php
+            <?php
 
-declare(strict_types=1);
+            declare(strict_types=1);
 
-namespace {{MODULE_NAMESPACE}}\Application\Queries;
+            namespace {{MODULE_NAMESPACE}}\Application\Queries;
 
-use TaiCrm\LaravelModularDdd\Foundation\Query;
+            use TaiCrm\LaravelModularDdd\Foundation\Query;
 
-class {{QUERY_NAME}} extends Query
-{
-{{PROPERTIES}}
+            class {{QUERY_NAME}} extends Query
+            {
+            {{PROPERTIES}}
 
-    public function __construct({{CONSTRUCTOR_PARAMS}})
-    {
-{{CONSTRUCTOR_ASSIGNMENTS}}
-        parent::__construct();
-    }
+                public function __construct({{CONSTRUCTOR_PARAMS}})
+                {
+            {{CONSTRUCTOR_ASSIGNMENTS}}
+                    parent::__construct();
+                }
 
-    protected function isCacheable(): bool
-    {
-        return {{CACHEABLE}};
-    }
+                protected function isCacheable(): bool
+                {
+                    return {{CACHEABLE}};
+                }
 
-    protected function getDefaultCacheTtl(): int
-    {
-        return {{CACHE_TTL}};
-    }
+                protected function getDefaultCacheTtl(): int
+                {
+                    return {{CACHE_TTL}};
+                }
 
-    protected function toArray(): array
-    {
-        return [
-{{TO_ARRAY_CONTENT}}
-        ];
-    }
-}
-PHP;
+                protected function toArray(): array
+                {
+                    return [
+            {{TO_ARRAY_CONTENT}}
+                    ];
+                }
+            }
+            PHP;
     }
 
     private function getQueryHandlerTemplate(): string
     {
         return <<<'PHP'
-<?php
+            <?php
 
-declare(strict_types=1);
+            declare(strict_types=1);
 
-namespace {{MODULE_NAMESPACE}}\Application\Handlers\Queries;
+            namespace {{MODULE_NAMESPACE}}\Application\Handlers\Queries;
 
-use {{MODULE_NAMESPACE}}\Application\Queries\{{QUERY_NAME}};
-use TaiCrm\LaravelModularDdd\Foundation\Contracts\QueryHandlerInterface;
+            use {{MODULE_NAMESPACE}}\Application\Queries\{{QUERY_NAME}};
+            use TaiCrm\LaravelModularDdd\Foundation\Contracts\QueryHandlerInterface;
 
-class {{HANDLER_NAME}} implements QueryHandlerInterface
-{
-    public function handle({{QUERY_NAME}} $query): mixed
-    {
-        // TODO: Implement query handling logic
-        // Example: Fetch {{AGGREGATE_NAME}} data
+            class {{HANDLER_NAME}} implements QueryHandlerInterface
+            {
+                public function handle({{QUERY_NAME}} $query): mixed
+                {
+                    // TODO: Implement query handling logic
+                    // Example: Fetch {{AGGREGATE_NAME}} data
 
-        return [];
-    }
-}
-PHP;
+                    return [];
+                }
+            }
+            PHP;
     }
 
     private function getPropertiesExample(?string $aggregateName): string
     {
         if (!$aggregateName) {
-            return "    private ?string \$filter = null;";
+            return '    private ?string $filter = null;';
         }
 
         $variable = Str::camel($aggregateName);
+
         return "    private ?string \${$variable}Id = null;\n    private array \$filters = [];";
     }
 
     private function getConstructorParamsExample(?string $aggregateName): string
     {
         if (!$aggregateName) {
-            return "?string \$filter = null";
+            return '?string $filter = null';
         }
 
         $variable = Str::camel($aggregateName);
+
         return "?string \${$variable}Id = null, array \$filters = []";
     }
 
     private function getConstructorAssignmentsExample(?string $aggregateName): string
     {
         if (!$aggregateName) {
-            return "        \$this->filter = \$filter;";
+            return '        $this->filter = $filter;';
         }
 
         $variable = Str::camel($aggregateName);
+
         return "        \$this->{$variable}Id = \${$variable}Id;\n        \$this->filters = \$filters;";
     }
 
@@ -193,6 +197,7 @@ PHP;
 
         $variable = Str::camel($aggregateName);
         $snakeCase = Str::snake($aggregateName);
+
         return "            '{$snakeCase}_id' => \$this->{$variable}Id,\n            'filters' => \$this->filters,";
     }
 }

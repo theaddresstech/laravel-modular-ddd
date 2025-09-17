@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Commands;
 
-use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
-use TaiCrm\LaravelModularDdd\Exceptions\ModuleNotFoundException;
-use TaiCrm\LaravelModularDdd\Exceptions\ModuleInstallationException;
+use Exception;
 use Illuminate\Console\Command;
+use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
+use TaiCrm\LaravelModularDdd\Exceptions\ModuleInstallationException;
+use TaiCrm\LaravelModularDdd\Exceptions\ModuleNotFoundException;
 
 class ModuleDisableCommand extends Command
 {
     protected $signature = 'module:disable {name : The name of the module to disable} {--force : Force disable even if other modules depend on it}';
-
     protected $description = 'Disable a module';
 
     public function __construct(
-        private ModuleManagerInterface $moduleManager
+        private ModuleManagerInterface $moduleManager,
     ) {
         parent::__construct();
     }
@@ -27,6 +27,7 @@ class ModuleDisableCommand extends Command
 
         if (!$this->moduleManager->isEnabled($moduleName)) {
             $this->info("✅ Module '{$moduleName}' is already disabled.");
+
             return self::SUCCESS;
         }
 
@@ -38,6 +39,7 @@ class ModuleDisableCommand extends Command
 
             if (!$this->option('force') && !$this->confirmDisabling($moduleName)) {
                 $this->info('Operation cancelled.');
+
                 return self::SUCCESS;
             }
 
@@ -54,19 +56,20 @@ class ModuleDisableCommand extends Command
                 $this->showModuleInfo($moduleName);
             } else {
                 $this->error("❌ Failed to disable module '{$moduleName}'.");
+
                 return self::FAILURE;
             }
-
         } catch (ModuleNotFoundException $e) {
-            $this->error("❌ " . $e->getMessage());
-            return self::FAILURE;
+            $this->error('❌ ' . $e->getMessage());
 
+            return self::FAILURE;
         } catch (ModuleInstallationException $e) {
-            $this->error("❌ Disable error: " . $e->getMessage());
-            return self::FAILURE;
+            $this->error('❌ Disable error: ' . $e->getMessage());
 
-        } catch (\Exception $e) {
-            $this->error("❌ Unexpected error: " . $e->getMessage());
+            return self::FAILURE;
+        } catch (Exception $e) {
+            $this->error('❌ Unexpected error: ' . $e->getMessage());
+
             return self::FAILURE;
         }
 
@@ -88,7 +91,7 @@ class ModuleDisableCommand extends Command
             }
 
             $this->newLine();
-            $this->warn("Disabling this module may break dependent functionality.");
+            $this->warn('Disabling this module may break dependent functionality.');
         }
     }
 
@@ -100,13 +103,14 @@ class ModuleDisableCommand extends Command
     private function checkDependents(string $moduleName): void
     {
         $dependents = $this->moduleManager->getDependents($moduleName);
-        $enabledDependents = $dependents->filter(fn($dep) => $this->moduleManager->isEnabled($dep));
+        $enabledDependents = $dependents->filter(fn ($dep) => $this->moduleManager->isEnabled($dep));
 
         if ($enabledDependents->isNotEmpty()) {
             $dependentList = $enabledDependents->implode(', ');
+
             throw ModuleInstallationException::cannotDisable(
                 $moduleName,
-                "Module has enabled dependents: {$dependentList}. Use --force to override."
+                "Module has enabled dependents: {$dependentList}. Use --force to override.",
             );
         }
     }
@@ -119,7 +123,7 @@ class ModuleDisableCommand extends Command
             $this->newLine();
             $this->line("📦 <info>{$moduleInfo->displayName}</info> v{$moduleInfo->version}");
             $this->line("   {$moduleInfo->description}");
-            $this->line("   <comment>State:</comment> <comment>Disabled</comment>");
+            $this->line('   <comment>State:</comment> <comment>Disabled</comment>');
         }
     }
 }

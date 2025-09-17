@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Tests\Unit;
 
-use TaiCrm\LaravelModularDdd\Communication\EventBus;
+use Exception;
+use Illuminate\Contracts\Events\Dispatcher;
+use Mockery;
+use Psr\Log\LoggerInterface;
+use TaiCrm\LaravelModularDdd\Foundation\EventBus;
 use TaiCrm\LaravelModularDdd\Foundation\Contracts\DomainEventInterface;
 use TaiCrm\LaravelModularDdd\Tests\TestCase;
-use Illuminate\Contracts\Events\Dispatcher;
-use Psr\Log\LoggerInterface;
-use Mockery;
 
 class EventBusTest extends TestCase
 {
@@ -27,9 +28,9 @@ class EventBusTest extends TestCase
         $this->eventBus = new EventBus($this->mockDispatcher, $this->mockLogger);
     }
 
-    public function test_can_subscribe_to_event(): void
+    public function testCanSubscribeToEvent(): void
     {
-        $handler = fn() => 'handled';
+        $handler = static fn () => 'handled';
 
         $this->eventBus->subscribe('TestEvent', $handler);
 
@@ -37,10 +38,10 @@ class EventBusTest extends TestCase
         $this->assertCount(1, $this->eventBus->getSubscribers('TestEvent'));
     }
 
-    public function test_can_dispatch_event_to_subscribers(): void
+    public function testCanDispatchEventToSubscribers(): void
     {
         $handlerCalled = false;
-        $handler = function() use (&$handlerCalled) {
+        $handler = static function () use (&$handlerCalled): void {
             $handlerCalled = true;
         };
 
@@ -59,9 +60,9 @@ class EventBusTest extends TestCase
         $this->assertTrue($handlerCalled);
     }
 
-    public function test_can_unsubscribe_from_event(): void
+    public function testCanUnsubscribeFromEvent(): void
     {
-        $handler = fn() => 'handled';
+        $handler = static fn () => 'handled';
 
         $this->eventBus->subscribe('TestEvent', $handler);
         $this->assertTrue($this->eventBus->hasSubscribers('TestEvent'));
@@ -70,7 +71,7 @@ class EventBusTest extends TestCase
         $this->assertFalse($this->eventBus->hasSubscribers('TestEvent'));
     }
 
-    public function test_can_dispatch_multiple_events(): void
+    public function testCanDispatchMultipleEvents(): void
     {
         $events = collect([
             $this->createMockEvent('Event1'),
@@ -85,10 +86,10 @@ class EventBusTest extends TestCase
         $this->assertTrue(true); // Test passes if no exceptions thrown
     }
 
-    public function test_handles_subscriber_exceptions_gracefully(): void
+    public function testHandlesSubscriberExceptionsGracefully(): void
     {
-        $handler = function() {
-            throw new \Exception('Handler error');
+        $handler = static function (): void {
+            throw new Exception('Handler error');
         };
 
         $this->eventBus->subscribe('TestEvent', $handler);
@@ -105,10 +106,10 @@ class EventBusTest extends TestCase
         $this->assertTrue(true);
     }
 
-    public function test_can_clear_all_subscribers(): void
+    public function testCanClearAllSubscribers(): void
     {
-        $this->eventBus->subscribe('Event1', fn() => null);
-        $this->eventBus->subscribe('Event2', fn() => null);
+        $this->eventBus->subscribe('Event1', static fn () => null);
+        $this->eventBus->subscribe('Event2', static fn () => null);
 
         $this->assertTrue($this->eventBus->hasSubscribers('Event1'));
         $this->assertTrue($this->eventBus->hasSubscribers('Event2'));

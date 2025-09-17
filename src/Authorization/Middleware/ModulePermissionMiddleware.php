@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Authorization\Middleware;
 
-use TaiCrm\LaravelModularDdd\Authorization\ModuleAuthorizationManager;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use InvalidArgumentException;
 use Symfony\Component\HttpFoundation\Response;
+use TaiCrm\LaravelModularDdd\Authorization\ModulePermissionManager;
 
 class ModulePermissionMiddleware
 {
     public function __construct(
-        private ModuleAuthorizationManager $authManager
-    ) {
-    }
+        private ModulePermissionManager $permissionManager,
+    ) {}
 
     /**
      * Handle an incoming request.
@@ -35,12 +35,12 @@ class ModulePermissionMiddleware
 
         // Check module access if wildcard permission
         if ($permissionName === '*') {
-            if (!$this->authManager->checkModuleAccess($user, $moduleId)) {
+            if (!$user->hasModuleAccess($moduleId)) {
                 return $this->forbidden("Access denied to module: {$moduleId}");
             }
         } else {
             // Check specific permission
-            if (!$this->authManager->hasPermission($user, $moduleId, $permissionName)) {
+            if (!$this->permissionManager->userHasModulePermission($user, $moduleId, $permissionName)) {
                 return $this->forbidden("Permission denied: {$permission}");
             }
         }
@@ -58,7 +58,7 @@ class ModulePermissionMiddleware
         $parts = explode('.', $permission, 2);
 
         if (count($parts) !== 2) {
-            throw new \InvalidArgumentException("Invalid permission format: {$permission}. Expected format: 'module.permission'");
+            throw new InvalidArgumentException("Invalid permission format: {$permission}. Expected format: 'module.permission'");
         }
 
         return $parts;

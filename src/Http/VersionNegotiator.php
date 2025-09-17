@@ -15,7 +15,6 @@ class VersionNegotiator
         'X-API-Version',
         'Api-Version',
     ];
-
     private const VERSION_QUERY_PARAMS = [
         'api_version',
         'version',
@@ -42,7 +41,7 @@ class VersionNegotiator
         $apiPrefix = Config::get('modular-ddd.api.prefix', 'api');
 
         // Pattern: api/v{major}.{minor}/... or api/v{major}/...
-        if (preg_match("#^{$apiPrefix}/v(\d+(?:\.\d+)?)/.*#", $path, $matches)) {
+        if (preg_match("#^{$apiPrefix}/v(\\d+(?:\\.\\d+)?)/.*#", $path, $matches)) {
             return 'v' . $matches[1];
         }
 
@@ -116,44 +115,6 @@ class VersionNegotiator
         return Config::get('modular-ddd.api.versions.supported', ['v1']);
     }
 
-    private function validateVersion(string $version, ?string $module, Request $request): void
-    {
-        $supportedVersions = $this->getSupportedVersions($module);
-
-        if (!in_array($version, $supportedVersions)) {
-            throw new UnsupportedApiVersionException(
-                "API version '{$version}' is not supported. Supported versions: " . implode(', ', $supportedVersions),
-                $version,
-                $supportedVersions
-            );
-        }
-
-        // Check if version is sunset
-        $sunsetDates = Config::get('modular-ddd.api.versions.sunset_dates', []);
-        if (isset($sunsetDates[$version])) {
-            $sunsetDate = $sunsetDates[$version];
-            if (now()->isAfter($sunsetDate)) {
-                throw new UnsupportedApiVersionException(
-                    "API version '{$version}' has been sunset as of {$sunsetDate}",
-                    $version,
-                    $supportedVersions
-                );
-            }
-        }
-    }
-
-    private function isValidVersionFormat(string $version): bool
-    {
-        // Support formats: v1, v1.0, v2.1, 1, 1.0, 2.1
-        return preg_match('/^v?\d+(\.\d+)?$/', $version) === 1;
-    }
-
-    private function normalizeVersion(string $version): string
-    {
-        // Ensure version starts with 'v'
-        return str_starts_with($version, 'v') ? $version : 'v' . $version;
-    }
-
     public function getVersionInfo(string $version, ?string $module = null): array
     {
         $supportedVersions = $this->getSupportedVersions($module);
@@ -170,5 +131,43 @@ class VersionNegotiator
             'supported_versions' => $supportedVersions,
             'latest_version' => $latestVersion,
         ];
+    }
+
+    private function validateVersion(string $version, ?string $module, Request $request): void
+    {
+        $supportedVersions = $this->getSupportedVersions($module);
+
+        if (!in_array($version, $supportedVersions)) {
+            throw new UnsupportedApiVersionException(
+                "API version '{$version}' is not supported. Supported versions: " . implode(', ', $supportedVersions),
+                $version,
+                $supportedVersions,
+            );
+        }
+
+        // Check if version is sunset
+        $sunsetDates = Config::get('modular-ddd.api.versions.sunset_dates', []);
+        if (isset($sunsetDates[$version])) {
+            $sunsetDate = $sunsetDates[$version];
+            if (now()->isAfter($sunsetDate)) {
+                throw new UnsupportedApiVersionException(
+                    "API version '{$version}' has been sunset as of {$sunsetDate}",
+                    $version,
+                    $supportedVersions,
+                );
+            }
+        }
+    }
+
+    private function isValidVersionFormat(string $version): bool
+    {
+        // Support formats: v1, v1.0, v2.1, 1, 1.0, 2.1
+        return preg_match('/^v?\d+(\.\d+)?$/', $version) === 1;
+    }
+
+    private function normalizeVersion(string $version): string
+    {
+        // Ensure version starts with 'v'
+        return str_starts_with($version, 'v') ? $version : 'v' . $version;
     }
 }

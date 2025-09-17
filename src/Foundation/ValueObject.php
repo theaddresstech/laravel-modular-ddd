@@ -4,10 +4,18 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Foundation;
 
+use BackedEnum;
 use JsonSerializable;
+use ReflectionClass;
+use UnitEnum;
 
 abstract readonly class ValueObject implements JsonSerializable
 {
+    public function __toString(): string
+    {
+        return json_encode($this->toArray());
+    }
+
     abstract public function equals(object $other): bool;
 
     public function jsonSerialize(): array
@@ -17,7 +25,7 @@ abstract readonly class ValueObject implements JsonSerializable
 
     public function toArray(): array
     {
-        $reflection = new \ReflectionClass($this);
+        $reflection = new ReflectionClass($this);
         $properties = $reflection->getProperties();
 
         $data = [];
@@ -25,17 +33,18 @@ abstract readonly class ValueObject implements JsonSerializable
             $property->setAccessible(true);
             $value = $property->getValue($this);
 
-            if ($value instanceof ValueObject) {
+            if ($value instanceof self) {
                 $data[$property->getName()] = $value->toArray();
-            } elseif ($value instanceof \BackedEnum) {
+            } elseif ($value instanceof BackedEnum) {
                 $data[$property->getName()] = $value->value;
-            } elseif ($value instanceof \UnitEnum) {
+            } elseif ($value instanceof UnitEnum) {
                 $data[$property->getName()] = $value->name;
             } elseif (is_array($value)) {
-                $data[$property->getName()] = array_map(function ($item) {
+                $data[$property->getName()] = array_map(static function ($item) {
                     if ($item instanceof ValueObject) {
                         return $item->toArray();
                     }
+
                     return $item;
                 }, $value);
             } else {
@@ -57,8 +66,8 @@ abstract readonly class ValueObject implements JsonSerializable
                 return false;
             }
 
-            if ($value instanceof ValueObject) {
-                if (!($array2[$key] instanceof ValueObject) || !$value->equals($array2[$key])) {
+            if ($value instanceof self) {
+                if (!($array2[$key] instanceof self) || !$value->equals($array2[$key])) {
                     return false;
                 }
             } elseif ($value !== $array2[$key]) {
@@ -67,10 +76,5 @@ abstract readonly class ValueObject implements JsonSerializable
         }
 
         return true;
-    }
-
-    public function __toString(): string
-    {
-        return json_encode($this->toArray());
     }
 }

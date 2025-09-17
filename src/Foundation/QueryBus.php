@@ -4,29 +4,28 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Foundation;
 
-use TaiCrm\LaravelModularDdd\Foundation\Contracts\QueryInterface;
-use TaiCrm\LaravelModularDdd\Foundation\Contracts\QueryHandlerInterface;
 use Illuminate\Container\Container;
 use Illuminate\Support\Facades\Cache;
 use InvalidArgumentException;
+use TaiCrm\LaravelModularDdd\Foundation\Contracts\QueryHandlerInterface;
+use TaiCrm\LaravelModularDdd\Foundation\Contracts\QueryInterface;
 
 class QueryBus
 {
     private array $handlers = [];
 
     public function __construct(
-        private Container $container
-    ) {
-    }
+        private Container $container,
+    ) {}
 
     public function register(string $queryClass, string $handlerClass): void
     {
         if (!is_subclass_of($queryClass, QueryInterface::class)) {
-            throw new InvalidArgumentException("Query class must implement QueryInterface");
+            throw new InvalidArgumentException('Query class must implement QueryInterface');
         }
 
         if (!is_subclass_of($handlerClass, QueryHandlerInterface::class)) {
-            throw new InvalidArgumentException("Handler class must implement QueryHandlerInterface");
+            throw new InvalidArgumentException('Handler class must implement QueryHandlerInterface');
         }
 
         $this->handlers[$queryClass] = $handlerClass;
@@ -40,7 +39,7 @@ class QueryBus
             return Cache::get($cacheKey);
         }
 
-        $queryClass = get_class($query);
+        $queryClass = $query::class;
 
         if (!isset($this->handlers[$queryClass])) {
             throw new InvalidArgumentException("No handler registered for query: {$queryClass}");

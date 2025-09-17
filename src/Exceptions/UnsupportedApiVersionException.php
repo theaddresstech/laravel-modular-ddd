@@ -16,7 +16,7 @@ class UnsupportedApiVersionException extends Exception
         string $requestedVersion,
         array $supportedVersions = [],
         int $code = 406,
-        ?Exception $previous = null
+        ?Exception $previous = null,
     ) {
         parent::__construct($message, $code, $previous);
 

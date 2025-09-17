@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Commands;
 
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Str;
@@ -15,13 +16,12 @@ class ModuleMakeFactoryCommand extends Command
                             {name : The name of the factory}
                             {--model= : The model this factory creates}
                             {--force : Overwrite existing factory}';
-
     protected $description = 'Create a new factory for a module';
 
     public function __construct(
         private Filesystem $files,
         private string $modulesPath,
-        private string $stubPath
+        private string $stubPath,
     ) {
         parent::__construct();
     }
@@ -41,6 +41,7 @@ class ModuleMakeFactoryCommand extends Command
 
         if (!$this->files->exists($modulePath)) {
             $this->error("Module '{$moduleName}' does not exist. Create it first using module:make");
+
             return self::FAILURE;
         }
 
@@ -48,6 +49,7 @@ class ModuleMakeFactoryCommand extends Command
 
         if ($this->files->exists($factoryPath) && !$this->option('force')) {
             $this->error("Factory '{$factoryName}' already exists in module '{$moduleName}'. Use --force to overwrite.");
+
             return self::FAILURE;
         }
 
@@ -57,9 +59,9 @@ class ModuleMakeFactoryCommand extends Command
             $this->displayNextSteps($moduleName, $factoryName, $modelName);
 
             return self::SUCCESS;
+        } catch (Exception $e) {
+            $this->error('❌ Failed to create factory: ' . $e->getMessage());
 
-        } catch (\Exception $e) {
-            $this->error("❌ Failed to create factory: " . $e->getMessage());
             return self::FAILURE;
         }
     }
@@ -70,6 +72,7 @@ class ModuleMakeFactoryCommand extends Command
 
         if (!$this->files->exists($stubPath)) {
             $this->createFactoryFromTemplate($factoryPath, $moduleName, $factoryName, $modelName);
+
             return;
         }
 
@@ -82,7 +85,7 @@ class ModuleMakeFactoryCommand extends Command
 
         $factoryDir = dirname($factoryPath);
         if (!$this->files->exists($factoryDir)) {
-            $this->files->makeDirectory($factoryDir, 0755, true);
+            $this->files->makeDirectory($factoryDir, 0o755, true);
         }
 
         $this->files->put($factoryPath, $content);
@@ -101,9 +104,9 @@ declare(strict_types=1);
 namespace {$namespace};
 
 use Illuminate\\Database\\Eloquent\\Factories\\Factory;
-" . ($modelClass ? "use {$modelClass};\n" : "") . "
+" . ($modelClass ? "use {$modelClass};\n" : '') . '
 /**
- * @extends Factory<" . ($modelName ?: 'Model') . ">
+ * @extends Factory<' . ($modelName ?: 'Model') . ">
  */
 class {$factoryName} extends Factory
 {
@@ -127,19 +130,19 @@ class {$factoryName} extends Factory
      */
     public function configure(): static
     {
-        return \$this->afterMaking(function (" . ($modelName ?: 'Model') . " \$model) {
+        return \$this->afterMaking(function (" . ($modelName ?: 'Model') . ' $model) {
             // Customize model after making
-        })->afterCreating(function (" . ($modelName ?: 'Model') . " \$model) {
+        })->afterCreating(function (' . ($modelName ?: 'Model') . ' $model) {
             // Customize model after creating
         });
     }
-" . $this->generateFactoryStates($modelName) . "
+' . $this->generateFactoryStates($modelName) . '
 }
-";
+';
 
         $factoryDir = dirname($factoryPath);
         if (!$this->files->exists($factoryDir)) {
-            $this->files->makeDirectory($factoryDir, 0755, true);
+            $this->files->makeDirectory($factoryDir, 0o755, true);
         }
 
         $this->files->put($factoryPath, $content);
@@ -157,7 +160,7 @@ class {$factoryName} extends Factory
         $attributes = [];
 
         // Always include basic fields
-        $attributes[] = "            'id' => " . $modelName . "Id::generate(),";
+        $attributes[] = "            'id' => " . $modelName . 'Id::generate(),';
         $attributes[] = "            'name' => fake()->name(),";
 
         // Add specific attributes based on common patterns
@@ -280,20 +283,20 @@ class {$factoryName} extends Factory
     private function displayNextSteps(string $moduleName, string $factoryName, ?string $modelName): void
     {
         $this->newLine();
-        $this->line("📋 <comment>Next steps:</comment>");
+        $this->line('📋 <comment>Next steps:</comment>');
         $this->line("1. Customize factory attributes in: modules/{$moduleName}/Database/Factories/{$factoryName}.php");
-        $this->line("2. Use factory in tests:");
+        $this->line('2. Use factory in tests:');
 
         if ($modelName) {
             $this->line("   <info>{$modelName}::factory()->create();</info>");
             $this->line("   <info>{$modelName}::factory()->count(3)->make();</info>");
-            $this->line("3. Use factory states:");
+            $this->line('3. Use factory states:');
             $this->line("   <info>{$modelName}::factory()->verified()->create();</info>");
         } else {
-            $this->line("   <info>YourModel::factory()->create();</info>");
+            $this->line('   <info>YourModel::factory()->create();</info>');
         }
 
-        $this->line("4. Register factory in your test setup if needed");
+        $this->line('4. Register factory in your test setup if needed');
         $this->newLine();
     }
 }

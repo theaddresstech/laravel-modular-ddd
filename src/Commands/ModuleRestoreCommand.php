@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Commands;
 
-use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\DB;
+use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
+use ZipArchive;
 
 class ModuleRestoreCommand extends Command
 {
@@ -16,12 +18,11 @@ class ModuleRestoreCommand extends Command
                             {--data : Restore database data}
                             {--force : Force restore without confirmation}
                             {--overwrite : Overwrite existing module}';
-
     protected $description = 'Restore a module from backup';
 
     public function __construct(
         private ModuleManagerInterface $moduleManager,
-        private Filesystem $files
+        private Filesystem $files,
     ) {
         parent::__construct();
     }
@@ -32,6 +33,7 @@ class ModuleRestoreCommand extends Command
 
         if (!$this->files->exists($backupPath)) {
             $this->error("❌ Backup path not found: {$backupPath}");
+
             return self::FAILURE;
         }
 
@@ -50,6 +52,7 @@ class ModuleRestoreCommand extends Command
             // Confirm restoration
             if (!$this->option('force') && !$this->confirmRestore($manifest)) {
                 $this->info('Restoration cancelled.');
+
                 return self::SUCCESS;
             }
 
@@ -63,14 +66,15 @@ class ModuleRestoreCommand extends Command
 
             if ($result) {
                 $this->info("✅ Module '{$manifest['module_name']}' restored successfully!");
-                return self::SUCCESS;
-            } else {
-                $this->error("❌ Module restoration failed.");
-                return self::FAILURE;
-            }
 
-        } catch (\Exception $e) {
-            $this->error("❌ Restoration failed: " . $e->getMessage());
+                return self::SUCCESS;
+            }
+            $this->error('❌ Module restoration failed.');
+
+            return self::FAILURE;
+        } catch (Exception $e) {
+            $this->error('❌ Restoration failed: ' . $e->getMessage());
+
             return self::FAILURE;
         }
     }
@@ -82,18 +86,18 @@ class ModuleRestoreCommand extends Command
             $this->line('📦 Extracting compressed backup...');
 
             if (!class_exists('ZipArchive')) {
-                throw new \Exception('ZipArchive is required to restore compressed backups');
+                throw new Exception('ZipArchive is required to restore compressed backups');
             }
 
             $extractPath = storage_path('app/temp-restore-' . uniqid());
-            $this->files->makeDirectory($extractPath, 0755, true);
+            $this->files->makeDirectory($extractPath, 0o755, true);
 
-            $zip = new \ZipArchive();
+            $zip = new ZipArchive();
             if ($zip->open($backupPath) === true) {
                 $zip->extractTo($extractPath);
                 $zip->close();
             } else {
-                throw new \Exception('Failed to extract backup archive');
+                throw new Exception('Failed to extract backup archive');
             }
 
             return $extractPath;
@@ -107,14 +111,14 @@ class ModuleRestoreCommand extends Command
         $manifestPath = $backupPath . '/backup-manifest.json';
 
         if (!$this->files->exists($manifestPath)) {
-            throw new \Exception('Backup manifest not found. This may not be a valid backup.');
+            throw new Exception('Backup manifest not found. This may not be a valid backup.');
         }
 
         $content = $this->files->get($manifestPath);
         $manifest = json_decode($content, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new \Exception('Invalid backup manifest: ' . json_last_error_msg());
+            throw new Exception('Invalid backup manifest: ' . json_last_error_msg());
         }
 
         return $manifest;
@@ -143,7 +147,8 @@ class ModuleRestoreCommand extends Command
 
             if (!$this->option('overwrite')) {
                 $this->error('Use --overwrite flag to replace existing module');
-                throw new \Exception('Module already exists');
+
+                throw new Exception('Module already exists');
             }
         }
     }
@@ -156,13 +161,13 @@ class ModuleRestoreCommand extends Command
         if ($existingModule) {
             return $this->confirm(
                 "This will replace the existing '{$moduleName}' module. Continue?",
-                false
+                false,
             );
         }
 
         return $this->confirm(
             "Do you want to restore module '{$moduleName}'?",
-            true
+            true,
         );
     }
 
@@ -203,9 +208,9 @@ class ModuleRestoreCommand extends Command
             $this->call('module:cache', ['action' => 'clear']);
 
             return true;
+        } catch (Exception $e) {
+            $this->error('Restoration failed: ' . $e->getMessage());
 
-        } catch (\Exception $e) {
-            $this->error("Restoration failed: " . $e->getMessage());
             return false;
         }
     }
@@ -218,7 +223,7 @@ class ModuleRestoreCommand extends Command
         $filesSource = "{$backupPath}/files";
 
         if (!$this->files->exists($filesSource)) {
-            throw new \Exception('Module files not found in backup');
+            throw new Exception('Module files not found in backup');
         }
 
         // Remove existing module directory if it exists
@@ -228,7 +233,7 @@ class ModuleRestoreCommand extends Command
 
         // Create parent directory if it doesn't exist
         if (!$this->files->exists($modulesBasePath)) {
-            $this->files->makeDirectory($modulesBasePath, 0755, true);
+            $this->files->makeDirectory($modulesBasePath, 0o755, true);
         }
 
         // Copy files from backup
@@ -236,7 +241,7 @@ class ModuleRestoreCommand extends Command
 
         // Verify restoration
         if (!$this->files->exists("{$moduleDestination}/manifest.json")) {
-            throw new \Exception('Module restoration verification failed - manifest.json not found');
+            throw new Exception('Module restoration verification failed - manifest.json not found');
         }
     }
 
@@ -246,6 +251,7 @@ class ModuleRestoreCommand extends Command
 
         if (!$this->files->exists($dataFile)) {
             $this->warn('   ⚠️  Database backup file not found, skipping data restoration');
+
             return;
         }
 
@@ -255,7 +261,7 @@ class ModuleRestoreCommand extends Command
             // Split SQL statements and execute them
             $statements = array_filter(
                 array_map('trim', explode(';', $sql)),
-                fn($stmt) => !empty($stmt) && !str_starts_with($stmt, '--')
+                static fn ($stmt) => !empty($stmt) && !str_starts_with($stmt, '--'),
             );
 
             DB::beginTransaction();
@@ -269,10 +275,10 @@ class ModuleRestoreCommand extends Command
             DB::commit();
 
             $this->line('   ✅ Database data restored successfully');
-
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
-            throw new \Exception("Database restoration failed: " . $e->getMessage());
+
+            throw new Exception('Database restoration failed: ' . $e->getMessage());
         }
     }
 }

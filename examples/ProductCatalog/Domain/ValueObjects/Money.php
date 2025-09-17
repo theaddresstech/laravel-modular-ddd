@@ -4,15 +4,21 @@ declare(strict_types=1);
 
 namespace Modules\ProductCatalog\Domain\ValueObjects;
 
+use InvalidArgumentException;
 use TaiCrm\LaravelModularDdd\Foundation\ValueObject;
 
 readonly class Money extends ValueObject
 {
     public function __construct(
         private int $amount,        // Amount in cents/smallest currency unit
-        private string $currency
+        private string $currency,
     ) {
         $this->validate($amount, $currency);
+    }
+
+    public function __toString(): string
+    {
+        return $this->format();
     }
 
     public static function fromAmount(int $amount, string $currency): self
@@ -30,14 +36,14 @@ readonly class Money extends ValueObject
         return new self(0, $currency);
     }
 
-    public function add(Money $other): self
+    public function add(self $other): self
     {
         $this->assertSameCurrency($other);
 
         return new self($this->amount + $other->amount, $this->currency);
     }
 
-    public function subtract(Money $other): self
+    public function subtract(self $other): self
     {
         $this->assertSameCurrency($other);
 
@@ -52,7 +58,7 @@ readonly class Money extends ValueObject
     public function divide(float $divisor): self
     {
         if ($divisor == 0) {
-            throw new \InvalidArgumentException('Cannot divide by zero');
+            throw new InvalidArgumentException('Cannot divide by zero');
         }
 
         return new self((int) round($this->amount / $divisor), $this->currency);
@@ -78,14 +84,14 @@ readonly class Money extends ValueObject
         return $this->amount < 0;
     }
 
-    public function isGreaterThan(Money $other): bool
+    public function isGreaterThan(self $other): bool
     {
         $this->assertSameCurrency($other);
 
         return $this->amount > $other->amount;
     }
 
-    public function isLessThan(Money $other): bool
+    public function isLessThan(self $other): bool
     {
         $this->assertSameCurrency($other);
 
@@ -94,9 +100,9 @@ readonly class Money extends ValueObject
 
     public function equals(object $other): bool
     {
-        return $other instanceof self &&
-               $this->amount === $other->amount &&
-               $this->currency === $other->currency;
+        return $other instanceof self
+               && $this->amount === $other->amount
+               && $this->currency === $other->currency;
     }
 
     public function getAmount(): int
@@ -139,35 +145,6 @@ readonly class Money extends ValueObject
         };
     }
 
-    private function validate(int $amount, string $currency): void
-    {
-        if (empty($currency)) {
-            throw new \InvalidArgumentException('Currency cannot be empty');
-        }
-
-        if (strlen($currency) !== 3) {
-            throw new \InvalidArgumentException('Currency must be a 3-letter ISO code');
-        }
-
-        $currency = strtoupper($currency);
-        $validCurrencies = [
-            'USD', 'EUR', 'GBP', 'JPY', 'CNY', 'CAD', 'AUD', 'CHF', 'SEK', 'NOK'
-        ];
-
-        if (!in_array($currency, $validCurrencies)) {
-            throw new \InvalidArgumentException("Unsupported currency: {$currency}");
-        }
-    }
-
-    private function assertSameCurrency(Money $other): void
-    {
-        if ($this->currency !== $other->currency) {
-            throw new \InvalidArgumentException(
-                "Cannot perform operation with different currencies: {$this->currency} vs {$other->currency}"
-            );
-        }
-    }
-
     public function toArray(): array
     {
         return [
@@ -182,8 +159,32 @@ readonly class Money extends ValueObject
         return $this->toArray();
     }
 
-    public function __toString(): string
+    private function validate(int $amount, string $currency): void
     {
-        return $this->format();
+        if (empty($currency)) {
+            throw new InvalidArgumentException('Currency cannot be empty');
+        }
+
+        if (strlen($currency) !== 3) {
+            throw new InvalidArgumentException('Currency must be a 3-letter ISO code');
+        }
+
+        $currency = strtoupper($currency);
+        $validCurrencies = [
+            'USD', 'EUR', 'GBP', 'JPY', 'CNY', 'CAD', 'AUD', 'CHF', 'SEK', 'NOK',
+        ];
+
+        if (!in_array($currency, $validCurrencies)) {
+            throw new InvalidArgumentException("Unsupported currency: {$currency}");
+        }
+    }
+
+    private function assertSameCurrency(self $other): void
+    {
+        if ($this->currency !== $other->currency) {
+            throw new InvalidArgumentException(
+                "Cannot perform operation with different currencies: {$this->currency} vs {$other->currency}",
+            );
+        }
     }
 }

@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Health;
 
-use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
-use TaiCrm\LaravelModularDdd\ValueObjects\ModuleInfo;
-use TaiCrm\LaravelModularDdd\Health\Contracts\HealthCheckInterface;
-use TaiCrm\LaravelModularDdd\Health\ValueObjects\HealthStatus;
-use TaiCrm\LaravelModularDdd\Health\ValueObjects\HealthReport;
+use Exception;
 use Illuminate\Support\Collection;
 use Psr\Log\LoggerInterface;
+use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
+use TaiCrm\LaravelModularDdd\Health\Contracts\HealthCheckInterface;
+use TaiCrm\LaravelModularDdd\Health\ValueObjects\HealthReport;
+use TaiCrm\LaravelModularDdd\Health\ValueObjects\HealthStatus;
 
 class ModuleHealthChecker
 {
@@ -18,7 +18,7 @@ class ModuleHealthChecker
 
     public function __construct(
         private ModuleManagerInterface $moduleManager,
-        private LoggerInterface $logger
+        private LoggerInterface $logger,
     ) {
         $this->healthChecks = collect();
         $this->registerDefaultChecks();
@@ -45,12 +45,11 @@ class ModuleHealthChecker
                 } elseif ($result['status'] === HealthStatus::Warning && $overallStatus === HealthStatus::Healthy) {
                     $overallStatus = HealthStatus::Warning;
                 }
-
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->error("Health check failed for module {$moduleName}: " . $e->getMessage());
 
                 $checks->push([
-                    'name' => get_class($check),
+                    'name' => $check::class,
                     'status' => HealthStatus::Critical,
                     'message' => 'Health check failed: ' . $e->getMessage(),
                     'details' => [],
@@ -64,7 +63,7 @@ class ModuleHealthChecker
             moduleName: $moduleName,
             status: $overallStatus,
             checks: $checks->toArray(),
-            timestamp: now()
+            timestamp: now(),
         );
     }
 
@@ -90,7 +89,7 @@ class ModuleHealthChecker
     public function removeHealthCheck(string $checkClass): void
     {
         $this->healthChecks = $this->healthChecks->reject(
-            fn($check) => get_class($check) === $checkClass
+            static fn ($check) => $check::class === $checkClass,
         );
     }
 

@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Monitoring;
 
-use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
-use Illuminate\Database\ConnectionInterface;
+use Exception;
 use Illuminate\Cache\CacheManager;
+use Illuminate\Database\ConnectionInterface;
 use Illuminate\Queue\QueueManager;
 use Psr\Log\LoggerInterface;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
 
 class MetricsCollector
 {
@@ -17,7 +20,7 @@ class MetricsCollector
         private ConnectionInterface $db,
         private CacheManager $cache,
         private QueueManager $queue,
-        private LoggerInterface $logger
+        private LoggerInterface $logger,
     ) {}
 
     public function collectSystemMetrics(): array
@@ -92,9 +95,9 @@ class MetricsCollector
             }
 
             return $metrics;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->warning('Failed to collect database metrics', [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return [
@@ -130,9 +133,9 @@ class MetricsCollector
             }
 
             return $metrics;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->warning('Failed to collect cache metrics', [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return [
@@ -147,7 +150,7 @@ class MetricsCollector
         try {
             $defaultConnection = $this->queue->getDefaultDriver();
 
-            $metrics = [
+            return [
                 'default_connection' => $defaultConnection,
                 'connections' => [],
                 'jobs' => [
@@ -156,11 +159,9 @@ class MetricsCollector
                     'processed_today' => $this->getProcessedJobsTodayCount(),
                 ],
             ];
-
-            return $metrics;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->warning('Failed to collect queue metrics', [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return [
@@ -198,7 +199,7 @@ class MetricsCollector
         $tablePrefix = $moduleSnake . '_';
 
         try {
-            $tables = $this->db->select("
+            $tables = $this->db->select('
                 SELECT
                     table_name,
                     table_rows,
@@ -208,7 +209,7 @@ class MetricsCollector
                 FROM information_schema.tables
                 WHERE table_schema = ?
                 AND table_name LIKE ?
-            ", [$this->db->getDatabaseName(), $tablePrefix . '%']);
+            ', [$this->db->getDatabaseName(), $tablePrefix . '%']);
 
             $metrics = [
                 'tables' => [],
@@ -231,7 +232,7 @@ class MetricsCollector
             }
 
             return $metrics;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return [];
         }
     }
@@ -256,7 +257,7 @@ class MetricsCollector
                     $metrics['memory_usage'] += strlen($redis->get($key));
                 }
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Ignore cache collection errors
         }
 
@@ -278,7 +279,7 @@ class MetricsCollector
                 'keyspace_hits' => $info['keyspace_hits'] ?? 0,
                 'keyspace_misses' => $info['keyspace_misses'] ?? 0,
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return ['error' => 'Unable to collect Redis metrics'];
         }
     }
@@ -290,8 +291,8 @@ class MetricsCollector
         }
 
         $size = 0;
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($path, \RecursiveDirectoryIterator::SKIP_DOTS)
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($path, RecursiveDirectoryIterator::SKIP_DOTS),
         );
 
         foreach ($iterator as $file) {
@@ -307,8 +308,8 @@ class MetricsCollector
             return 0;
         }
 
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($path, \RecursiveDirectoryIterator::SKIP_DOTS)
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($path, RecursiveDirectoryIterator::SKIP_DOTS),
         );
 
         return iterator_count($iterator);
@@ -321,8 +322,8 @@ class MetricsCollector
         }
 
         $latest = 0;
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($path, \RecursiveDirectoryIterator::SKIP_DOTS)
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($path, RecursiveDirectoryIterator::SKIP_DOTS),
         );
 
         foreach ($iterator as $file) {
@@ -338,14 +339,14 @@ class MetricsCollector
     private function getTablesCount(): int
     {
         try {
-            $result = $this->db->selectOne("
+            $result = $this->db->selectOne('
                 SELECT COUNT(*) as count
                 FROM information_schema.tables
                 WHERE table_schema = ?
-            ", [$this->db->getDatabaseName()]);
+            ', [$this->db->getDatabaseName()]);
 
             return $result->count ?? 0;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return 0;
         }
     }
@@ -353,14 +354,14 @@ class MetricsCollector
     private function getTotalRows(): int
     {
         try {
-            $result = $this->db->selectOne("
+            $result = $this->db->selectOne('
                 SELECT SUM(table_rows) as total
                 FROM information_schema.tables
                 WHERE table_schema = ?
-            ", [$this->db->getDatabaseName()]);
+            ', [$this->db->getDatabaseName()]);
 
             return $result->total ?? 0;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return 0;
         }
     }
@@ -368,14 +369,14 @@ class MetricsCollector
     private function getDatabaseSize(): int
     {
         try {
-            $result = $this->db->selectOne("
+            $result = $this->db->selectOne('
                 SELECT SUM(data_length + index_length) as size
                 FROM information_schema.tables
                 WHERE table_schema = ?
-            ", [$this->db->getDatabaseName()]);
+            ', [$this->db->getDatabaseName()]);
 
             return $result->size ?? 0;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return 0;
         }
     }
@@ -383,7 +384,7 @@ class MetricsCollector
     private function getIndexUsage(): array
     {
         try {
-            $results = $this->db->select("
+            $results = $this->db->select('
                 SELECT
                     table_name,
                     index_name,
@@ -392,16 +393,14 @@ class MetricsCollector
                 WHERE table_schema = ?
                 ORDER BY cardinality DESC
                 LIMIT 10
-            ", [$this->db->getDatabaseName()]);
+            ', [$this->db->getDatabaseName()]);
 
-            return array_map(function ($row) {
-                return [
-                    'table' => $row->table_name,
-                    'index' => $row->index_name,
-                    'cardinality' => $row->cardinality,
-                ];
-            }, $results);
-        } catch (\Exception $e) {
+            return array_map(static fn ($row) => [
+                'table' => $row->table_name,
+                'index' => $row->index_name,
+                'cardinality' => $row->cardinality,
+            ], $results);
+        } catch (Exception $e) {
             return [];
         }
     }
@@ -410,8 +409,9 @@ class MetricsCollector
     {
         try {
             $result = $this->db->selectOne("SHOW GLOBAL STATUS LIKE 'Slow_queries'");
-            return (int)($result->Value ?? 0);
-        } catch (\Exception $e) {
+
+            return (int) ($result->Value ?? 0);
+        } catch (Exception $e) {
             return 0;
         }
     }
@@ -419,9 +419,10 @@ class MetricsCollector
     private function getPendingJobsCount(): int
     {
         try {
-            $result = $this->db->selectOne("SELECT COUNT(*) as count FROM jobs");
+            $result = $this->db->selectOne('SELECT COUNT(*) as count FROM jobs');
+
             return $result->count ?? 0;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return 0;
         }
     }
@@ -429,9 +430,10 @@ class MetricsCollector
     private function getFailedJobsCount(): int
     {
         try {
-            $result = $this->db->selectOne("SELECT COUNT(*) as count FROM failed_jobs");
+            $result = $this->db->selectOne('SELECT COUNT(*) as count FROM failed_jobs');
+
             return $result->count ?? 0;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return 0;
         }
     }
@@ -439,15 +441,15 @@ class MetricsCollector
     private function getProcessedJobsTodayCount(): int
     {
         try {
-            $result = $this->db->selectOne("
+            $result = $this->db->selectOne('
                 SELECT COUNT(*) as count
                 FROM jobs
                 WHERE created_at >= ?
                 AND completed_at IS NOT NULL
-            ", [now()->startOfDay()]);
+            ', [now()->startOfDay()]);
 
             return $result->count ?? 0;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return 0;
         }
     }
@@ -459,13 +461,13 @@ class MetricsCollector
         }
 
         $unit = strtoupper(substr($limit, -1));
-        $value = (int)substr($limit, 0, -1);
+        $value = (int) substr($limit, 0, -1);
 
         return match ($unit) {
             'G' => $value * 1024 * 1024 * 1024,
             'M' => $value * 1024 * 1024,
             'K' => $value * 1024,
-            default => (int)$limit,
+            default => (int) $limit,
         };
     }
 
@@ -485,6 +487,7 @@ class MetricsCollector
     {
         if (function_exists('sys_getloadavg')) {
             $load = sys_getloadavg();
+
             return [
                 '1min' => $load[0] ?? null,
                 '5min' => $load[1] ?? null,
@@ -499,7 +502,8 @@ class MetricsCollector
     {
         if (PHP_OS_FAMILY === 'Linux' && file_exists('/proc/uptime')) {
             $uptime = file_get_contents('/proc/uptime');
-            $seconds = (float)explode(' ', $uptime)[0];
+            $seconds = (float) explode(' ', $uptime)[0];
+
             return $this->formatUptime($seconds);
         }
 

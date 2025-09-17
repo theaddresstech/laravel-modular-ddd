@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Tests\Unit\Monitoring;
 
-use TaiCrm\LaravelModularDdd\Monitoring\ModulePerformanceMonitor;
-use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
-use TaiCrm\LaravelModularDdd\ValueObjects\ModuleInfo;
-use TaiCrm\LaravelModularDdd\ValueObjects\ModuleState;
-use PHPUnit\Framework\TestCase;
 use Illuminate\Cache\CacheManager;
 use Illuminate\Cache\Repository;
-use Psr\Log\LoggerInterface;
 use Illuminate\Support\Collection;
+use InvalidArgumentException;
+use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
+use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
+use TaiCrm\LaravelModularDdd\Monitoring\ModulePerformanceMonitor;
+use TaiCrm\LaravelModularDdd\ValueObjects\ModuleInfo;
+use TaiCrm\LaravelModularDdd\ValueObjects\ModuleState;
 
 class ModulePerformanceMonitorTest extends TestCase
 {
@@ -42,11 +43,11 @@ class ModulePerformanceMonitorTest extends TestCase
         $this->monitor = new ModulePerformanceMonitor(
             $this->moduleManager,
             $this->cache,
-            $this->logger
+            $this->logger,
         );
     }
 
-    public function test_can_start_and_end_timer(): void
+    public function testCanStartAndEndTimer(): void
     {
         // Act
         $timerId = $this->monitor->startTimer('test.operation', ['key' => 'value']);
@@ -67,20 +68,20 @@ class ModulePerformanceMonitorTest extends TestCase
         $this->assertArrayHasKey('context', $metrics);
         $this->assertArrayHasKey('timestamp', $metrics);
 
-        $this->assertEquals('test.operation', $metrics['operation']);
+        $this->assertSame('test.operation', $metrics['operation']);
         $this->assertGreaterThan(0, $metrics['duration']);
-        $this->assertEquals(['key' => 'value'], $metrics['context']);
+        $this->assertSame(['key' => 'value'], $metrics['context']);
     }
 
-    public function test_throws_exception_for_invalid_timer_id(): void
+    public function testThrowsExceptionForInvalidTimerId(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Timer invalid_id not found');
 
         $this->monitor->endTimer('invalid_id');
     }
 
-    public function test_can_record_metric(): void
+    public function testCanRecordMetric(): void
     {
         $metric = [
             'operation' => 'test.operation',
@@ -100,13 +101,13 @@ class ModulePerformanceMonitorTest extends TestCase
             ->with(
                 $this->stringContains('module_performance_metrics:test.operation'),
                 $this->isType('array'),
-                $this->anything()
+                $this->anything(),
             );
 
         $this->monitor->recordMetric($metric);
     }
 
-    public function test_logs_slow_operations(): void
+    public function testLogsSlowOperations(): void
     {
         $slowMetric = [
             'operation' => 'slow.operation',
@@ -124,7 +125,7 @@ class ModulePerformanceMonitorTest extends TestCase
         $this->monitor->recordMetric($slowMetric);
     }
 
-    public function test_can_get_metrics_for_operation(): void
+    public function testCanGetMetricsForOperation(): void
     {
         $cachedMetrics = [
             [
@@ -150,7 +151,7 @@ class ModulePerformanceMonitorTest extends TestCase
         $this->assertCount(2, $metrics);
     }
 
-    public function test_can_get_aggregated_metrics(): void
+    public function testCanGetAggregatedMetrics(): void
     {
         $cachedMetrics = [
             [
@@ -183,15 +184,15 @@ class ModulePerformanceMonitorTest extends TestCase
         $this->assertArrayHasKey('operations_per_second', $aggregated);
         $this->assertArrayHasKey('percentiles', $aggregated);
 
-        $this->assertEquals('test.operation', $aggregated['operation']);
-        $this->assertEquals('1hour', $aggregated['period']);
-        $this->assertEquals(2, $aggregated['total_operations']);
-        $this->assertEquals(0.15, $aggregated['average_duration']); // (0.1 + 0.2) / 2
-        $this->assertEquals(0.1, $aggregated['min_duration']);
-        $this->assertEquals(0.2, $aggregated['max_duration']);
+        $this->assertSame('test.operation', $aggregated['operation']);
+        $this->assertSame('1hour', $aggregated['period']);
+        $this->assertSame(2, $aggregated['total_operations']);
+        $this->assertSame(0.15, $aggregated['average_duration']); // (0.1 + 0.2) / 2
+        $this->assertSame(0.1, $aggregated['min_duration']);
+        $this->assertSame(0.2, $aggregated['max_duration']);
     }
 
-    public function test_can_get_module_health(): void
+    public function testCanGetModuleHealth(): void
     {
         $modules = collect([
             new ModuleInfo(
@@ -205,7 +206,7 @@ class ModulePerformanceMonitorTest extends TestCase
                 conflicts: [],
                 provides: [],
                 path: '/path/to/module',
-                state: ModuleState::Enabled
+                state: ModuleState::Enabled,
             ),
         ]);
 
@@ -228,11 +229,11 @@ class ModulePerformanceMonitorTest extends TestCase
         $this->assertArrayHasKey('performance', $moduleHealth);
         $this->assertArrayHasKey('health_score', $moduleHealth);
 
-        $this->assertEquals('TestModule', $moduleHealth['module']);
+        $this->assertSame('TestModule', $moduleHealth['module']);
         $this->assertTrue($moduleHealth['is_enabled']);
     }
 
-    public function test_can_export_metrics_as_json(): void
+    public function testCanExportMetricsAsJson(): void
     {
         $this->cache->method('get')->willReturn([]);
 
@@ -245,7 +246,7 @@ class ModulePerformanceMonitorTest extends TestCase
         $this->assertArrayHasKey('total_modules', $decoded);
     }
 
-    public function test_can_export_metrics_as_csv(): void
+    public function testCanExportMetricsAsCsv(): void
     {
         $this->cache->method('get')->willReturn([]);
 
@@ -255,15 +256,15 @@ class ModulePerformanceMonitorTest extends TestCase
         $this->assertStringContainsString('Operation,Duration,Memory,Timestamp', $exported);
     }
 
-    public function test_throws_exception_for_unsupported_export_format(): void
+    public function testThrowsExceptionForUnsupportedExportFormat(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Unsupported format: invalid');
 
         $this->monitor->exportMetrics('invalid');
     }
 
-    public function test_can_clear_metrics(): void
+    public function testCanClearMetrics(): void
     {
         $this->cache->expects($this->once())
             ->method('forget')
@@ -276,7 +277,7 @@ class ModulePerformanceMonitorTest extends TestCase
         $this->monitor->clearMetrics('test.operation');
     }
 
-    public function test_can_clear_all_metrics(): void
+    public function testCanClearAllMetrics(): void
     {
         // Mock Redis keys method for getting all operations
         $this->cache->method('getStore')->willReturnSelf();

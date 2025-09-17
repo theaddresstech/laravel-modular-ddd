@@ -86,7 +86,7 @@ enum ProductStatus: string
     {
         return array_filter(
             self::getAvailableStatuses(),
-            fn($status) => self::from(array_search($status, self::getAvailableStatuses()))->isVisibleToCustomers()
+            static fn ($status) => self::from(array_search($status, self::getAvailableStatuses()))->isVisibleToCustomers(),
         );
     }
 }

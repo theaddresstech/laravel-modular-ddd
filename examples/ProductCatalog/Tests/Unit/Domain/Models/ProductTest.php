@@ -4,21 +4,22 @@ declare(strict_types=1);
 
 namespace Modules\ProductCatalog\Tests\Unit\Domain\Models;
 
-use Modules\ProductCatalog\Domain\Models\Product;
-use Modules\ProductCatalog\Domain\ValueObjects\ProductId;
-use Modules\ProductCatalog\Domain\ValueObjects\CategoryId;
-use Modules\ProductCatalog\Domain\ValueObjects\Money;
-use Modules\ProductCatalog\Domain\ValueObjects\ProductStatus;
+use DateTimeImmutable;
 use Modules\ProductCatalog\Domain\Events\ProductCreated;
-use Modules\ProductCatalog\Domain\Events\ProductUpdated;
 use Modules\ProductCatalog\Domain\Events\ProductPriceChanged;
 use Modules\ProductCatalog\Domain\Events\ProductPublished;
+use Modules\ProductCatalog\Domain\Events\ProductUpdated;
 use Modules\ProductCatalog\Domain\Exceptions\ProductAlreadyPublishedException;
+use Modules\ProductCatalog\Domain\Models\Product;
+use Modules\ProductCatalog\Domain\ValueObjects\CategoryId;
+use Modules\ProductCatalog\Domain\ValueObjects\Money;
+use Modules\ProductCatalog\Domain\ValueObjects\ProductId;
+use Modules\ProductCatalog\Domain\ValueObjects\ProductStatus;
 use PHPUnit\Framework\TestCase;
 
 class ProductTest extends TestCase
 {
-    public function test_can_create_product(): void
+    public function testCanCreateProduct(): void
     {
         // Arrange
         $id = ProductId::generate();
@@ -31,12 +32,12 @@ class ProductTest extends TestCase
         $product = Product::create($id, $name, $description, $price, $categoryId);
 
         // Assert
-        $this->assertEquals($id, $product->getId());
-        $this->assertEquals($name, $product->getName());
-        $this->assertEquals($description, $product->getDescription());
-        $this->assertEquals($price, $product->getPrice());
-        $this->assertEquals(ProductStatus::Draft, $product->getStatus());
-        $this->assertEquals($categoryId, $product->getCategoryId());
+        $this->assertSame($id, $product->getId());
+        $this->assertSame($name, $product->getName());
+        $this->assertSame($description, $product->getDescription());
+        $this->assertSame($price, $product->getPrice());
+        $this->assertSame(ProductStatus::Draft, $product->getStatus());
+        $this->assertSame($categoryId, $product->getCategoryId());
         $this->assertTrue($product->isDraft());
         $this->assertFalse($product->isPublished());
         $this->assertTrue($product->hasUncommittedEvents());
@@ -47,7 +48,7 @@ class ProductTest extends TestCase
         $this->assertInstanceOf(ProductCreated::class, $events[0]);
     }
 
-    public function test_can_create_product_without_category(): void
+    public function testCanCreateProductWithoutCategory(): void
     {
         // Arrange
         $id = ProductId::generate();
@@ -62,7 +63,7 @@ class ProductTest extends TestCase
         $this->assertNull($product->getCategoryId());
     }
 
-    public function test_can_update_product_details(): void
+    public function testCanUpdateProductDetails(): void
     {
         // Arrange
         $product = $this->createProduct();
@@ -73,8 +74,8 @@ class ProductTest extends TestCase
         $product->updateDetails($newName, $newDescription);
 
         // Assert
-        $this->assertEquals($newName, $product->getName());
-        $this->assertEquals($newDescription, $product->getDescription());
+        $this->assertSame($newName, $product->getName());
+        $this->assertSame($newDescription, $product->getDescription());
         $this->assertNotNull($product->getUpdatedAt());
         $this->assertCount(2, $product->getUncommittedEvents()); // Created + Updated
 
@@ -83,7 +84,7 @@ class ProductTest extends TestCase
         $this->assertInstanceOf(ProductUpdated::class, $events[1]);
     }
 
-    public function test_does_not_update_when_details_are_same(): void
+    public function testDoesNotUpdateWhenDetailsAreSame(): void
     {
         // Arrange
         $product = $this->createProduct();
@@ -95,12 +96,12 @@ class ProductTest extends TestCase
         $product->updateDetails($originalName, $originalDescription);
 
         // Assert
-        $this->assertEquals($originalName, $product->getName());
-        $this->assertEquals($originalDescription, $product->getDescription());
+        $this->assertSame($originalName, $product->getName());
+        $this->assertSame($originalDescription, $product->getDescription());
         $this->assertCount($originalEventsCount, $product->getUncommittedEvents());
     }
 
-    public function test_can_change_price(): void
+    public function testCanChangePrice(): void
     {
         // Arrange
         $product = $this->createProduct();
@@ -110,7 +111,7 @@ class ProductTest extends TestCase
         $product->changePrice($newPrice);
 
         // Assert
-        $this->assertEquals($newPrice, $product->getPrice());
+        $this->assertSame($newPrice, $product->getPrice());
         $this->assertNotNull($product->getUpdatedAt());
         $this->assertCount(2, $product->getUncommittedEvents()); // Created + PriceChanged
 
@@ -119,7 +120,7 @@ class ProductTest extends TestCase
         $this->assertInstanceOf(ProductPriceChanged::class, $events[1]);
     }
 
-    public function test_does_not_change_price_when_same(): void
+    public function testDoesNotChangePriceWhenSame(): void
     {
         // Arrange
         $product = $this->createProduct();
@@ -130,11 +131,11 @@ class ProductTest extends TestCase
         $product->changePrice($originalPrice);
 
         // Assert
-        $this->assertEquals($originalPrice, $product->getPrice());
+        $this->assertSame($originalPrice, $product->getPrice());
         $this->assertCount($originalEventsCount, $product->getUncommittedEvents());
     }
 
-    public function test_can_assign_to_category(): void
+    public function testCanAssignToCategory(): void
     {
         // Arrange
         $product = $this->createProduct();
@@ -144,11 +145,11 @@ class ProductTest extends TestCase
         $product->assignToCategory($categoryId);
 
         // Assert
-        $this->assertEquals($categoryId, $product->getCategoryId());
+        $this->assertSame($categoryId, $product->getCategoryId());
         $this->assertNotNull($product->getUpdatedAt());
     }
 
-    public function test_can_remove_from_category(): void
+    public function testCanRemoveFromCategory(): void
     {
         // Arrange
         $categoryId = CategoryId::generate();
@@ -162,7 +163,7 @@ class ProductTest extends TestCase
         $this->assertNotNull($product->getUpdatedAt());
     }
 
-    public function test_can_add_images(): void
+    public function testCanAddImages(): void
     {
         // Arrange
         $product = $this->createProduct();
@@ -176,12 +177,12 @@ class ProductTest extends TestCase
         // Assert
         $images = $product->getImages();
         $this->assertCount(2, $images);
-        $this->assertEquals($imageUrl1, $product->getPrimaryImage());
+        $this->assertSame($imageUrl1, $product->getPrimaryImage());
         $this->assertTrue($images[0]['is_primary']);
         $this->assertFalse($images[1]['is_primary']);
     }
 
-    public function test_first_image_becomes_primary_by_default(): void
+    public function testFirstImageBecomesPrimaryByDefault(): void
     {
         // Arrange
         $product = $this->createProduct();
@@ -193,10 +194,10 @@ class ProductTest extends TestCase
         // Assert
         $images = $product->getImages();
         $this->assertTrue($images[0]['is_primary']);
-        $this->assertEquals($imageUrl, $product->getPrimaryImage());
+        $this->assertSame($imageUrl, $product->getPrimaryImage());
     }
 
-    public function test_can_remove_images(): void
+    public function testCanRemoveImages(): void
     {
         // Arrange
         $product = $this->createProduct();
@@ -211,10 +212,10 @@ class ProductTest extends TestCase
         // Assert
         $images = $product->getImages();
         $this->assertCount(1, $images);
-        $this->assertEquals($imageUrl2, $images[0]['url']);
+        $this->assertSame($imageUrl2, $images[0]['url']);
     }
 
-    public function test_can_set_and_get_attributes(): void
+    public function testCanSetAndGetAttributes(): void
     {
         // Arrange
         $product = $this->createProduct();
@@ -224,18 +225,18 @@ class ProductTest extends TestCase
         $product->setAttribute('size', 'large');
 
         // Assert
-        $this->assertEquals('red', $product->getAttribute('color'));
-        $this->assertEquals('large', $product->getAttribute('size'));
+        $this->assertSame('red', $product->getAttribute('color'));
+        $this->assertSame('large', $product->getAttribute('size'));
         $this->assertNull($product->getAttribute('nonexistent'));
-        $this->assertEquals('default', $product->getAttribute('nonexistent', 'default'));
+        $this->assertSame('default', $product->getAttribute('nonexistent', 'default'));
 
         $attributes = $product->getAttributes();
         $this->assertCount(2, $attributes);
-        $this->assertEquals('red', $attributes['color']);
-        $this->assertEquals('large', $attributes['size']);
+        $this->assertSame('red', $attributes['color']);
+        $this->assertSame('large', $attributes['size']);
     }
 
-    public function test_can_remove_attributes(): void
+    public function testCanRemoveAttributes(): void
     {
         // Arrange
         $product = $this->createProduct();
@@ -252,7 +253,7 @@ class ProductTest extends TestCase
         $this->assertArrayHasKey('size', $attributes);
     }
 
-    public function test_can_publish_product(): void
+    public function testCanPublishProduct(): void
     {
         // Arrange
         $product = $this->createProduct();
@@ -262,7 +263,7 @@ class ProductTest extends TestCase
 
         // Assert
         $this->assertTrue($product->isPublished());
-        $this->assertEquals(ProductStatus::Published, $product->getStatus());
+        $this->assertSame(ProductStatus::Published, $product->getStatus());
         $this->assertNotNull($product->getPublishedAt());
         $this->assertNotNull($product->getUpdatedAt());
         $this->assertCount(2, $product->getUncommittedEvents()); // Created + Published
@@ -272,7 +273,7 @@ class ProductTest extends TestCase
         $this->assertInstanceOf(ProductPublished::class, $events[1]);
     }
 
-    public function test_cannot_publish_already_published_product(): void
+    public function testCannotPublishAlreadyPublishedProduct(): void
     {
         // Arrange
         $product = $this->createProduct();
@@ -285,7 +286,7 @@ class ProductTest extends TestCase
         $product->publish();
     }
 
-    public function test_can_unpublish_product(): void
+    public function testCanUnpublishProduct(): void
     {
         // Arrange
         $product = $this->createProduct();
@@ -300,7 +301,7 @@ class ProductTest extends TestCase
         $this->assertNull($product->getPublishedAt());
     }
 
-    public function test_can_archive_product(): void
+    public function testCanArchiveProduct(): void
     {
         // Arrange
         $product = $this->createProduct();
@@ -310,11 +311,11 @@ class ProductTest extends TestCase
 
         // Assert
         $this->assertTrue($product->isArchived());
-        $this->assertEquals(ProductStatus::Archived, $product->getStatus());
+        $this->assertSame(ProductStatus::Archived, $product->getStatus());
         $this->assertNotNull($product->getUpdatedAt());
     }
 
-    public function test_can_convert_to_array(): void
+    public function testCanConvertToArray(): void
     {
         // Arrange
         $product = $this->createProduct();
@@ -331,12 +332,12 @@ class ProductTest extends TestCase
         $this->assertArrayHasKey('status', $array);
         $this->assertArrayHasKey('created_at', $array);
 
-        $this->assertEquals($product->getId()->toString(), $array['id']);
-        $this->assertEquals($product->getName(), $array['name']);
-        $this->assertEquals($product->getStatus()->value, $array['status']);
+        $this->assertSame($product->getId()->toString(), $array['id']);
+        $this->assertSame($product->getName(), $array['name']);
+        $this->assertSame($product->getStatus()->value, $array['status']);
     }
 
-    public function test_can_reconstitute_product(): void
+    public function testCanReconstituteProduct(): void
     {
         // Arrange
         $id = ProductId::generate();
@@ -344,8 +345,8 @@ class ProductTest extends TestCase
         $description = 'Description';
         $price = Money::fromAmount(1999, 'USD');
         $status = ProductStatus::Published;
-        $createdAt = new \DateTimeImmutable();
-        $updatedAt = new \DateTimeImmutable();
+        $createdAt = new DateTimeImmutable();
+        $updatedAt = new DateTimeImmutable();
 
         // Act
         $product = Product::reconstitute(
@@ -358,17 +359,17 @@ class ProductTest extends TestCase
             [],
             [],
             $createdAt,
-            $updatedAt
+            $updatedAt,
         );
 
         // Assert
-        $this->assertEquals($id, $product->getId());
-        $this->assertEquals($name, $product->getName());
-        $this->assertEquals($description, $product->getDescription());
-        $this->assertEquals($price, $product->getPrice());
-        $this->assertEquals($status, $product->getStatus());
-        $this->assertEquals($createdAt, $product->getCreatedAt());
-        $this->assertEquals($updatedAt, $product->getUpdatedAt());
+        $this->assertSame($id, $product->getId());
+        $this->assertSame($name, $product->getName());
+        $this->assertSame($description, $product->getDescription());
+        $this->assertSame($price, $product->getPrice());
+        $this->assertSame($status, $product->getStatus());
+        $this->assertSame($createdAt, $product->getCreatedAt());
+        $this->assertSame($updatedAt, $product->getUpdatedAt());
         $this->assertFalse($product->hasUncommittedEvents()); // Reconstituted objects have no events
     }
 
@@ -379,7 +380,7 @@ class ProductTest extends TestCase
             'Test Product',
             'A test product description',
             Money::fromAmount(1999, 'USD'),
-            $categoryId
+            $categoryId,
         );
     }
 }

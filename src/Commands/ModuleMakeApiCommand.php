@@ -34,6 +34,7 @@ class ModuleMakeApiCommand extends Command
 
         if (!$this->moduleExists($moduleName)) {
             $this->error("Module '{$moduleName}' does not exist.");
+
             return 1;
         }
 
@@ -41,8 +42,8 @@ class ModuleMakeApiCommand extends Command
         if ($withAuth && !$this->guardExists($authGuard)) {
             $this->warn("Auth guard '{$authGuard}' is not configured. Consider:");
             $this->line("  1. Adding '{$authGuard}' guard to config/auth.php");
-            $this->line("  2. Using --guard=web to use the web guard");
-            $this->line("  3. Omitting --auth to generate routes without authentication");
+            $this->line('  2. Using --guard=web to use the web guard');
+            $this->line('  3. Omitting --auth to generate routes without authentication');
 
             if (!$this->option('yes') && !$this->input->getOption('no-interaction') && !$this->confirm("Continue anyway? Routes will include auth:{$authGuard} middleware.")) {
                 return 1;
@@ -53,12 +54,13 @@ class ModuleMakeApiCommand extends Command
         $versions = $this->getTargetVersions($specificVersion, $allVersions);
 
         if (empty($versions)) {
-            $this->error("No valid API versions found to generate.");
+            $this->error('No valid API versions found to generate.');
+
             return 1;
         }
 
         $this->info("Generating API scaffolding for {$resourceName} in {$moduleName} module...");
-        $this->info("Target versions: " . implode(', ', $versions));
+        $this->info('Target versions: ' . implode(', ', $versions));
 
         // Generate for each version
         foreach ($versions as $version) {
@@ -78,7 +80,7 @@ class ModuleMakeApiCommand extends Command
             }
         }
 
-        $this->info("✅ API scaffolding generated successfully!");
+        $this->info('✅ API scaffolding generated successfully!');
         $this->displayGeneratedFiles($resourceName, $versions, $withSwagger);
 
         return 0;
@@ -92,6 +94,7 @@ class ModuleMakeApiCommand extends Command
     private function guardExists(string $guardName): bool
     {
         $guards = config('auth.guards', []);
+
         return array_key_exists($guardName, $guards);
     }
 
@@ -106,11 +109,13 @@ class ModuleMakeApiCommand extends Command
             if (!in_array($specificVersion, $supportedVersions)) {
                 $this->warn("Version '{$specificVersion}' is not in supported versions. Generating anyway.");
             }
+
             return [$specificVersion];
         }
 
         // Default to latest version
         $defaultVersion = config('modular-ddd.api.versions.latest', config('modular-ddd.api.version', 'v1'));
+
         return [$defaultVersion];
     }
 
@@ -124,7 +129,7 @@ class ModuleMakeApiCommand extends Command
 
     private function displayGeneratedFiles(string $resourceName, array $versions, bool $withSwagger): void
     {
-        $this->line("📝 Generated files:");
+        $this->line('📝 Generated files:');
 
         foreach ($versions as $version) {
             $this->line("   📁 Version {$version}:");
@@ -135,11 +140,11 @@ class ModuleMakeApiCommand extends Command
             }
         }
 
-        $this->line("   📁 Shared Components:");
+        $this->line('   📁 Shared Components:');
         $this->line("     - Requests: Http/Requests/{$resourceName}/");
         $this->line("     - Resource: Http/Resources/{$resourceName}Resource.php");
-        $this->line("     - Commands & Queries: Application/");
-        $this->line("     - Handlers: Application/Handlers/");
+        $this->line('     - Commands & Queries: Application/');
+        $this->line('     - Handlers: Application/Handlers/');
     }
 
     private function generateController(string $moduleName, string $resourceName, string $apiVersion, bool $withAuth, string $authGuard, bool $withValidation, bool $withSwagger, bool $withComprehensive = false, bool $withExamples = false): void
@@ -262,14 +267,14 @@ class ModuleMakeApiCommand extends Command
             $existingContent = file_get_contents($routesFile);
             // Check specifically for the versioned route pattern
             $versionedRoutePattern = "Route::prefix('api/{$apiVersion}')";
-            if (!str_contains($existingContent, $versionedRoutePattern) || !str_contains($existingContent, "Route::apiResource('" . Str::kebab($resourceName) . "', " . $resourceName . "Controller::class")) {
+            if (!str_contains($existingContent, $versionedRoutePattern) || !str_contains($existingContent, "Route::apiResource('" . Str::kebab($resourceName) . "', " . $resourceName . 'Controller::class')) {
                 // Use alias for versioned controller to avoid namespace collision
                 $controllerAlias = "{$resourceName}Controller" . ucfirst($apiVersion);
                 $importLine = "use {$controllerNamespace} as {$controllerAlias};";
 
                 // Add controller import if not exists
                 if (!str_contains($existingContent, "use {$controllerNamespace}")) {
-                    $existingContent = str_replace("use Illuminate\Support\Facades\Route;", "use Illuminate\Support\Facades\Route;\n{$importLine}", $existingContent);
+                    $existingContent = str_replace('use Illuminate\\Support\\Facades\\Route;', "use Illuminate\\Support\\Facades\\Route;\n{$importLine}", $existingContent);
                 }
 
                 // Update route content to use aliased controller
@@ -280,7 +285,7 @@ class ModuleMakeApiCommand extends Command
             $controllerAlias = "{$resourceName}Controller" . ucfirst($apiVersion);
             $importLine = "use {$controllerNamespace} as {$controllerAlias};";
             $routeContent = str_replace("{$resourceName}Controller::class", "{$controllerAlias}::class", $routeContent);
-            $fullRouteFile = "<?php\n\n/*\n|--------------------------------------------------------------------------\n| {$moduleName} API Routes ({$apiVersion})\n|--------------------------------------------------------------------------\n*/\n\nuse Illuminate\Support\Facades\Route;\n{$importLine}\n\n" . $routeContent;
+            $fullRouteFile = "<?php\n\n/*\n|--------------------------------------------------------------------------\n| {$moduleName} API Routes ({$apiVersion})\n|--------------------------------------------------------------------------\n*/\n\nuse Illuminate\\Support\\Facades\\Route;\n{$importLine}\n\n" . $routeContent;
             file_put_contents($routesFile, $fullRouteFile);
         }
     }
@@ -417,531 +422,531 @@ class ModuleMakeApiCommand extends Command
     private function ensureDirectoryExists(string $directory): void
     {
         if (!is_dir($directory)) {
-            mkdir($directory, 0755, true);
+            mkdir($directory, 0o755, true);
         }
     }
 
     private function getControllerTemplate(): string
     {
         return <<<'PHP'
-<?php
+            <?php
 
-declare(strict_types=1);
+            declare(strict_types=1);
 
-namespace {{MODULE_NAMESPACE}}\Http\Controllers\Api\{{API_VERSION}};
+            namespace {{MODULE_NAMESPACE}}\Http\Controllers\Api\{{API_VERSION}};
 
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use App\Http\Controllers\Controller;
-use TaiCrm\LaravelModularDdd\Foundation\CommandBus;
-use TaiCrm\LaravelModularDdd\Foundation\QueryBus;
-use {{MODULE_NAMESPACE}}\Application\Commands\Create{{RESOURCE_NAME}}Command;
-use {{MODULE_NAMESPACE}}\Application\Commands\Update{{RESOURCE_NAME}}Command;
-use {{MODULE_NAMESPACE}}\Application\Commands\Delete{{RESOURCE_NAME}}Command;
-use {{MODULE_NAMESPACE}}\Application\Queries\Get{{RESOURCE_NAME}}Query;
-use {{MODULE_NAMESPACE}}\Application\Queries\List{{RESOURCE_NAME}}Query;
-use {{MODULE_NAMESPACE}}\Http\Resources\{{RESOURCE_NAME}}Resource;
-{{VALIDATION_IMPORTS}}{{SWAGGER_ANNOTATIONS}}
+            use Illuminate\Http\Request;
+            use Illuminate\Http\JsonResponse;
+            use App\Http\Controllers\Controller;
+            use TaiCrm\LaravelModularDdd\Foundation\CommandBus;
+            use TaiCrm\LaravelModularDdd\Foundation\QueryBus;
+            use {{MODULE_NAMESPACE}}\Application\Commands\Create{{RESOURCE_NAME}}Command;
+            use {{MODULE_NAMESPACE}}\Application\Commands\Update{{RESOURCE_NAME}}Command;
+            use {{MODULE_NAMESPACE}}\Application\Commands\Delete{{RESOURCE_NAME}}Command;
+            use {{MODULE_NAMESPACE}}\Application\Queries\Get{{RESOURCE_NAME}}Query;
+            use {{MODULE_NAMESPACE}}\Application\Queries\List{{RESOURCE_NAME}}Query;
+            use {{MODULE_NAMESPACE}}\Http\Resources\{{RESOURCE_NAME}}Resource;
+            {{VALIDATION_IMPORTS}}{{SWAGGER_ANNOTATIONS}}
 
-class {{RESOURCE_NAME}}Controller extends Controller
-{
-    public function __construct(
-        private CommandBus $commandBus,
-        private QueryBus $queryBus
-    ) {}
+            class {{RESOURCE_NAME}}Controller extends Controller
+            {
+                public function __construct(
+                    private CommandBus $commandBus,
+                    private QueryBus $queryBus
+                ) {}
 
-    public function index(Request $request): JsonResponse
-    {
-        $query = new List{{RESOURCE_NAME}}Query(
-            $request->get('filters', []),
-            $request->get('sort', 'created_at'),
-            $request->get('direction', 'desc'),
-            $request->get('per_page', 15)
-        );
+                public function index(Request $request): JsonResponse
+                {
+                    $query = new List{{RESOURCE_NAME}}Query(
+                        $request->get('filters', []),
+                        $request->get('sort', 'created_at'),
+                        $request->get('direction', 'desc'),
+                        $request->get('per_page', 15)
+                    );
 
-        ${{RESOURCE_VARIABLE}}s = $this->queryBus->ask($query);
+                    ${{RESOURCE_VARIABLE}}s = $this->queryBus->ask($query);
 
-        return response()->json([
-            'data' => {{RESOURCE_NAME}}Resource::collection(${{RESOURCE_VARIABLE}}s->items()),
-            'meta' => [
-                'current_page' => ${{RESOURCE_VARIABLE}}s->currentPage(),
-                'last_page' => ${{RESOURCE_VARIABLE}}s->lastPage(),
-                'per_page' => ${{RESOURCE_VARIABLE}}s->perPage(),
-                'total' => ${{RESOURCE_VARIABLE}}s->total(),
-            ]
-        ]);
-    }
+                    return response()->json([
+                        'data' => {{RESOURCE_NAME}}Resource::collection(${{RESOURCE_VARIABLE}}s->items()),
+                        'meta' => [
+                            'current_page' => ${{RESOURCE_VARIABLE}}s->currentPage(),
+                            'last_page' => ${{RESOURCE_VARIABLE}}s->lastPage(),
+                            'per_page' => ${{RESOURCE_VARIABLE}}s->perPage(),
+                            'total' => ${{RESOURCE_VARIABLE}}s->total(),
+                        ]
+                    ]);
+                }
 
-    public function store({{REQUEST_CLASSES}} $request): JsonResponse
-    {
-        $command = new Create{{RESOURCE_NAME}}Command(
-            ...$request->validated()
-        );
+                public function store({{REQUEST_CLASSES}} $request): JsonResponse
+                {
+                    $command = new Create{{RESOURCE_NAME}}Command(
+                        ...$request->validated()
+                    );
 
-        ${{RESOURCE_VARIABLE}} = $this->commandBus->dispatch($command);
+                    ${{RESOURCE_VARIABLE}} = $this->commandBus->dispatch($command);
 
-        return response()->json([
-            'data' => new {{RESOURCE_NAME}}Resource(${{RESOURCE_VARIABLE}}),
-            'message' => '{{RESOURCE_NAME}} created successfully'
-        ], 201);
-    }
+                    return response()->json([
+                        'data' => new {{RESOURCE_NAME}}Resource(${{RESOURCE_VARIABLE}}),
+                        'message' => '{{RESOURCE_NAME}} created successfully'
+                    ], 201);
+                }
 
-    public function show(string $id): JsonResponse
-    {
-        $query = new Get{{RESOURCE_NAME}}Query($id);
-        ${{RESOURCE_VARIABLE}} = $this->queryBus->ask($query);
+                public function show(string $id): JsonResponse
+                {
+                    $query = new Get{{RESOURCE_NAME}}Query($id);
+                    ${{RESOURCE_VARIABLE}} = $this->queryBus->ask($query);
 
-        if (!${{RESOURCE_VARIABLE}}) {
-            return response()->json(['message' => '{{RESOURCE_NAME}} not found'], 404);
-        }
+                    if (!${{RESOURCE_VARIABLE}}) {
+                        return response()->json(['message' => '{{RESOURCE_NAME}} not found'], 404);
+                    }
 
-        return response()->json([
-            'data' => new {{RESOURCE_NAME}}Resource(${{RESOURCE_VARIABLE}})
-        ]);
-    }
+                    return response()->json([
+                        'data' => new {{RESOURCE_NAME}}Resource(${{RESOURCE_VARIABLE}})
+                    ]);
+                }
 
-    public function update({{REQUEST_CLASSES}} $request, string $id): JsonResponse
-    {
-        $command = new Update{{RESOURCE_NAME}}Command(
-            $id,
-            $request->validated()
-        );
+                public function update({{REQUEST_CLASSES}} $request, string $id): JsonResponse
+                {
+                    $command = new Update{{RESOURCE_NAME}}Command(
+                        $id,
+                        $request->validated()
+                    );
 
-        ${{RESOURCE_VARIABLE}} = $this->commandBus->dispatch($command);
+                    ${{RESOURCE_VARIABLE}} = $this->commandBus->dispatch($command);
 
-        return response()->json([
-            'data' => new {{RESOURCE_NAME}}Resource(${{RESOURCE_VARIABLE}}),
-            'message' => '{{RESOURCE_NAME}} updated successfully'
-        ]);
-    }
+                    return response()->json([
+                        'data' => new {{RESOURCE_NAME}}Resource(${{RESOURCE_VARIABLE}}),
+                        'message' => '{{RESOURCE_NAME}} updated successfully'
+                    ]);
+                }
 
-    public function destroy(string $id): JsonResponse
-    {
-        $command = new Delete{{RESOURCE_NAME}}Command($id);
-        $this->commandBus->dispatch($command);
+                public function destroy(string $id): JsonResponse
+                {
+                    $command = new Delete{{RESOURCE_NAME}}Command($id);
+                    $this->commandBus->dispatch($command);
 
-        return response()->json([
-            'message' => '{{RESOURCE_NAME}} deleted successfully'
-        ]);
-    }
-}
-PHP;
+                    return response()->json([
+                        'message' => '{{RESOURCE_NAME}} deleted successfully'
+                    ]);
+                }
+            }
+            PHP;
     }
 
     private function getCreateRequestTemplate(): string
     {
         return <<<'PHP'
-<?php
+            <?php
 
-declare(strict_types=1);
+            declare(strict_types=1);
 
-namespace {{MODULE_NAMESPACE}}\Http\Requests\{{RESOURCE_NAME}};
+            namespace {{MODULE_NAMESPACE}}\Http\Requests\{{RESOURCE_NAME}};
 
-use Illuminate\Foundation\Http\FormRequest;
+            use Illuminate\Foundation\Http\FormRequest;
 
-class Create{{RESOURCE_NAME}}Request extends FormRequest
-{
-    public function authorize(): bool
-    {
-        return true;
-    }
+            class Create{{RESOURCE_NAME}}Request extends FormRequest
+            {
+                public function authorize(): bool
+                {
+                    return true;
+                }
 
-    public function rules(): array
-    {
-        return [
-{{VALIDATION_RULES}}
-        ];
-    }
+                public function rules(): array
+                {
+                    return [
+            {{VALIDATION_RULES}}
+                    ];
+                }
 
-    public function messages(): array
-    {
-        return [
-            'name.required' => 'The name field is required.',
-            'name.string' => 'The name must be a string.',
-            'name.max' => 'The name may not be greater than 255 characters.',
-        ];
-    }
-}
-PHP;
+                public function messages(): array
+                {
+                    return [
+                        'name.required' => 'The name field is required.',
+                        'name.string' => 'The name must be a string.',
+                        'name.max' => 'The name may not be greater than 255 characters.',
+                    ];
+                }
+            }
+            PHP;
     }
 
     private function getUpdateRequestTemplate(): string
     {
         return <<<'PHP'
-<?php
+            <?php
 
-declare(strict_types=1);
+            declare(strict_types=1);
 
-namespace {{MODULE_NAMESPACE}}\Http\Requests\{{RESOURCE_NAME}};
+            namespace {{MODULE_NAMESPACE}}\Http\Requests\{{RESOURCE_NAME}};
 
-use Illuminate\Foundation\Http\FormRequest;
+            use Illuminate\Foundation\Http\FormRequest;
 
-class Update{{RESOURCE_NAME}}Request extends FormRequest
-{
-    public function authorize(): bool
-    {
-        return true;
-    }
+            class Update{{RESOURCE_NAME}}Request extends FormRequest
+            {
+                public function authorize(): bool
+                {
+                    return true;
+                }
 
-    public function rules(): array
-    {
-        return [
-{{VALIDATION_RULES}}
-        ];
-    }
+                public function rules(): array
+                {
+                    return [
+            {{VALIDATION_RULES}}
+                    ];
+                }
 
-    public function messages(): array
-    {
-        return [
-            'name.string' => 'The name must be a string.',
-            'name.max' => 'The name may not be greater than 255 characters.',
-        ];
-    }
-}
-PHP;
+                public function messages(): array
+                {
+                    return [
+                        'name.string' => 'The name must be a string.',
+                        'name.max' => 'The name may not be greater than 255 characters.',
+                    ];
+                }
+            }
+            PHP;
     }
 
     private function getResourceTemplate(): string
     {
         return <<<'PHP'
-<?php
+            <?php
 
-declare(strict_types=1);
+            declare(strict_types=1);
 
-namespace {{MODULE_NAMESPACE}}\Http\Resources;
+            namespace {{MODULE_NAMESPACE}}\Http\Resources;
 
-use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\JsonResource;
+            use Illuminate\Http\Request;
+            use Illuminate\Http\Resources\Json\JsonResource;
 
-class {{RESOURCE_NAME}}Resource extends JsonResource
-{
-    public function toArray(Request $request): array
-    {
-        return [
-{{RESOURCE_ATTRIBUTES}}
-        ];
-    }
-}
-PHP;
+            class {{RESOURCE_NAME}}Resource extends JsonResource
+            {
+                public function toArray(Request $request): array
+                {
+                    return [
+            {{RESOURCE_ATTRIBUTES}}
+                    ];
+                }
+            }
+            PHP;
     }
 
     private function getRouteTemplate(): string
     {
         return <<<'PHP'
-Route::prefix('api/{{API_VERSION}}')
-    ->middleware(['api', 'api.version'{{AUTH_MIDDLEWARE_ARRAY}}])
-    ->group(function () {
-        Route::apiResource('{{RESOURCE_KEBAB}}', {{RESOURCE_NAME}}Controller::class);
-    });
-PHP;
+            Route::prefix('api/{{API_VERSION}}')
+                ->middleware(['api', 'api.version'{{AUTH_MIDDLEWARE_ARRAY}}])
+                ->group(function () {
+                    Route::apiResource('{{RESOURCE_KEBAB}}', {{RESOURCE_NAME}}Controller::class);
+                });
+            PHP;
     }
 
     private function getCreateCommandTemplate(): string
     {
         return <<<'PHP'
-<?php
+            <?php
 
-declare(strict_types=1);
+            declare(strict_types=1);
 
-namespace {{MODULE_NAMESPACE}}\Application\Commands;
+            namespace {{MODULE_NAMESPACE}}\Application\Commands;
 
-use TaiCrm\LaravelModularDdd\Foundation\Command;
+            use TaiCrm\LaravelModularDdd\Foundation\Command;
 
-class Create{{RESOURCE_NAME}}Command extends Command
-{
-{{COMMAND_PROPERTIES}}
+            class Create{{RESOURCE_NAME}}Command extends Command
+            {
+            {{COMMAND_PROPERTIES}}
 
-    public function __construct({{CONSTRUCTOR_PARAMS}})
-    {
-{{CONSTRUCTOR_ASSIGNMENTS}}
-        parent::__construct();
-    }
+                public function __construct({{CONSTRUCTOR_PARAMS}})
+                {
+            {{CONSTRUCTOR_ASSIGNMENTS}}
+                    parent::__construct();
+                }
 
-    protected function toArray(): array
-    {
-        return [
-{{TO_ARRAY_CONTENT}}
-        ];
-    }
-}
-PHP;
+                protected function toArray(): array
+                {
+                    return [
+            {{TO_ARRAY_CONTENT}}
+                    ];
+                }
+            }
+            PHP;
     }
 
     private function getUpdateCommandTemplate(): string
     {
         return <<<'PHP'
-<?php
+            <?php
 
-declare(strict_types=1);
+            declare(strict_types=1);
 
-namespace {{MODULE_NAMESPACE}}\Application\Commands;
+            namespace {{MODULE_NAMESPACE}}\Application\Commands;
 
-use TaiCrm\LaravelModularDdd\Foundation\Command;
+            use TaiCrm\LaravelModularDdd\Foundation\Command;
 
-class Update{{RESOURCE_NAME}}Command extends Command
-{
-{{COMMAND_PROPERTIES}}
+            class Update{{RESOURCE_NAME}}Command extends Command
+            {
+            {{COMMAND_PROPERTIES}}
 
-    public function __construct({{CONSTRUCTOR_PARAMS}})
-    {
-{{CONSTRUCTOR_ASSIGNMENTS}}
-        parent::__construct();
-    }
+                public function __construct({{CONSTRUCTOR_PARAMS}})
+                {
+            {{CONSTRUCTOR_ASSIGNMENTS}}
+                    parent::__construct();
+                }
 
-    protected function toArray(): array
-    {
-        return [
-{{TO_ARRAY_CONTENT}}
-        ];
-    }
-}
-PHP;
+                protected function toArray(): array
+                {
+                    return [
+            {{TO_ARRAY_CONTENT}}
+                    ];
+                }
+            }
+            PHP;
     }
 
     private function getDeleteCommandTemplate(): string
     {
         return <<<'PHP'
-<?php
+            <?php
 
-declare(strict_types=1);
+            declare(strict_types=1);
 
-namespace {{MODULE_NAMESPACE}}\Application\Commands;
+            namespace {{MODULE_NAMESPACE}}\Application\Commands;
 
-use TaiCrm\LaravelModularDdd\Foundation\Command;
+            use TaiCrm\LaravelModularDdd\Foundation\Command;
 
-class Delete{{RESOURCE_NAME}}Command extends Command
-{
-    private string ${{RESOURCE_VARIABLE}}Id;
+            class Delete{{RESOURCE_NAME}}Command extends Command
+            {
+                private string ${{RESOURCE_VARIABLE}}Id;
 
-    public function __construct(string ${{RESOURCE_VARIABLE}}Id)
-    {
-        $this->{{RESOURCE_VARIABLE}}Id = ${{RESOURCE_VARIABLE}}Id;
-        parent::__construct();
-    }
+                public function __construct(string ${{RESOURCE_VARIABLE}}Id)
+                {
+                    $this->{{RESOURCE_VARIABLE}}Id = ${{RESOURCE_VARIABLE}}Id;
+                    parent::__construct();
+                }
 
-    protected function toArray(): array
-    {
-        return [
-            '{{RESOURCE_VARIABLE}}_id' => $this->{{RESOURCE_VARIABLE}}Id,
-        ];
-    }
-}
-PHP;
+                protected function toArray(): array
+                {
+                    return [
+                        '{{RESOURCE_VARIABLE}}_id' => $this->{{RESOURCE_VARIABLE}}Id,
+                    ];
+                }
+            }
+            PHP;
     }
 
     private function getGetQueryTemplate(): string
     {
         return <<<'PHP'
-<?php
+            <?php
 
-declare(strict_types=1);
+            declare(strict_types=1);
 
-namespace {{MODULE_NAMESPACE}}\Application\Queries;
+            namespace {{MODULE_NAMESPACE}}\Application\Queries;
 
-use TaiCrm\LaravelModularDdd\Foundation\Query;
+            use TaiCrm\LaravelModularDdd\Foundation\Query;
 
-class Get{{RESOURCE_NAME}}Query extends Query
-{
-    private string ${{RESOURCE_VARIABLE}}Id;
+            class Get{{RESOURCE_NAME}}Query extends Query
+            {
+                private string ${{RESOURCE_VARIABLE}}Id;
 
-    public function __construct(string ${{RESOURCE_VARIABLE}}Id)
-    {
-        $this->{{RESOURCE_VARIABLE}}Id = ${{RESOURCE_VARIABLE}}Id;
-        parent::__construct();
-    }
+                public function __construct(string ${{RESOURCE_VARIABLE}}Id)
+                {
+                    $this->{{RESOURCE_VARIABLE}}Id = ${{RESOURCE_VARIABLE}}Id;
+                    parent::__construct();
+                }
 
-    protected function isCacheable(): bool
-    {
-        return true;
-    }
+                protected function isCacheable(): bool
+                {
+                    return true;
+                }
 
-    protected function getDefaultCacheTtl(): int
-    {
-        return 300;
-    }
+                protected function getDefaultCacheTtl(): int
+                {
+                    return 300;
+                }
 
-    protected function toArray(): array
-    {
-        return [
-            '{{RESOURCE_VARIABLE}}_id' => $this->{{RESOURCE_VARIABLE}}Id,
-        ];
-    }
-}
-PHP;
+                protected function toArray(): array
+                {
+                    return [
+                        '{{RESOURCE_VARIABLE}}_id' => $this->{{RESOURCE_VARIABLE}}Id,
+                    ];
+                }
+            }
+            PHP;
     }
 
     private function getListQueryTemplate(): string
     {
         return <<<'PHP'
-<?php
+            <?php
 
-declare(strict_types=1);
+            declare(strict_types=1);
 
-namespace {{MODULE_NAMESPACE}}\Application\Queries;
+            namespace {{MODULE_NAMESPACE}}\Application\Queries;
 
-use TaiCrm\LaravelModularDdd\Foundation\Query;
+            use TaiCrm\LaravelModularDdd\Foundation\Query;
 
-class List{{RESOURCE_NAME}}Query extends Query
-{
-    private array $filters;
-    private string $sort;
-    private string $direction;
-    private int $perPage;
+            class List{{RESOURCE_NAME}}Query extends Query
+            {
+                private array $filters;
+                private string $sort;
+                private string $direction;
+                private int $perPage;
 
-    public function __construct(
-        array $filters = [],
-        string $sort = 'created_at',
-        string $direction = 'desc',
-        int $perPage = 15
-    ) {
-        $this->filters = $filters;
-        $this->sort = $sort;
-        $this->direction = $direction;
-        $this->perPage = $perPage;
-        parent::__construct();
-    }
+                public function __construct(
+                    array $filters = [],
+                    string $sort = 'created_at',
+                    string $direction = 'desc',
+                    int $perPage = 15
+                ) {
+                    $this->filters = $filters;
+                    $this->sort = $sort;
+                    $this->direction = $direction;
+                    $this->perPage = $perPage;
+                    parent::__construct();
+                }
 
-    protected function isCacheable(): bool
-    {
-        return true;
-    }
+                protected function isCacheable(): bool
+                {
+                    return true;
+                }
 
-    protected function getDefaultCacheTtl(): int
-    {
-        return 60;
-    }
+                protected function getDefaultCacheTtl(): int
+                {
+                    return 60;
+                }
 
-    protected function toArray(): array
-    {
-        return [
-            'filters' => $this->filters,
-            'sort' => $this->sort,
-            'direction' => $this->direction,
-            'per_page' => $this->perPage,
-        ];
-    }
-}
-PHP;
+                protected function toArray(): array
+                {
+                    return [
+                        'filters' => $this->filters,
+                        'sort' => $this->sort,
+                        'direction' => $this->direction,
+                        'per_page' => $this->perPage,
+                    ];
+                }
+            }
+            PHP;
     }
 
     private function getCommandHandlerTemplate(string $action): string
     {
         return <<<'PHP'
-<?php
+            <?php
 
-declare(strict_types=1);
+            declare(strict_types=1);
 
-namespace {{MODULE_NAMESPACE}}\Application\Handlers\Commands;
+            namespace {{MODULE_NAMESPACE}}\Application\Handlers\Commands;
 
-use {{MODULE_NAMESPACE}}\Application\Commands\{{ACTION}}{{RESOURCE_NAME}}Command;
-use TaiCrm\LaravelModularDdd\Foundation\Contracts\CommandHandlerInterface;
-use TaiCrm\LaravelModularDdd\Foundation\Contracts\CommandInterface;
+            use {{MODULE_NAMESPACE}}\Application\Commands\{{ACTION}}{{RESOURCE_NAME}}Command;
+            use TaiCrm\LaravelModularDdd\Foundation\Contracts\CommandHandlerInterface;
+            use TaiCrm\LaravelModularDdd\Foundation\Contracts\CommandInterface;
 
-class {{ACTION}}{{RESOURCE_NAME}}CommandHandler implements CommandHandlerInterface
-{
-    public function handle(CommandInterface $command): mixed
-    {
-        if (!$command instanceof {{ACTION}}{{RESOURCE_NAME}}Command) {
-            throw new \InvalidArgumentException('Expected {{ACTION}}{{RESOURCE_NAME}}Command');
-        }
+            class {{ACTION}}{{RESOURCE_NAME}}CommandHandler implements CommandHandlerInterface
+            {
+                public function handle(CommandInterface $command): mixed
+                {
+                    if (!$command instanceof {{ACTION}}{{RESOURCE_NAME}}Command) {
+                        throw new \InvalidArgumentException('Expected {{ACTION}}{{RESOURCE_NAME}}Command');
+                    }
 
-        // TODO: Implement {{ACTION}} {{RESOURCE_NAME}} logic
+                    // TODO: Implement {{ACTION}} {{RESOURCE_NAME}} logic
 
-        return true;
-    }
-}
-PHP;
+                    return true;
+                }
+            }
+            PHP;
     }
 
     private function getQueryHandlerTemplate(string $action): string
     {
         return <<<'PHP'
-<?php
+            <?php
 
-declare(strict_types=1);
+            declare(strict_types=1);
 
-namespace {{MODULE_NAMESPACE}}\Application\Handlers\Queries;
+            namespace {{MODULE_NAMESPACE}}\Application\Handlers\Queries;
 
-use {{MODULE_NAMESPACE}}\Application\Queries\{{ACTION}}{{RESOURCE_NAME}}Query;
-use TaiCrm\LaravelModularDdd\Foundation\Contracts\QueryHandlerInterface;
-use TaiCrm\LaravelModularDdd\Foundation\Contracts\QueryInterface;
+            use {{MODULE_NAMESPACE}}\Application\Queries\{{ACTION}}{{RESOURCE_NAME}}Query;
+            use TaiCrm\LaravelModularDdd\Foundation\Contracts\QueryHandlerInterface;
+            use TaiCrm\LaravelModularDdd\Foundation\Contracts\QueryInterface;
 
-class {{ACTION}}{{RESOURCE_NAME}}QueryHandler implements QueryHandlerInterface
-{
-    public function handle(QueryInterface $query): mixed
-    {
-        if (!$query instanceof {{ACTION}}{{RESOURCE_NAME}}Query) {
-            throw new \InvalidArgumentException('Expected {{ACTION}}{{RESOURCE_NAME}}Query');
-        }
+            class {{ACTION}}{{RESOURCE_NAME}}QueryHandler implements QueryHandlerInterface
+            {
+                public function handle(QueryInterface $query): mixed
+                {
+                    if (!$query instanceof {{ACTION}}{{RESOURCE_NAME}}Query) {
+                        throw new \InvalidArgumentException('Expected {{ACTION}}{{RESOURCE_NAME}}Query');
+                    }
 
-        // TODO: Implement {{ACTION}} {{RESOURCE_NAME}} logic
+                    // TODO: Implement {{ACTION}} {{RESOURCE_NAME}} logic
 
-        return [];
-    }
-}
-PHP;
+                    return [];
+                }
+            }
+            PHP;
     }
 
     private function getSwaggerTemplate(): string
     {
         return <<<'PHP'
-<?php
+            <?php
 
-/**
- * @OA\Tag(
- *     name="{{RESOURCE_NAME}}",
- *     description="{{RESOURCE_NAME}} management endpoints"
- * )
- */
+            /**
+             * @OA\Tag(
+             *     name="{{RESOURCE_NAME}}",
+             *     description="{{RESOURCE_NAME}} management endpoints"
+             * )
+             */
 
-/**
- * @OA\Get(
- *     path="/api/{{RESOURCE_KEBAB}}",
- *     tags={"{{RESOURCE_NAME}}"},
- *     summary="List {{RESOURCE_NAME}}s",
- *     @OA\Response(response=200, description="Successful operation")
- * )
- */
+            /**
+             * @OA\Get(
+             *     path="/api/{{RESOURCE_KEBAB}}",
+             *     tags={"{{RESOURCE_NAME}}"},
+             *     summary="List {{RESOURCE_NAME}}s",
+             *     @OA\Response(response=200, description="Successful operation")
+             * )
+             */
 
-/**
- * @OA\Post(
- *     path="/api/{{RESOURCE_KEBAB}}",
- *     tags={"{{RESOURCE_NAME}}"},
- *     summary="Create {{RESOURCE_NAME}}",
- *     @OA\Response(response=201, description="{{RESOURCE_NAME}} created")
- * )
- */
+            /**
+             * @OA\Post(
+             *     path="/api/{{RESOURCE_KEBAB}}",
+             *     tags={"{{RESOURCE_NAME}}"},
+             *     summary="Create {{RESOURCE_NAME}}",
+             *     @OA\Response(response=201, description="{{RESOURCE_NAME}} created")
+             * )
+             */
 
-/**
- * @OA\Get(
- *     path="/api/{{RESOURCE_KEBAB}}/{id}",
- *     tags={"{{RESOURCE_NAME}}"},
- *     summary="Get {{RESOURCE_NAME}}",
- *     @OA\Parameter(name="id", in="path", required=true),
- *     @OA\Response(response=200, description="{{RESOURCE_NAME}} found")
- * )
- */
+            /**
+             * @OA\Get(
+             *     path="/api/{{RESOURCE_KEBAB}}/{id}",
+             *     tags={"{{RESOURCE_NAME}}"},
+             *     summary="Get {{RESOURCE_NAME}}",
+             *     @OA\Parameter(name="id", in="path", required=true),
+             *     @OA\Response(response=200, description="{{RESOURCE_NAME}} found")
+             * )
+             */
 
-/**
- * @OA\Put(
- *     path="/api/{{RESOURCE_KEBAB}}/{id}",
- *     tags={"{{RESOURCE_NAME}}"},
- *     summary="Update {{RESOURCE_NAME}}",
- *     @OA\Parameter(name="id", in="path", required=true),
- *     @OA\Response(response=200, description="{{RESOURCE_NAME}} updated")
- * )
- */
+            /**
+             * @OA\Put(
+             *     path="/api/{{RESOURCE_KEBAB}}/{id}",
+             *     tags={"{{RESOURCE_NAME}}"},
+             *     summary="Update {{RESOURCE_NAME}}",
+             *     @OA\Parameter(name="id", in="path", required=true),
+             *     @OA\Response(response=200, description="{{RESOURCE_NAME}} updated")
+             * )
+             */
 
-/**
- * @OA\Delete(
- *     path="/api/{{RESOURCE_KEBAB}}/{id}",
- *     tags={"{{RESOURCE_NAME}}"},
- *     summary="Delete {{RESOURCE_NAME}}",
- *     @OA\Parameter(name="id", in="path", required=true),
- *     @OA\Response(response=200, description="{{RESOURCE_NAME}} deleted")
- * )
- */
-PHP;
+            /**
+             * @OA\Delete(
+             *     path="/api/{{RESOURCE_KEBAB}}/{id}",
+             *     tags={"{{RESOURCE_NAME}}"},
+             *     summary="Delete {{RESOURCE_NAME}}",
+             *     @OA\Parameter(name="id", in="path", required=true),
+             *     @OA\Response(response=200, description="{{RESOURCE_NAME}} deleted")
+             * )
+             */
+            PHP;
     }
 
     private function getValidationImports(string $moduleName, string $resourceName): string
@@ -956,7 +961,7 @@ PHP;
 
     private function getSwaggerAnnotations(string $resourceName, string $apiVersion): string
     {
-        return "\n\n/**\n * @OA\Info(title=\"{$resourceName} API\", version=\"{$apiVersion}\")\n */";
+        return "\n\n/**\n * @OA\\Info(title=\"{$resourceName} API\", version=\"{$apiVersion}\")\n */";
     }
 
     private function getCreateValidationRules(string $resourceName): string
@@ -981,7 +986,7 @@ PHP;
 
     private function getConstructorParams(string $resourceName): string
     {
-        return "string \$name, ?string \$description = null, bool \$status = true";
+        return 'string $name, ?string $description = null, bool $status = true';
     }
 
     private function getConstructorAssignments(string $resourceName): string
@@ -997,18 +1002,21 @@ PHP;
     private function getUpdateCommandProperties(string $resourceName): string
     {
         $var = Str::camel($resourceName);
+
         return "    private string \${$var}Id;\n    private array \$data;";
     }
 
     private function getUpdateConstructorParams(string $resourceName): string
     {
         $var = Str::camel($resourceName);
+
         return "string \${$var}Id, array \$data";
     }
 
     private function getUpdateConstructorAssignments(string $resourceName): string
     {
         $var = Str::camel($resourceName);
+
         return "        \$this->{$var}Id = \${$var}Id;\n        \$this->data = \$data;";
     }
 
@@ -1016,11 +1024,12 @@ PHP;
     {
         $var = Str::camel($resourceName);
         $snake = Str::snake($resourceName);
+
         return "            '{$snake}_id' => \$this->{$var}Id,\n            'data' => \$this->data,";
     }
 
     /**
-     * Get comprehensive Swagger controller template from stub file
+     * Get comprehensive Swagger controller template from stub file.
      */
     private function getComprehensiveSwaggerControllerTemplate(): string
     {
@@ -1035,7 +1044,7 @@ PHP;
     }
 
     /**
-     * Get comprehensive Swagger create request template from stub file
+     * Get comprehensive Swagger create request template from stub file.
      */
     private function getComprehensiveCreateRequestTemplate(): string
     {
@@ -1050,7 +1059,7 @@ PHP;
     }
 
     /**
-     * Get comprehensive Swagger update request template from stub file
+     * Get comprehensive Swagger update request template from stub file.
      */
     private function getComprehensiveUpdateRequestTemplate(): string
     {
@@ -1065,7 +1074,7 @@ PHP;
     }
 
     /**
-     * Get comprehensive Swagger resource template from stub file
+     * Get comprehensive Swagger resource template from stub file.
      */
     private function getComprehensiveResourceTemplate(): string
     {
@@ -1080,11 +1089,11 @@ PHP;
     }
 
     /**
-     * Enhanced validation rules for comprehensive requests
+     * Enhanced validation rules for comprehensive requests.
      */
     private function getComprehensiveCreateValidationRules(string $resourceName): string
     {
-        return "            'name' => 'required|string|max:255|unique:". Str::snake(Str::plural($resourceName)) . ",name',\n" .
+        return "            'name' => 'required|string|max:255|unique:" . Str::snake(Str::plural($resourceName)) . ",name',\n" .
                "            'description' => 'nullable|string|max:1000',\n" .
                "            'status' => 'boolean',\n" .
                "            'metadata' => 'nullable|array',\n" .
@@ -1092,11 +1101,11 @@ PHP;
     }
 
     /**
-     * Enhanced validation rules for comprehensive update requests
+     * Enhanced validation rules for comprehensive update requests.
      */
     private function getComprehensiveUpdateValidationRules(string $resourceName): string
     {
-        return "            'name' => 'sometimes|string|max:255|unique:". Str::snake(Str::plural($resourceName)) . ",name,' . \$" . Str::camel($resourceName) . "Id,\n" .
+        return "            'name' => 'sometimes|string|max:255|unique:" . Str::snake(Str::plural($resourceName)) . ",name,' . \$" . Str::camel($resourceName) . "Id,\n" .
                "            'description' => 'nullable|string|max:1000',\n" .
                "            'status' => 'boolean',\n" .
                "            'metadata' => 'nullable|array',\n" .
@@ -1104,7 +1113,7 @@ PHP;
     }
 
     /**
-     * Enhanced resource attributes for comprehensive resources
+     * Enhanced resource attributes for comprehensive resources.
      */
     private function getComprehensiveResourceAttributes(string $resourceName): string
     {

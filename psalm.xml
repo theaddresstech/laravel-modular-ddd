@@ -67,7 +67,7 @@
         <MixedPropertyFetch>
             <errorLevel type="suppress">
                 <directory name="src/ModuleManager"/>
-                <file name="src/Foundation/ServiceRegistry.php"/>
+                <file name="src/Communication/ServiceRegistry.php"/>
                 <file name="src/Foundation/EventBus.php"/>
             </errorLevel>
         </MixedPropertyFetch>
@@ -75,14 +75,14 @@
         <!-- Suppress for Laravel facades and helpers -->
         <UndefinedMagicMethod>
             <errorLevel type="suppress">
-                <referencedMethod name="Illuminate\Support\Facades\*"/>
+                <directory name="src/Commands"/>
+                <directory name="src/ModuleManager"/>
             </errorLevel>
         </UndefinedMagicMethod>
 
         <UndefinedClass>
             <errorLevel type="suppress">
                 <referencedClass name="Illuminate\Foundation\Application"/>
-                <referencedClass name="Laravel\*"/>
             </errorLevel>
         </UndefinedClass>
 
@@ -123,8 +123,10 @@
     </issueHandlers>
 
     <!-- Plugin configuration -->
+    <!--
     <plugins>
         <pluginClass class="Psalm\LaravelPlugin\Plugin"/>
     </plugins>
+    -->
 
 </psalm>

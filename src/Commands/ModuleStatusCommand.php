@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Commands;
 
+use Exception;
+use Illuminate\Console\Command;
 use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
 use TaiCrm\LaravelModularDdd\Exceptions\ModuleNotFoundException;
-use Illuminate\Console\Command;
 
 class ModuleStatusCommand extends Command
 {
     protected $signature = 'module:status {name : The name of the module to check}';
-
     protected $description = 'Show detailed status information for a module';
 
     public function __construct(
-        private ModuleManagerInterface $moduleManager
+        private ModuleManagerInterface $moduleManager,
     ) {
         parent::__construct();
     }
@@ -35,13 +35,13 @@ class ModuleStatusCommand extends Command
             $this->displayDependencyInfo($moduleName);
 
             return self::SUCCESS;
-
         } catch (ModuleNotFoundException $e) {
-            $this->error("❌ " . $e->getMessage());
-            return self::FAILURE;
+            $this->error('❌ ' . $e->getMessage());
 
-        } catch (\Exception $e) {
-            $this->error("❌ Unexpected error: " . $e->getMessage());
+            return self::FAILURE;
+        } catch (Exception $e) {
+            $this->error('❌ Unexpected error: ' . $e->getMessage());
+
             return self::FAILURE;
         }
     }
@@ -72,7 +72,7 @@ class ModuleStatusCommand extends Command
 
         if ($dependencies->isNotEmpty()) {
             $this->newLine();
-            $this->line("📋 <comment>Dependencies:</comment>");
+            $this->line('📋 <comment>Dependencies:</comment>');
 
             $depRows = [];
             foreach ($dependencies as $dependency) {
@@ -93,7 +93,7 @@ class ModuleStatusCommand extends Command
 
         if ($dependents->isNotEmpty()) {
             $this->newLine();
-            $this->line("📋 <comment>Dependents (modules that depend on this):</comment>");
+            $this->line('📋 <comment>Dependents (modules that depend on this):</comment>');
 
             $depRows = [];
             foreach ($dependents as $dependent) {
@@ -114,7 +114,7 @@ class ModuleStatusCommand extends Command
 
         if ($dependencies->isEmpty() && $dependents->isEmpty()) {
             $this->newLine();
-            $this->line("📋 <comment>No dependencies or dependents found.</comment>");
+            $this->line('📋 <comment>No dependencies or dependents found.</comment>');
         }
     }
 

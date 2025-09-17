@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Monitoring;
 
-use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
+use Exception;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
 
 class ModuleResourceMonitor
 {
@@ -14,7 +17,7 @@ class ModuleResourceMonitor
     private array $thresholds;
 
     public function __construct(
-        private ModuleManagerInterface $moduleManager
+        private ModuleManagerInterface $moduleManager,
     ) {
         $this->thresholds = [
             'memory_usage' => 128 * 1024 * 1024, // 128MB
@@ -72,7 +75,8 @@ class ModuleResourceMonitor
         }
 
         $modulePath = $module->path;
-        $resourceUsage = [
+
+        return [
             'module_id' => $moduleId,
             'module_path' => $modulePath,
             'disk_usage' => $this->calculateDiskUsage($modulePath),
@@ -82,8 +86,6 @@ class ModuleResourceMonitor
             'route_count' => $this->countRoutes($modulePath),
             'last_modified' => $this->getLastModified($modulePath),
         ];
-
-        return $resourceUsage;
     }
 
     public function getAllModulesResourceUsage(): array
@@ -122,7 +124,7 @@ class ModuleResourceMonitor
             $module = $this->moduleManager->get($moduleId);
 
             if (!$module) {
-                throw new \Exception("Module {$moduleId} not found");
+                throw new Exception("Module {$moduleId} not found");
             }
 
             // Monitor actual module loading
@@ -135,12 +137,12 @@ class ModuleResourceMonitor
             $metrics['status'] = 'success';
 
             return $metrics;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $metrics = $this->stopMonitoring($moduleId);
             $metrics['status'] = 'error';
             $metrics['error'] = $e->getMessage();
 
-            Log::error("Module load monitoring failed", [
+            Log::error('Module load monitoring failed', [
                 'module_id' => $moduleId,
                 'error' => $e->getMessage(),
                 'metrics' => $metrics,
@@ -169,11 +171,11 @@ class ModuleResourceMonitor
         }
 
         if ($metrics['memory_usage'] > $this->thresholds['memory_usage']) {
-            $warnings[] = "High memory usage: " . $this->formatBytes($metrics['memory_usage']);
+            $warnings[] = 'High memory usage: ' . $this->formatBytes($metrics['memory_usage']);
         }
 
         if (!empty($warnings)) {
-            Log::warning("Module performance warning", [
+            Log::warning('Module performance warning', [
                 'module_id' => $metrics['module_id'],
                 'warnings' => $warnings,
                 'metrics' => $metrics,
@@ -202,8 +204,8 @@ class ModuleResourceMonitor
         }
 
         $size = 0;
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($path, \RecursiveDirectoryIterator::SKIP_DOTS)
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($path, RecursiveDirectoryIterator::SKIP_DOTS),
         );
 
         foreach ($iterator as $file) {
@@ -222,8 +224,8 @@ class ModuleResourceMonitor
         }
 
         $count = 0;
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($path, \RecursiveDirectoryIterator::SKIP_DOTS)
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($path, RecursiveDirectoryIterator::SKIP_DOTS),
         );
 
         foreach ($iterator as $file) {
@@ -273,8 +275,8 @@ class ModuleResourceMonitor
         }
 
         $lastModified = 0;
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($path, \RecursiveDirectoryIterator::SKIP_DOTS)
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($path, RecursiveDirectoryIterator::SKIP_DOTS),
         );
 
         foreach ($iterator as $file) {
@@ -334,7 +336,7 @@ class ModuleResourceMonitor
                     'module' => $moduleId,
                     'type' => 'high_disk_usage',
                     'severity' => 'low',
-                    'message' => "Module uses " . $this->formatBytes($usage['disk_usage']) . " disk space.",
+                    'message' => 'Module uses ' . $this->formatBytes($usage['disk_usage']) . ' disk space.',
                 ];
             }
         }

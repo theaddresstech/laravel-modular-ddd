@@ -15,7 +15,7 @@ class VersionDiscoveryController extends Controller
 {
     public function __construct(
         private ModuleManagerInterface $moduleManager,
-        private VersionNegotiator $versionNegotiator
+        private VersionNegotiator $versionNegotiator,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -93,15 +93,13 @@ class VersionDiscoveryController extends Controller
         return [
             'current' => Config::get('modular-ddd.api.versions.default', 'v1'),
             'latest' => Config::get('modular-ddd.api.versions.latest', 'v1'),
-            'supported' => array_map(function ($version) use ($deprecatedVersions, $sunsetDates) {
-                return [
-                    'version' => $version,
-                    'status' => in_array($version, $deprecatedVersions) ? 'deprecated' : 'active',
-                    'sunset_date' => $sunsetDates[$version] ?? null,
-                    'documentation_url' => url("/api/docs/{$version}"),
-                    'base_url' => url("/api/{$version}"),
-                ];
-            }, $supportedVersions),
+            'supported' => array_map(static fn ($version) => [
+                'version' => $version,
+                'status' => in_array($version, $deprecatedVersions) ? 'deprecated' : 'active',
+                'sunset_date' => $sunsetDates[$version] ?? null,
+                'documentation_url' => url("/api/docs/{$version}"),
+                'base_url' => url("/api/{$version}"),
+            ], $supportedVersions),
             'deprecated' => $deprecatedVersions,
             'sunset_dates' => $sunsetDates,
         ];
@@ -137,26 +135,23 @@ class VersionDiscoveryController extends Controller
         $moduleVersions = Config::get("modular-ddd.modules.{$module}.api.supported_versions");
 
         if ($moduleVersions) {
-            return array_map(function ($version) use ($module) {
-                return [
-                    'version' => $version,
-                    'status' => 'active', // Module-specific deprecation logic can be added here
-                    'base_url' => url("/api/{$version}/{$module}"),
-                    'documentation_url' => url("/api/docs/{$version}/modules/{$module}"),
-                ];
-            }, $moduleVersions);
+            return array_map(static fn ($version) => [
+                'version' => $version,
+                'status' => 'active', // Module-specific deprecation logic can be added here
+                'base_url' => url("/api/{$version}/{$module}"),
+                'documentation_url' => url("/api/docs/{$version}/modules/{$module}"),
+            ], $moduleVersions);
         }
 
         // Fallback to global versions
         $supportedVersions = Config::get('modular-ddd.api.versions.supported', ['v1']);
-        return array_map(function ($version) use ($module) {
-            return [
-                'version' => $version,
-                'status' => 'active',
-                'base_url' => url("/api/{$version}/{$module}"),
-                'documentation_url' => url("/api/docs/{$version}/modules/{$module}"),
-            ];
-        }, $supportedVersions);
+
+        return array_map(static fn ($version) => [
+            'version' => $version,
+            'status' => 'active',
+            'base_url' => url("/api/{$version}/{$module}"),
+            'documentation_url' => url("/api/docs/{$version}/modules/{$module}"),
+        ], $supportedVersions);
     }
 
     private function getModuleEndpoints(string $module): array
@@ -188,8 +183,6 @@ class VersionDiscoveryController extends Controller
         $strategy = Config::get('modular-ddd.api.negotiation.strategy', 'url,header,query,default');
         $strategies = explode(',', $strategy);
 
-        return array_map(function ($s) {
-            return trim($s);
-        }, $strategies);
+        return array_map(static fn ($s) => trim($s), $strategies);
     }
 }

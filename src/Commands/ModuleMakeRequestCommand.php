@@ -21,6 +21,7 @@ class ModuleMakeRequestCommand extends Command
 
         if (!$this->moduleExists($moduleName)) {
             $this->error("Module '{$moduleName}' does not exist.");
+
             return 1;
         }
 
@@ -54,8 +55,8 @@ class ModuleMakeRequestCommand extends Command
             '{{REQUEST_NAME}}' => $requestName,
             '{{RESOURCE_NAME}}' => $resource ?? 'Resource',
             '{{RESOURCE_PATH}}' => $resource ? "\\{$resource}" : '',
-            '{{VALIDATION_RULES}}' => $withValidation ? $this->getValidationRules($requestName, $resource) : "return [];",
-            '{{VALIDATION_MESSAGES}}' => $withValidation ? $this->getValidationMessages($requestName, $resource) : "return [];",
+            '{{VALIDATION_RULES}}' => $withValidation ? $this->getValidationRules($requestName, $resource) : 'return [];',
+            '{{VALIDATION_MESSAGES}}' => $withValidation ? $this->getValidationMessages($requestName, $resource) : 'return [];',
             '{{AUTHORIZATION_LOGIC}}' => $this->getAuthorizationLogic($requestName),
         ];
 
@@ -66,77 +67,77 @@ class ModuleMakeRequestCommand extends Command
     private function ensureDirectoryExists(string $directory): void
     {
         if (!is_dir($directory)) {
-            mkdir($directory, 0755, true);
+            mkdir($directory, 0o755, true);
         }
     }
 
     private function getRequestTemplate(): string
     {
         return <<<'PHP'
-<?php
+            <?php
 
-declare(strict_types=1);
+            declare(strict_types=1);
 
-namespace {{MODULE_NAMESPACE}}\Http\Requests{{RESOURCE_PATH}};
+            namespace {{MODULE_NAMESPACE}}\Http\Requests{{RESOURCE_PATH}};
 
-use Illuminate\Foundation\Http\FormRequest;
+            use Illuminate\Foundation\Http\FormRequest;
 
-class {{REQUEST_NAME}} extends FormRequest
-{
-    /**
-     * Determine if the user is authorized to make this request.
-     */
-    public function authorize(): bool
-    {
-        {{AUTHORIZATION_LOGIC}}
-    }
+            class {{REQUEST_NAME}} extends FormRequest
+            {
+                /**
+                 * Determine if the user is authorized to make this request.
+                 */
+                public function authorize(): bool
+                {
+                    {{AUTHORIZATION_LOGIC}}
+                }
 
-    /**
-     * Get the validation rules that apply to the request.
-     */
-    public function rules(): array
-    {
-        {{VALIDATION_RULES}}
-    }
+                /**
+                 * Get the validation rules that apply to the request.
+                 */
+                public function rules(): array
+                {
+                    {{VALIDATION_RULES}}
+                }
 
-    /**
-     * Get custom messages for validator errors.
-     */
-    public function messages(): array
-    {
-        {{VALIDATION_MESSAGES}}
-    }
+                /**
+                 * Get custom messages for validator errors.
+                 */
+                public function messages(): array
+                {
+                    {{VALIDATION_MESSAGES}}
+                }
 
-    /**
-     * Get custom attributes for validator errors.
-     */
-    public function attributes(): array
-    {
-        return [
-            // 'field_name' => 'Human Readable Field Name',
-        ];
-    }
+                /**
+                 * Get custom attributes for validator errors.
+                 */
+                public function attributes(): array
+                {
+                    return [
+                        // 'field_name' => 'Human Readable Field Name',
+                    ];
+                }
 
-    /**
-     * Configure the validator instance.
-     */
-    public function withValidator($validator): void
-    {
-        $validator->after(function ($validator) {
-            // Add custom validation logic here
-        });
-    }
+                /**
+                 * Configure the validator instance.
+                 */
+                public function withValidator($validator): void
+                {
+                    $validator->after(function ($validator) {
+                        // Add custom validation logic here
+                    });
+                }
 
-    /**
-     * Prepare the data for validation.
-     */
-    protected function prepareForValidation(): void
-    {
-        // Transform data before validation
-        // Example: $this->merge(['slug' => Str::slug($this->title)]);
-    }
-}
-PHP;
+                /**
+                 * Prepare the data for validation.
+                 */
+                protected function prepareForValidation(): void
+                {
+                    // Transform data before validation
+                    // Example: $this->merge(['slug' => Str::slug($this->title)]);
+                }
+            }
+            PHP;
     }
 
     private function getValidationRules(string $requestName, ?string $resource): string
@@ -219,7 +220,7 @@ PHP;
         }
 
         if (empty($messages)) {
-            return "return [];";
+            return 'return [];';
         }
 
         return "return [\n            " . implode(",\n            ", $messages) . ",\n        ];";
@@ -229,12 +230,14 @@ PHP;
     {
         if (Str::contains(strtolower($requestName), ['create', 'store'])) {
             return "// Check if user can create this resource\n        return auth()->check();";
-        } elseif (Str::contains(strtolower($requestName), ['update', 'edit'])) {
-            return "// Check if user can update this resource\n        return auth()->check() && auth()->user()->can('update', \$this->route('model'));";
-        } elseif (Str::contains(strtolower($requestName), ['delete', 'destroy'])) {
-            return "// Check if user can delete this resource\n        return auth()->check() && auth()->user()->can('delete', \$this->route('model'));";
-        } else {
-            return "return true;";
         }
+        if (Str::contains(strtolower($requestName), ['update', 'edit'])) {
+            return "// Check if user can update this resource\n        return auth()->check() && auth()->user()->can('update', \$this->route('model'));";
+        }
+        if (Str::contains(strtolower($requestName), ['delete', 'destroy'])) {
+            return "// Check if user can delete this resource\n        return auth()->check() && auth()->user()->can('delete', \$this->route('model'));";
+        }
+
+        return 'return true;';
     }
 }

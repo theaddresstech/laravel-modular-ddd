@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Commands;
 
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Str;
@@ -15,13 +16,12 @@ class ModuleMakeEventCommand extends Command
                             {name : The name of the event}
                             {--aggregate= : The aggregate that triggers this event}
                             {--force : Overwrite existing event}';
-
     protected $description = 'Create a new domain event for a module';
 
     public function __construct(
         private Filesystem $files,
         private string $modulesPath,
-        private string $stubPath
+        private string $stubPath,
     ) {
         parent::__construct();
     }
@@ -36,6 +36,7 @@ class ModuleMakeEventCommand extends Command
 
         if (!$this->files->exists($modulePath)) {
             $this->error("Module '{$moduleName}' does not exist. Create it first using module:make");
+
             return self::FAILURE;
         }
 
@@ -43,6 +44,7 @@ class ModuleMakeEventCommand extends Command
 
         if ($this->files->exists($eventPath) && !$this->option('force')) {
             $this->error("Event '{$eventName}' already exists in module '{$moduleName}'. Use --force to overwrite.");
+
             return self::FAILURE;
         }
 
@@ -52,9 +54,9 @@ class ModuleMakeEventCommand extends Command
             $this->displayNextSteps($moduleName, $eventName);
 
             return self::SUCCESS;
+        } catch (Exception $e) {
+            $this->error('❌ Failed to create event: ' . $e->getMessage());
 
-        } catch (\Exception $e) {
-            $this->error("❌ Failed to create event: " . $e->getMessage());
             return self::FAILURE;
         }
     }
@@ -65,6 +67,7 @@ class ModuleMakeEventCommand extends Command
 
         if (!$this->files->exists($stubPath)) {
             $this->createEventFromTemplate($eventPath, $moduleName, $eventName, $aggregate);
+
             return;
         }
 
@@ -77,7 +80,7 @@ class ModuleMakeEventCommand extends Command
 
         $eventDir = dirname($eventPath);
         if (!$this->files->exists($eventDir)) {
-            $this->files->makeDirectory($eventDir, 0755, true);
+            $this->files->makeDirectory($eventDir, 0o755, true);
         }
 
         $this->files->put($eventPath, $content);
@@ -135,7 +138,7 @@ final readonly class {$eventName} extends DomainEvent
 
         $eventDir = dirname($eventPath);
         if (!$this->files->exists($eventDir)) {
-            $this->files->makeDirectory($eventDir, 0755, true);
+            $this->files->makeDirectory($eventDir, 0o755, true);
         }
 
         $this->files->put($eventPath, $content);
@@ -160,11 +163,11 @@ final readonly class {$eventName} extends DomainEvent
     private function displayNextSteps(string $moduleName, string $eventName): void
     {
         $this->newLine();
-        $this->line("📋 <comment>Next steps:</comment>");
+        $this->line('📋 <comment>Next steps:</comment>');
         $this->line("1. Update the event properties and payload in: modules/{$moduleName}/Domain/Events/{$eventName}.php");
         $this->line("2. Add the event to your aggregate: <info>\$this->apply({$eventName}::raise(\$id));</info>");
         $this->line("3. Create event listener: <info>php artisan module:make-listener {$moduleName} {$eventName}Listener --event={$eventName}</info>");
-        $this->line("4. Register the listener in your service provider");
+        $this->line('4. Register the listener in your service provider');
         $this->newLine();
     }
 }

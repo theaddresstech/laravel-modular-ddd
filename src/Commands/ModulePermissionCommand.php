@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Commands;
 
+use Exception;
+use Illuminate\Console\Command;
 use TaiCrm\LaravelModularDdd\Authorization\ModuleAuthorizationManager;
 use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
-use Illuminate\Console\Command;
 
 class ModulePermissionCommand extends Command
 {
@@ -17,12 +18,11 @@ class ModulePermissionCommand extends Command
                             {--permission= : Permission name}
                             {--role= : Role name}
                             {--export= : Export to file}';
-
     protected $description = 'Manage module permissions and roles';
 
     public function __construct(
         private ModuleAuthorizationManager $authManager,
-        private ModuleManagerInterface $moduleManager
+        private ModuleManagerInterface $moduleManager,
     ) {
         parent::__construct();
     }
@@ -60,6 +60,7 @@ class ModulePermissionCommand extends Command
 
         if (empty($permissions)) {
             $this->warn("No permissions found for module: {$moduleId}");
+
             return;
         }
 
@@ -78,7 +79,7 @@ class ModulePermissionCommand extends Command
 
         $this->table(
             ['Permission', 'Group', 'Description', 'Dependencies'],
-            $tableData
+            $tableData,
         );
     }
 
@@ -91,10 +92,10 @@ class ModulePermissionCommand extends Command
         $this->line('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
         foreach ($modules as $moduleId) {
-            $modulePermissions = array_filter($allPermissions, fn($p) => $p['module'] === $moduleId);
+            $modulePermissions = array_filter($allPermissions, static fn ($p) => $p['module'] === $moduleId);
 
             $this->newLine();
-            $this->line("🏷️  <fg=blue>{$moduleId}</> (" . count($modulePermissions) . " permissions)");
+            $this->line("🏷️  <fg=blue>{$moduleId}</> (" . count($modulePermissions) . ' permissions)');
 
             foreach ($modulePermissions as $permission) {
                 $this->line("   • {$permission['permission']} - {$permission['description']}");
@@ -102,7 +103,7 @@ class ModulePermissionCommand extends Command
         }
 
         $this->newLine();
-        $this->info("Total: " . count($allPermissions) . " permissions across " . count($modules) . " modules");
+        $this->info('Total: ' . count($allPermissions) . ' permissions across ' . count($modules) . ' modules');
     }
 
     private function grantPermission(): int
@@ -113,14 +114,16 @@ class ModulePermissionCommand extends Command
 
         if (!$user || !$module || !$permission) {
             $this->error('User, module, and permission are required for grant action.');
+
             return 1;
         }
 
         try {
             $user->grantModulePermission($module, $permission);
             $this->info("✅ Granted permission '{$module}.{$permission}' to user: {$user->email}");
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->error("❌ Failed to grant permission: {$e->getMessage()}");
+
             return 1;
         }
 
@@ -135,14 +138,16 @@ class ModulePermissionCommand extends Command
 
         if (!$user || !$module || !$permission) {
             $this->error('User, module, and permission are required for revoke action.');
+
             return 1;
         }
 
         try {
             $user->revokeModulePermission($module, $permission);
             $this->info("✅ Revoked permission '{$module}.{$permission}' from user: {$user->email}");
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->error("❌ Failed to revoke permission: {$e->getMessage()}");
+
             return 1;
         }
 
@@ -156,8 +161,9 @@ class ModulePermissionCommand extends Command
         try {
             $this->authManager->syncModulePermissions();
             $this->info('✅ Module permissions synchronized successfully.');
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->error("❌ Failed to sync permissions: {$e->getMessage()}");
+
             return 1;
         }
 
@@ -215,7 +221,7 @@ class ModulePermissionCommand extends Command
 
         foreach ($matrix as $moduleId => $moduleData) {
             $this->newLine();
-            $this->line("🏷️  <fg=blue>{$moduleId}</> (" . count($moduleData['permissions']) . " permissions)");
+            $this->line("🏷️  <fg=blue>{$moduleId}</> (" . count($moduleData['permissions']) . ' permissions)');
 
             // Group permissions by category
             foreach ($moduleData['groups'] as $group => $permissions) {
@@ -236,7 +242,7 @@ class ModulePermissionCommand extends Command
         $userInput = $this->option('user');
 
         if (!$userInput) {
-            return null;
+            return;
         }
 
         $userModel = config('auth.providers.users.model', 'App\Models\User');
@@ -264,6 +270,7 @@ class ModulePermissionCommand extends Command
     {
         $this->error("Invalid action: {$action}");
         $this->line('Available actions: list, grant, revoke, sync, matrix');
+
         return 1;
     }
 }

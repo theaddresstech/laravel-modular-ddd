@@ -41,6 +41,7 @@ class CqrsServiceProvider extends ServiceProvider
     private function getActiveModules(): array
     {
         $moduleManager = $this->app->make(\TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface::class);
+
         return $moduleManager->getActiveModules();
     }
 

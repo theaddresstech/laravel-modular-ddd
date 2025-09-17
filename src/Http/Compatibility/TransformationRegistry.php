@@ -23,7 +23,7 @@ class TransformationRegistry
         string $fromVersion,
         string $toVersion,
         RequestTransformerInterface $transformer,
-        ?string $module = null
+        ?string $module = null,
     ): void {
         $this->requestTransformers->push([
             'from_version' => $fromVersion,
@@ -43,7 +43,7 @@ class TransformationRegistry
         string $fromVersion,
         string $toVersion,
         ResponseTransformerInterface $transformer,
-        ?string $module = null
+        ?string $module = null,
     ): void {
         $this->responseTransformers->push([
             'from_version' => $fromVersion,
@@ -62,7 +62,7 @@ class TransformationRegistry
     public function getRequestTransformer(string $fromVersion, string $toVersion, ?string $module = null): ?RequestTransformerInterface
     {
         $transformer = $this->requestTransformers
-            ->filter(function ($item) use ($fromVersion, $toVersion, $module) {
+            ->filter(static function ($item) use ($fromVersion, $toVersion, $module) {
                 $versionMatch = $item['from_version'] === $fromVersion && $item['to_version'] === $toVersion;
                 $moduleMatch = $module ? $item['module'] === $module : true;
 
@@ -76,7 +76,7 @@ class TransformationRegistry
     public function getResponseTransformer(string $fromVersion, string $toVersion, ?string $module = null): ?ResponseTransformerInterface
     {
         $transformer = $this->responseTransformers
-            ->filter(function ($item) use ($fromVersion, $toVersion, $module) {
+            ->filter(static function ($item) use ($fromVersion, $toVersion, $module) {
                 $versionMatch = $item['from_version'] === $fromVersion && $item['to_version'] === $toVersion;
                 $moduleMatch = $module ? $item['module'] === $module : true;
 
@@ -96,9 +96,7 @@ class TransformationRegistry
     {
         $moduleTransformers = $this->requestTransformers
             ->merge($this->responseTransformers)
-            ->filter(function ($item) use ($module) {
-                return $item['module'] === $module;
-            });
+            ->filter(static fn ($item) => $item['module'] === $module);
 
         return $moduleTransformers->toArray();
     }
@@ -143,8 +141,8 @@ class TransformationRegistry
                 $matrix[$from][$to] = [
                     'direct' => $this->findDirectTransformation($from, $to) !== null,
                     'multi_step' => !empty($this->findMultiStepTransformation($from, $to)),
-                    'bidirectional' => $this->findDirectTransformation($from, $to) !== null &&
-                                     $this->findDirectTransformation($to, $from) !== null,
+                    'bidirectional' => $this->findDirectTransformation($from, $to) !== null
+                                     && $this->findDirectTransformation($to, $from) !== null,
                 ];
             }
         }
@@ -155,15 +153,11 @@ class TransformationRegistry
     private function findDirectTransformation(string $fromVersion, string $toVersion): ?array
     {
         $requestTransformer = $this->requestTransformers
-            ->filter(function ($item) use ($fromVersion, $toVersion) {
-                return $item['from_version'] === $fromVersion && $item['to_version'] === $toVersion;
-            })
+            ->filter(static fn ($item) => $item['from_version'] === $fromVersion && $item['to_version'] === $toVersion)
             ->first();
 
         $responseTransformer = $this->responseTransformers
-            ->filter(function ($item) use ($fromVersion, $toVersion) {
-                return $item['from_version'] === $fromVersion && $item['to_version'] === $toVersion;
-            })
+            ->filter(static fn ($item) => $item['from_version'] === $fromVersion && $item['to_version'] === $toVersion)
             ->first();
 
         if ($requestTransformer || $responseTransformer) {
@@ -201,6 +195,7 @@ class TransformationRegistry
                 'path' => $path,
                 'steps' => count($path) - 1,
             ];
+
             return;
         }
 
@@ -209,9 +204,7 @@ class TransformationRegistry
         // Find all transformers that start from current version
         $nextTransformers = $this->requestTransformers
             ->merge($this->responseTransformers)
-            ->filter(function ($item) use ($current) {
-                return $item['from_version'] === $current;
-            })
+            ->filter(static fn ($item) => $item['from_version'] === $current)
             ->unique('to_version');
 
         foreach ($nextTransformers as $transformer) {
@@ -223,7 +216,7 @@ class TransformationRegistry
                     array_merge($path, [$nextVersion]),
                     $visited,
                     $paths,
-                    $maxDepth - 1
+                    $maxDepth - 1,
                 );
             }
         }

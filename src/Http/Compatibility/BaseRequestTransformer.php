@@ -77,7 +77,7 @@ abstract class BaseRequestTransformer implements RequestTransformerInterface
                 return $this->transformValue(
                     $data,
                     $transformation['field'],
-                    $transformation['transformer']
+                    $transformation['transformer'],
                 );
 
             case 'restructure':
@@ -101,12 +101,14 @@ abstract class BaseRequestTransformer implements RequestTransformerInterface
     protected function removeField(array $data, string $field): array
     {
         unset($data[$field]);
+
         return $data;
     }
 
     protected function addField(array $data, string $field, $value): array
     {
         $data[$field] = $value;
+
         return $data;
     }
 
@@ -144,7 +146,7 @@ abstract class BaseRequestTransformer implements RequestTransformerInterface
 
         foreach ($path as $key) {
             if (!isset($current[$key])) {
-                return null;
+                return;
             }
             $current = $current[$key];
         }
@@ -161,7 +163,7 @@ abstract class BaseRequestTransformer implements RequestTransformerInterface
             $request->cookies->all(),
             $request->files->all(),
             $request->server->all(),
-            $request->getContent()
+            $request->getContent(),
         );
     }
 }

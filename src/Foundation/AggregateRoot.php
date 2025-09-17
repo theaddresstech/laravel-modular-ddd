@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Foundation;
 
-use TaiCrm\LaravelModularDdd\Foundation\Contracts\DomainEventInterface;
 use Illuminate\Support\Collection;
+use TaiCrm\LaravelModularDdd\Foundation\Contracts\DomainEventInterface;
 
 abstract class AggregateRoot
 {
@@ -16,15 +16,11 @@ abstract class AggregateRoot
         $this->domainEvents = collect();
     }
 
-    protected function recordEvent(DomainEventInterface $event): void
-    {
-        $this->domainEvents->push($event);
-    }
-
     public function releaseEvents(): Collection
     {
         $events = $this->domainEvents;
         $this->domainEvents = collect();
+
         return $events;
     }
 
@@ -41,6 +37,11 @@ abstract class AggregateRoot
     public function clearEvents(): void
     {
         $this->domainEvents = collect();
+    }
+
+    protected function recordEvent(DomainEventInterface $event): void
+    {
+        $this->domainEvents->push($event);
     }
 
     protected function apply(DomainEventInterface $event): void
@@ -60,8 +61,9 @@ abstract class AggregateRoot
 
     private function getApplyMethod(DomainEventInterface $event): string
     {
-        $classParts = explode('\\', get_class($event));
+        $classParts = explode('\\', $event::class);
         $eventName = end($classParts);
+
         return 'apply' . $eventName;
     }
 }

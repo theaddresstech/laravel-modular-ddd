@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Health\Checks;
 
+use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
 use TaiCrm\LaravelModularDdd\Health\Contracts\HealthCheckInterface;
 use TaiCrm\LaravelModularDdd\Health\ValueObjects\HealthStatus;
 use TaiCrm\LaravelModularDdd\ValueObjects\ModuleInfo;
-use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
 
 class DependencyCheck implements HealthCheckInterface
 {
     public function __construct(
-        private ModuleManagerInterface $moduleManager
+        private ModuleManagerInterface $moduleManager,
     ) {}
 
     public function check(ModuleInfo $module): array

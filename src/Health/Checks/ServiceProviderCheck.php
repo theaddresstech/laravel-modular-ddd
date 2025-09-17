@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Health\Checks;
 
+use Exception;
 use TaiCrm\LaravelModularDdd\Health\Contracts\HealthCheckInterface;
 use TaiCrm\LaravelModularDdd\Health\ValueObjects\HealthStatus;
 use TaiCrm\LaravelModularDdd\ValueObjects\ModuleInfo;
@@ -37,8 +38,7 @@ class ServiceProviderCheck implements HealthCheckInterface
                 'message' => $analysis['message'],
                 'details' => array_merge($details, $analysis['details']),
             ];
-
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return [
                 'name' => $this->getName(),
                 'status' => HealthStatus::Critical,
@@ -48,6 +48,16 @@ class ServiceProviderCheck implements HealthCheckInterface
         }
     }
 
+    public function getName(): string
+    {
+        return 'Service Provider';
+    }
+
+    public function getDescription(): string
+    {
+        return 'Checks if the module service provider is properly configured';
+    }
+
     private function analyzeServiceProvider(string $content, string $moduleName): array
     {
         $issues = [];
@@ -55,12 +65,12 @@ class ServiceProviderCheck implements HealthCheckInterface
         $info = [];
 
         // Check for correct namespace
-        if (!preg_match("/namespace\s+Modules\\\\{$moduleName}\\\\Providers;/", $content)) {
+        if (!preg_match("/namespace\\s+Modules\\\\{$moduleName}\\\\Providers;/", $content)) {
             $issues[] = 'Incorrect namespace - should be Modules\\' . $moduleName . '\\Providers';
         }
 
         // Check for correct class name
-        if (!preg_match("/class\s+{$moduleName}ServiceProvider/", $content)) {
+        if (!preg_match("/class\\s+{$moduleName}ServiceProvider/", $content)) {
             $issues[] = "Incorrect class name - should be {$moduleName}ServiceProvider";
         }
 
@@ -184,15 +194,5 @@ class ServiceProviderCheck implements HealthCheckInterface
         }
 
         return $features;
-    }
-
-    public function getName(): string
-    {
-        return 'Service Provider';
-    }
-
-    public function getDescription(): string
-    {
-        return 'Checks if the module service provider is properly configured';
     }
 }

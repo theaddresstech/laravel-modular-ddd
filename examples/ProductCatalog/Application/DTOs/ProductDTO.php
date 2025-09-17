@@ -19,7 +19,7 @@ readonly class ProductDTO
         public array $attributes,
         public string $createdAt,
         public ?string $updatedAt,
-        public ?string $publishedAt
+        public ?string $publishedAt,
     ) {}
 
     public static function fromAggregate(Product $product): self
@@ -40,7 +40,7 @@ readonly class ProductDTO
             $product->getAttributes(),
             $product->getCreatedAt()->format('Y-m-d H:i:s'),
             $product->getUpdatedAt()?->format('Y-m-d H:i:s'),
-            $product->getPublishedAt()?->format('Y-m-d H:i:s')
+            $product->getPublishedAt()?->format('Y-m-d H:i:s'),
         );
     }
 
@@ -57,7 +57,7 @@ readonly class ProductDTO
             $data['attributes'] ?? [],
             $data['created_at'],
             $data['updated_at'] ?? null,
-            $data['published_at'] ?? null
+            $data['published_at'] ?? null,
         );
     }
 
@@ -87,7 +87,7 @@ readonly class ProductDTO
     {
         $primaryImages = array_filter(
             $this->images,
-            fn($image) => $image['is_primary'] ?? false
+            static fn ($image) => $image['is_primary'] ?? false,
         );
 
         if (!empty($primaryImages)) {
@@ -153,7 +153,7 @@ readonly class ProductDTO
             $this->attributes,
             $this->createdAt,
             $this->updatedAt,
-            $this->publishedAt
+            $this->publishedAt,
         );
     }
 
@@ -170,7 +170,7 @@ readonly class ProductDTO
             $this->attributes,
             $this->createdAt,
             $this->updatedAt,
-            $this->publishedAt
+            $this->publishedAt,
         );
     }
 }

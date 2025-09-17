@@ -4,21 +4,21 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Commands;
 
-use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
+use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
 
 class ModuleDevCommand extends Command
 {
     protected $signature = 'module:dev
                             {action : Action to perform (watch|link|unlink|info)}
                             {module? : Module name for specific actions}';
-
     protected $description = 'Development utilities for modules';
 
     public function __construct(
         private ModuleManagerInterface $moduleManager,
-        private Filesystem $files
+        private Filesystem $files,
     ) {
         parent::__construct();
     }
@@ -45,6 +45,7 @@ class ModuleDevCommand extends Command
 
         if (!$this->files->isDirectory($modulesPath)) {
             $this->error("Modules directory not found: {$modulesPath}");
+
             return self::FAILURE;
         }
 
@@ -52,7 +53,7 @@ class ModuleDevCommand extends Command
 
         while (true) {
             $modules = $this->moduleManager->list()
-                ->filter(fn($module) => $module->isEnabled());
+                ->filter(static fn ($module) => $module->isEnabled());
 
             foreach ($modules as $module) {
                 $this->checkModuleChanges($module, $lastModified);
@@ -77,6 +78,7 @@ class ModuleDevCommand extends Command
 
         if (!isset($lastModified[$moduleName])) {
             $lastModified[$moduleName] = $currentModified;
+
             return;
         }
 
@@ -104,7 +106,7 @@ class ModuleDevCommand extends Command
 
             // Auto-reload module if enabled in config
             if (config('modular-ddd.development.auto_reload', false)) {
-                $this->line("  🔄 Auto-reloading module...");
+                $this->line('  🔄 Auto-reloading module...');
                 $this->reloadModule($moduleName);
             }
 
@@ -142,8 +144,8 @@ class ModuleDevCommand extends Command
             $this->moduleManager->enable($moduleName);
 
             $this->line("  ✅ Module {$moduleName} reloaded successfully");
-        } catch (\Exception $e) {
-            $this->line("  ❌ Failed to reload module: " . $e->getMessage());
+        } catch (Exception $e) {
+            $this->line('  ❌ Failed to reload module: ' . $e->getMessage());
         }
     }
 
@@ -153,12 +155,14 @@ class ModuleDevCommand extends Command
 
         if (!$moduleName) {
             $this->error('Module name is required for link action');
+
             return self::FAILURE;
         }
 
         $module = $this->moduleManager->getInfo($moduleName);
         if (!$module) {
             $this->error("Module '{$moduleName}' not found");
+
             return self::FAILURE;
         }
 
@@ -175,10 +179,11 @@ class ModuleDevCommand extends Command
             $this->linkConfig($module);
 
             $this->info("✅ Development links created for {$moduleName}");
-            return self::SUCCESS;
 
-        } catch (\Exception $e) {
-            $this->error("❌ Failed to create links: " . $e->getMessage());
+            return self::SUCCESS;
+        } catch (Exception $e) {
+            $this->error('❌ Failed to create links: ' . $e->getMessage());
+
             return self::FAILURE;
         }
     }
@@ -204,7 +209,7 @@ class ModuleDevCommand extends Command
         if ($this->files->isDirectory($viewsPath)) {
             $parentDir = dirname($laravelViewsPath);
             if (!$this->files->exists($parentDir)) {
-                $this->files->makeDirectory($parentDir, 0755, true);
+                $this->files->makeDirectory($parentDir, 0o755, true);
             }
 
             if (!$this->files->exists($laravelViewsPath)) {
@@ -222,7 +227,7 @@ class ModuleDevCommand extends Command
         if ($this->files->isDirectory($configPath)) {
             $parentDir = dirname($laravelConfigPath);
             if (!$this->files->exists($parentDir)) {
-                $this->files->makeDirectory($parentDir, 0755, true);
+                $this->files->makeDirectory($parentDir, 0o755, true);
             }
 
             if (!$this->files->exists($laravelConfigPath)) {
@@ -238,6 +243,7 @@ class ModuleDevCommand extends Command
 
         if (!$moduleName) {
             $this->error('Module name is required for unlink action');
+
             return self::FAILURE;
         }
 
@@ -258,10 +264,11 @@ class ModuleDevCommand extends Command
             }
 
             $this->info("✅ Development links removed for {$moduleName}");
-            return self::SUCCESS;
 
-        } catch (\Exception $e) {
-            $this->error("❌ Failed to remove links: " . $e->getMessage());
+            return self::SUCCESS;
+        } catch (Exception $e) {
+            $this->error('❌ Failed to remove links: ' . $e->getMessage());
+
             return self::FAILURE;
         }
     }

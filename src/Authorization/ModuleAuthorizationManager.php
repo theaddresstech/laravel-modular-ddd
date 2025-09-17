@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Authorization;
 
-use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
+use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
 
 class ModuleAuthorizationManager
 {
@@ -16,7 +16,7 @@ class ModuleAuthorizationManager
     private array $policies = [];
 
     public function __construct(
-        private ModuleManagerInterface $moduleManager
+        private ModuleManagerInterface $moduleManager,
     ) {
         $this->loadCachedPermissions();
     }
@@ -53,9 +53,7 @@ class ModuleAuthorizationManager
             ];
 
             // Register with Laravel's Gate
-            Gate::define("{$moduleId}.{$permission}", function ($user, ...$args) use ($moduleId, $permission, $config) {
-                return $this->checkPermission($user, $moduleId, $permission, $args, $config);
-            });
+            Gate::define("{$moduleId}.{$permission}", fn ($user, ...$args) => $this->checkPermission($user, $moduleId, $permission, $args, $config));
         }
     }
 
@@ -65,7 +63,7 @@ class ModuleAuthorizationManager
         $this->roles[$roleKey] = [
             'module' => $moduleId,
             'role' => $role,
-            'permissions' => array_map(fn($perm) => "{$moduleId}.{$perm}", $permissions),
+            'permissions' => array_map(static fn ($perm) => "{$moduleId}.{$perm}", $permissions),
         ];
 
         $this->cachePermissions();
@@ -76,7 +74,7 @@ class ModuleAuthorizationManager
         // Check if user has any permission in the module
         $modulePermissions = array_filter(
             $this->permissions,
-            fn($perm) => $perm['module'] === $moduleId
+            static fn ($perm) => $perm['module'] === $moduleId,
         );
 
         foreach ($modulePermissions as $permissionKey => $permission) {
@@ -93,7 +91,7 @@ class ModuleAuthorizationManager
         $userPermissions = [];
         $modulePermissions = array_filter(
             $this->permissions,
-            fn($perm) => $perm['module'] === $moduleId
+            static fn ($perm) => $perm['module'] === $moduleId,
         );
 
         foreach ($modulePermissions as $permissionKey => $permission) {
@@ -109,7 +107,7 @@ class ModuleAuthorizationManager
     {
         return array_filter(
             $this->permissions,
-            fn($perm) => $perm['module'] === $moduleId
+            static fn ($perm) => $perm['module'] === $moduleId,
         );
     }
 
@@ -121,6 +119,7 @@ class ModuleAuthorizationManager
     public function hasPermission(mixed $user, string $moduleId, string $permission): bool
     {
         $permissionKey = "{$moduleId}.{$permission}";
+
         return Gate::forUser($user)->allows($permissionKey);
     }
 
@@ -233,7 +232,7 @@ class ModuleAuthorizationManager
 
         // Custom authorization logic based on config
         if (isset($config['callback']) && is_callable($config['callback'])) {
-            return call_user_func($config['callback'], $user, ...$args);
+            return $config['callback']($user, ...$args);
         }
 
         // Default to checking Laravel's standard permission system

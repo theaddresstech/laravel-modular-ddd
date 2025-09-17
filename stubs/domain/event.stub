@@ -12,6 +12,7 @@ readonly class {{ name }} extends DomainEvent
     public function __construct(
         public {{ aggregate }}Id ${{ aggregateSnake }}Id,
         public string $name,
+        public string $description,
         public \DateTimeImmutable $occurredAt
     ) {
         parent::__construct();
@@ -37,6 +38,7 @@ readonly class {{ name }} extends DomainEvent
         return [
             '{{ aggregateSnake }}_id' => $this->{{ aggregateSnake }}Id->toString(),
             'name' => $this->name,
+            'description' => $this->description,
             'occurred_at' => $this->occurredAt->format(\DateTimeInterface::ATOM),
         ];
     }
@@ -51,6 +53,7 @@ readonly class {{ name }} extends DomainEvent
         return new self(
             {{ aggregate }}Id::fromString($payload['{{ aggregateSnake }}_id']),
             $payload['name'],
+            $payload['description'] ?? '',
             new \DateTimeImmutable($payload['occurred_at'])
         );
     }

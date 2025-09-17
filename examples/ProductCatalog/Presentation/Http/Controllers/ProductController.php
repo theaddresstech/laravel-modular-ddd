@@ -4,24 +4,26 @@ declare(strict_types=1);
 
 namespace Modules\ProductCatalog\Presentation\Http\Controllers;
 
-use Modules\ProductCatalog\Application\Commands\CreateProduct\CreateProductCommand;
-use Modules\ProductCatalog\Application\Commands\CreateProduct\CreateProductHandler;
-use Modules\ProductCatalog\Application\Commands\UpdateProduct\UpdateProductCommand;
-use Modules\ProductCatalog\Application\Commands\UpdateProduct\UpdateProductHandler;
-use Modules\ProductCatalog\Application\Commands\PublishProduct\PublishProductCommand;
-use Modules\ProductCatalog\Application\Commands\PublishProduct\PublishProductHandler;
-use Modules\ProductCatalog\Application\Queries\GetProduct\GetProductQuery;
-use Modules\ProductCatalog\Application\Queries\GetProduct\GetProductHandler;
-use Modules\ProductCatalog\Application\Queries\ListProducts\ListProductsQuery;
-use Modules\ProductCatalog\Application\Queries\ListProducts\ListProductsHandler;
-use Modules\ProductCatalog\Presentation\Http\Requests\CreateProductRequest;
-use Modules\ProductCatalog\Presentation\Http\Requests\UpdateProductRequest;
-use Modules\ProductCatalog\Presentation\Http\Resources\ProductResource;
-use Modules\ProductCatalog\Presentation\Http\Resources\ProductCollection;
+use App\Http\Controllers\Controller;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use App\Http\Controllers\Controller;
+use InvalidArgumentException;
+use Modules\ProductCatalog\Application\Commands\CreateProduct\CreateProductCommand;
+use Modules\ProductCatalog\Application\Commands\CreateProduct\CreateProductHandler;
+use Modules\ProductCatalog\Application\Commands\PublishProduct\PublishProductCommand;
+use Modules\ProductCatalog\Application\Commands\PublishProduct\PublishProductHandler;
+use Modules\ProductCatalog\Application\Commands\UpdateProduct\UpdateProductCommand;
+use Modules\ProductCatalog\Application\Commands\UpdateProduct\UpdateProductHandler;
+use Modules\ProductCatalog\Application\Queries\GetProduct\GetProductHandler;
+use Modules\ProductCatalog\Application\Queries\GetProduct\GetProductQuery;
+use Modules\ProductCatalog\Application\Queries\ListProducts\ListProductsHandler;
+use Modules\ProductCatalog\Application\Queries\ListProducts\ListProductsQuery;
+use Modules\ProductCatalog\Presentation\Http\Requests\CreateProductRequest;
+use Modules\ProductCatalog\Presentation\Http\Requests\UpdateProductRequest;
+use Modules\ProductCatalog\Presentation\Http\Resources\ProductCollection;
+use Modules\ProductCatalog\Presentation\Http\Resources\ProductResource;
 
 class ProductController extends Controller
 {
@@ -30,7 +32,7 @@ class ProductController extends Controller
         private UpdateProductHandler $updateProductHandler,
         private PublishProductHandler $publishProductHandler,
         private GetProductHandler $getProductHandler,
-        private ListProductsHandler $listProductsHandler
+        private ListProductsHandler $listProductsHandler,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -43,7 +45,7 @@ class ProductController extends Controller
             sortBy: $request->get('sort_by', 'created_at'),
             sortDirection: $request->get('sort_direction', 'desc'),
             page: $request->integer('page', 1),
-            perPage: min($request->integer('per_page', 15), 100)
+            perPage: min($request->integer('per_page', 15), 100),
         );
 
         $result = $this->listProductsHandler->handle($query);
@@ -90,7 +92,7 @@ class ProductController extends Controller
             currency: $request->validated('currency'),
             categoryId: $request->validated('category_id'),
             images: $request->validated('images', []),
-            attributes: $request->validated('attributes', [])
+            attributes: $request->validated('attributes', []),
         );
 
         try {
@@ -98,19 +100,17 @@ class ProductController extends Controller
 
             return (new ProductResource($product))
                 ->additional([
-                    'message' => 'Product created successfully'
+                    'message' => 'Product created successfully',
                 ])
                 ->response()
                 ->setStatusCode(Response::HTTP_CREATED);
-
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             return response()->json([
                 'message' => 'Validation failed',
                 'error' => 'VALIDATION_ERROR',
                 'details' => $e->getMessage(),
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
-
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json([
                 'message' => 'Failed to create product',
                 'error' => 'CREATION_FAILED',
@@ -129,7 +129,7 @@ class ProductController extends Controller
             currency: $request->validated('currency'),
             categoryId: $request->validated('category_id'),
             images: $request->validated('images'),
-            attributes: $request->validated('attributes')
+            attributes: $request->validated('attributes'),
         );
 
         try {
@@ -137,19 +137,17 @@ class ProductController extends Controller
 
             return (new ProductResource($product))
                 ->additional([
-                    'message' => 'Product updated successfully'
+                    'message' => 'Product updated successfully',
                 ])
                 ->response()
                 ->setStatusCode(Response::HTTP_OK);
-
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             return response()->json([
                 'message' => 'Validation failed',
                 'error' => 'VALIDATION_ERROR',
                 'details' => $e->getMessage(),
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
-
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json([
                 'message' => 'Failed to update product',
                 'error' => 'UPDATE_FAILED',
@@ -178,12 +176,11 @@ class ProductController extends Controller
 
             return (new ProductResource($product))
                 ->additional([
-                    'message' => 'Product published successfully'
+                    'message' => 'Product published successfully',
                 ])
                 ->response()
                 ->setStatusCode(Response::HTTP_OK);
-
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json([
                 'message' => 'Failed to publish product',
                 'error' => 'PUBLISH_FAILED',
@@ -214,7 +211,7 @@ class ProductController extends Controller
         $query = new ListProductsQuery(
             search: $searchTerm,
             status: 'published', // Only search published products
-            perPage: min($request->integer('per_page', 10), 50)
+            perPage: min($request->integer('per_page', 10), 50),
         );
 
         $result = $this->listProductsHandler->handle($query);
@@ -235,7 +232,7 @@ class ProductController extends Controller
         $query = new ListProductsQuery(
             filters: ['featured' => true],
             status: 'published',
-            perPage: min($request->integer('per_page', 10), 20)
+            perPage: min($request->integer('per_page', 10), 20),
         );
 
         $result = $this->listProductsHandler->handle($query);

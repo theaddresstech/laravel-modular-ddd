@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Foundation;
 
-use TaiCrm\LaravelModularDdd\Foundation\Contracts\QueryInterface;
 use Ramsey\Uuid\Uuid;
+use ReflectionClass;
+use TaiCrm\LaravelModularDdd\Foundation\Contracts\QueryInterface;
 
 abstract class Query implements QueryInterface
 {
@@ -23,7 +24,8 @@ abstract class Query implements QueryInterface
 
     public function getQueryType(): string
     {
-        $reflection = new \ReflectionClass($this);
+        $reflection = new ReflectionClass($this);
+
         return $reflection->getShortName();
     }
 
@@ -45,7 +47,7 @@ abstract class Query implements QueryInterface
         return sprintf(
             'query:%s:%s',
             $this->getQueryType(),
-            md5(serialize($this->toArray()))
+            md5(serialize($this->toArray())),
         );
     }
 

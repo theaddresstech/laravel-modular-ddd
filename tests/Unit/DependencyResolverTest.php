@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Tests\Unit;
 
+use InvalidArgumentException;
 use TaiCrm\LaravelModularDdd\ModuleManager\DependencyResolver;
+use TaiCrm\LaravelModularDdd\Tests\TestCase;
 use TaiCrm\LaravelModularDdd\ValueObjects\ModuleInfo;
 use TaiCrm\LaravelModularDdd\ValueObjects\ModuleState;
-use TaiCrm\LaravelModularDdd\Tests\TestCase;
-use Illuminate\Support\Collection;
 
 class DependencyResolverTest extends TestCase
 {
@@ -20,7 +20,7 @@ class DependencyResolverTest extends TestCase
         $this->resolver = new DependencyResolver();
     }
 
-    public function test_validates_dependencies_with_all_available(): void
+    public function testValidatesDependenciesWithAllAvailable(): void
     {
         $module = $this->createModuleInfo('TestModule', ['Dependency1', 'Dependency2']);
         $available = collect([
@@ -33,7 +33,7 @@ class DependencyResolverTest extends TestCase
         $this->assertEmpty($missing);
     }
 
-    public function test_validates_dependencies_with_missing(): void
+    public function testValidatesDependenciesWithMissing(): void
     {
         $module = $this->createModuleInfo('TestModule', ['Dependency1', 'MissingDependency']);
         $available = collect([
@@ -45,7 +45,7 @@ class DependencyResolverTest extends TestCase
         $this->assertContains('MissingDependency', $missing);
     }
 
-    public function test_detects_circular_dependency(): void
+    public function testDetectsCircularDependency(): void
     {
         $moduleA = $this->createModuleInfo('ModuleA', ['ModuleB']);
         $moduleB = $this->createModuleInfo('ModuleB', ['ModuleA']);
@@ -56,7 +56,7 @@ class DependencyResolverTest extends TestCase
         $this->assertTrue($hasCircular);
     }
 
-    public function test_does_not_detect_circular_dependency_for_valid_chain(): void
+    public function testDoesNotDetectCircularDependencyForValidChain(): void
     {
         $moduleA = $this->createModuleInfo('ModuleA', ['ModuleB']);
         $moduleB = $this->createModuleInfo('ModuleB', ['ModuleC']);
@@ -68,7 +68,7 @@ class DependencyResolverTest extends TestCase
         $this->assertFalse($hasCircular);
     }
 
-    public function test_gets_install_order_with_dependencies(): void
+    public function testGetsInstallOrderWithDependencies(): void
     {
         $moduleA = $this->createModuleInfo('ModuleA', ['ModuleB']);
         $moduleB = $this->createModuleInfo('ModuleB', ['ModuleC']);
@@ -78,10 +78,10 @@ class DependencyResolverTest extends TestCase
         $order = $this->resolver->getInstallOrder($modules);
 
         $names = $order->pluck('name')->toArray();
-        $this->assertEquals(['ModuleC', 'ModuleB', 'ModuleA'], $names);
+        $this->assertSame(['ModuleC', 'ModuleB', 'ModuleA'], $names);
     }
 
-    public function test_gets_install_order_with_no_dependencies(): void
+    public function testGetsInstallOrderWithNoDependencies(): void
     {
         $moduleA = $this->createModuleInfo('ModuleA', []);
         $moduleB = $this->createModuleInfo('ModuleB', []);
@@ -94,7 +94,7 @@ class DependencyResolverTest extends TestCase
         $this->assertContains('ModuleB', $order->pluck('name'));
     }
 
-    public function test_can_remove_module_without_dependents(): void
+    public function testCanRemoveModuleWithoutDependents(): void
     {
         $moduleA = $this->createModuleInfo('ModuleA', []);
         $moduleB = $this->createModuleInfo('ModuleB', []);
@@ -105,7 +105,7 @@ class DependencyResolverTest extends TestCase
         $this->assertTrue($canRemove);
     }
 
-    public function test_cannot_remove_module_with_enabled_dependents(): void
+    public function testCannotRemoveModuleWithEnabledDependents(): void
     {
         $moduleA = $this->createModuleInfo('ModuleA', []);
         $moduleB = $this->createModuleInfo('ModuleB', ['ModuleA'], ModuleState::Enabled);
@@ -116,7 +116,7 @@ class DependencyResolverTest extends TestCase
         $this->assertFalse($canRemove);
     }
 
-    public function test_gets_dependents(): void
+    public function testGetsDependents(): void
     {
         $moduleA = $this->createModuleInfo('ModuleA', []);
         $moduleB = $this->createModuleInfo('ModuleB', ['ModuleA']);
@@ -130,13 +130,13 @@ class DependencyResolverTest extends TestCase
         $this->assertContains('ModuleC', $dependents);
     }
 
-    public function test_throws_exception_for_circular_dependency_in_topological_sort(): void
+    public function testThrowsExceptionForCircularDependencyInTopologicalSort(): void
     {
         $moduleA = $this->createModuleInfo('ModuleA', ['ModuleB']);
         $moduleB = $this->createModuleInfo('ModuleB', ['ModuleA']);
         $modules = collect([$moduleA, $moduleB]);
 
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Circular dependency detected');
 
         $this->resolver->getInstallOrder($modules);
@@ -145,7 +145,7 @@ class DependencyResolverTest extends TestCase
     private function createModuleInfo(
         string $name,
         array $dependencies = [],
-        ModuleState $state = ModuleState::NotInstalled
+        ModuleState $state = ModuleState::NotInstalled,
     ): ModuleInfo {
         return ModuleInfo::fromArray([
             'name' => $name,

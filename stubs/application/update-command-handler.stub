@@ -1,0 +1,74 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\{{ module }}\Application\Commands\Update{{ name }};
+
+use Modules\{{ module }}\Domain\Models\{{ name }};
+use Modules\{{ module }}\Domain\ValueObjects\{{ name }}Id;
+use Modules\{{ module }}\Domain\Repositories\{{ name }}RepositoryInterface;
+use TaiCrm\LaravelModularDdd\Foundation\EventBus;
+use Psr\Log\LoggerInterface;
+
+readonly class Update{{ name }}Handler
+{
+    public function __construct(
+        private {{ name }}RepositoryInterface ${{ nameSnake }}Repository,
+        private EventBus $eventBus,
+        private LoggerInterface $logger
+    ) {}
+
+    public function handle(Update{{ name }}Command $command): {{ name }}
+    {
+        try {
+            $this->logger->debug('Handling Update{{ name }}Command', [
+                'command_type' => get_class($command),
+                'command_data' => $command->toArray()
+            ]);
+
+            ${{ nameSnake }}Id = {{ name }}Id::fromString($command->getId());
+            ${{ nameSnake }} = $this->{{ nameSnake }}Repository->findById(${{ nameSnake }}Id);
+
+            if (!${{ nameSnake }}) {
+                throw new \DomainException('{{ name }} not found with ID: ' . $command->getId());
+            }
+
+            // Update the aggregate
+            ${{ nameSnake }}->updateName($command->getName());
+
+            if ($command->getDescription() !== null) {
+                ${{ nameSnake }}->updateDescription($command->getDescription());
+            }
+
+            if ($command->getStatus() !== null) {
+                ${{ nameSnake }}->updateStatus($command->getStatus());
+            }
+
+            $this->{{ nameSnake }}Repository->save(${{ nameSnake }});
+
+            // Dispatch domain events
+            $events = ${{ nameSnake }}->releaseEvents();
+            if (!empty($events)) {
+                $this->eventBus->dispatchMany($events);
+            }
+
+            $this->logger->info('Update{{ name }}Command handled successfully', [
+                '{{ nameSnake }}_id' => ${{ nameSnake }}Id->toString(),
+                'name' => $command->getName(),
+                'description' => $command->getDescription(),
+            ]);
+
+            return ${{ nameSnake }};
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to handle Update{{ name }}Command', [
+                'command_type' => get_class($command),
+                'command_data' => $command->toArray(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            throw $e;
+        }
+    }
+}

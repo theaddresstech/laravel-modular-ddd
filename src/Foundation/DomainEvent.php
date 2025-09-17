@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Foundation;
 
-use TaiCrm\LaravelModularDdd\Foundation\Contracts\DomainEventInterface;
 use DateTimeImmutable;
 use Ramsey\Uuid\Uuid;
+use ReflectionClass;
+use TaiCrm\LaravelModularDdd\Foundation\Contracts\DomainEventInterface;
 
 abstract readonly class DomainEvent implements DomainEventInterface
 {
@@ -38,7 +39,8 @@ abstract readonly class DomainEvent implements DomainEventInterface
 
     public function getEventType(): string
     {
-        $reflection = new \ReflectionClass($this);
+        $reflection = new ReflectionClass($this);
+
         return $reflection->getShortName();
     }
 

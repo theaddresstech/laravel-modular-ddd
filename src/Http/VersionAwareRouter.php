@@ -12,7 +12,7 @@ class VersionAwareRouter
 {
     public function __construct(
         private Router $router,
-        private VersionNegotiator $versionNegotiator
+        private VersionNegotiator $versionNegotiator,
     ) {}
 
     public function registerVersionedRoutes(string $moduleName, string $routeFile): void
@@ -25,51 +25,9 @@ class VersionAwareRouter
         }
     }
 
-    private function registerVersionRoutes(string $moduleName, string $version, string $routeFile, string $apiPrefix): void
+    public function getVersionedRoute(string $name, ?string $version = null, array $parameters = []): string
     {
-        // Version-specific route group
-        Route::group([
-            'prefix' => "{$apiPrefix}/{$version}",
-            'middleware' => ['api', 'api.version'],
-            'namespace' => $this->getVersionNamespace($moduleName, $version),
-            'as' => "api.{$version}.",
-        ], function () use ($routeFile, $version, $moduleName) {
-            // Set context for the route group
-            app()->instance('current.api.version', $version);
-            app()->instance('current.api.module', $moduleName);
-
-            if (file_exists($routeFile)) {
-                require $routeFile;
-            }
-        });
-
-        // Fallback routes without version prefix (uses default version)
-        $defaultVersion = Config::get('modular-ddd.api.versions.default', 'v1');
-        if ($version === $defaultVersion) {
-            Route::group([
-                'prefix' => $apiPrefix,
-                'middleware' => ['api', 'api.version'],
-                'namespace' => $this->getVersionNamespace($moduleName, $version),
-                'as' => 'api.default.',
-            ], function () use ($routeFile, $version, $moduleName) {
-                app()->instance('current.api.version', $version);
-                app()->instance('current.api.module', $moduleName);
-
-                if (file_exists($routeFile)) {
-                    require $routeFile;
-                }
-            });
-        }
-    }
-
-    private function getVersionNamespace(string $moduleName, string $version): string
-    {
-        return "Modules\\{$moduleName}\\Http\\Controllers\\Api\\" . ucfirst($version);
-    }
-
-    public function getVersionedRoute(string $name, string $version = null, array $parameters = []): string
-    {
-        $version = $version ?? app('api.version') ?? Config::get('modular-ddd.api.versions.default', 'v1');
+        $version ??= app('api.version') ?? Config::get('modular-ddd.api.versions.default', 'v1');
         $routeName = "api.{$version}.{$name}";
 
         if (Route::has($routeName)) {
@@ -108,7 +66,7 @@ class VersionAwareRouter
     }
 
     /**
-     * Register documentation routes
+     * Register documentation routes.
      */
     public function registerDocumentationRoutes(): void
     {
@@ -180,16 +138,18 @@ class VersionAwareRouter
     public function isVersionSupported(string $version): bool
     {
         $supportedVersions = Config::get('modular-ddd.api.versions.supported', ['v1']);
+
         return in_array($version, $supportedVersions);
     }
 
     public function isVersionDeprecated(string $version): bool
     {
         $deprecatedVersions = Config::get('modular-ddd.api.versions.deprecated', []);
+
         return in_array($version, $deprecatedVersions);
     }
 
-    public function getVersionRoutePattern(string $version = null): string
+    public function getVersionRoutePattern(?string $version = null): string
     {
         if ($version) {
             return "api/{$version}";
@@ -198,7 +158,7 @@ class VersionAwareRouter
         $supportedVersions = Config::get('modular-ddd.api.versions.supported', ['v1']);
         $versionPattern = implode('|', $supportedVersions);
 
-        return "api/{version}";
+        return 'api/{version}';
     }
 
     public function registerVersionConstraints(): void
@@ -207,5 +167,47 @@ class VersionAwareRouter
         $versionPattern = '^(' . implode('|', $supportedVersions) . ')$';
 
         Route::pattern('version', $versionPattern);
+    }
+
+    private function registerVersionRoutes(string $moduleName, string $version, string $routeFile, string $apiPrefix): void
+    {
+        // Version-specific route group
+        Route::group([
+            'prefix' => "{$apiPrefix}/{$version}",
+            'middleware' => ['api', 'api.version'],
+            'namespace' => $this->getVersionNamespace($moduleName, $version),
+            'as' => "api.{$version}.",
+        ], function () use ($routeFile, $version, $moduleName): void {
+            // Set context for the route group
+            app()->instance('current.api.version', $version);
+            app()->instance('current.api.module', $moduleName);
+
+            if (file_exists($routeFile)) {
+                require $routeFile;
+            }
+        });
+
+        // Fallback routes without version prefix (uses default version)
+        $defaultVersion = Config::get('modular-ddd.api.versions.default', 'v1');
+        if ($version === $defaultVersion) {
+            Route::group([
+                'prefix' => $apiPrefix,
+                'middleware' => ['api', 'api.version'],
+                'namespace' => $this->getVersionNamespace($moduleName, $version),
+                'as' => 'api.default.',
+            ], function () use ($routeFile, $version, $moduleName): void {
+                app()->instance('current.api.version', $version);
+                app()->instance('current.api.module', $moduleName);
+
+                if (file_exists($routeFile)) {
+                    require $routeFile;
+                }
+            });
+        }
+    }
+
+    private function getVersionNamespace(string $moduleName, string $version): string
+    {
+        return "Modules\\{$moduleName}\\Http\\Controllers\\Api\\" . ucfirst($version);
     }
 }

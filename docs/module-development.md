@@ -285,7 +285,7 @@ use Modules\Catalog\Domain\Models\Product;
 use Modules\Catalog\Domain\ValueObjects\ProductId;
 use Modules\Catalog\Domain\ValueObjects\Money;
 use Modules\Catalog\Domain\Repositories\ProductRepositoryInterface;
-use TaiCrm\LaravelModularDdd\Communication\EventBus;
+use TaiCrm\LaravelModularDdd\Foundation\EventBus;
 
 readonly class CreateProductHandler
 {

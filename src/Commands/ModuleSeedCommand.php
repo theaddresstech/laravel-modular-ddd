@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Commands;
 
-use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
-use TaiCrm\LaravelModularDdd\Exceptions\ModuleNotFoundException;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
+use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
+use TaiCrm\LaravelModularDdd\Exceptions\ModuleNotFoundException;
 
 class ModuleSeedCommand extends Command
 {
@@ -15,12 +16,11 @@ class ModuleSeedCommand extends Command
                             {module? : The module to seed}
                             {--all : Seed all enabled modules}
                             {--class= : Specific seeder class to run}';
-
     protected $description = 'Run seeders for modules';
 
     public function __construct(
         private ModuleManagerInterface $moduleManager,
-        private Filesystem $files
+        private Filesystem $files,
     ) {
         parent::__construct();
     }
@@ -34,6 +34,7 @@ class ModuleSeedCommand extends Command
         $moduleName = $this->argument('module');
         if (!$moduleName) {
             $this->error('Please specify a module name or use --all flag');
+
             return self::FAILURE;
         }
 
@@ -43,10 +44,11 @@ class ModuleSeedCommand extends Command
     private function seedAllModules(): int
     {
         $modules = $this->moduleManager->list()
-            ->filter(fn($module) => $module->isEnabled());
+            ->filter(static fn ($module) => $module->isEnabled());
 
         if ($modules->isEmpty()) {
             $this->info('No enabled modules found.');
+
             return self::SUCCESS;
         }
 
@@ -77,19 +79,20 @@ class ModuleSeedCommand extends Command
 
             if (!$module->isEnabled()) {
                 $this->warn("⚠️  Module '{$moduleName}' is not enabled. Enable it first with: php artisan module:enable {$moduleName}");
+
                 return self::FAILURE;
             }
 
             $this->info("🌱 Running seeders for module: {$moduleName}");
 
             return $this->runModuleSeeders($moduleName, $module->path);
-
         } catch (ModuleNotFoundException $e) {
-            $this->error("❌ " . $e->getMessage());
-            return self::FAILURE;
+            $this->error('❌ ' . $e->getMessage());
 
-        } catch (\Exception $e) {
-            $this->error("❌ Seeding failed: " . $e->getMessage());
+            return self::FAILURE;
+        } catch (Exception $e) {
+            $this->error('❌ Seeding failed: ' . $e->getMessage());
+
             return self::FAILURE;
         }
     }
@@ -99,14 +102,16 @@ class ModuleSeedCommand extends Command
         $seedersPath = $modulePath . '/Database/Seeders';
 
         if (!$this->files->isDirectory($seedersPath)) {
-            $this->line("   📁 No seeders directory found, skipping.");
+            $this->line('   📁 No seeders directory found, skipping.');
+
             return self::SUCCESS;
         }
 
         $seederFiles = $this->files->glob($seedersPath . '/*.php');
 
         if (empty($seederFiles)) {
-            $this->line("   📁 No seeder files found, skipping.");
+            $this->line('   📁 No seeder files found, skipping.');
+
             return self::SUCCESS;
         }
 
@@ -116,9 +121,9 @@ class ModuleSeedCommand extends Command
             }
 
             return $this->runAllSeeders($seedersPath, $moduleName);
+        } catch (Exception $e) {
+            $this->error('   ❌ Seeding error: ' . $e->getMessage());
 
-        } catch (\Exception $e) {
-            $this->error("   ❌ Seeding error: " . $e->getMessage());
             return self::FAILURE;
         }
     }
@@ -129,6 +134,7 @@ class ModuleSeedCommand extends Command
 
         if (!$this->files->exists($seederFile)) {
             $this->error("   ❌ Seeder class '{$className}' not found");
+
             return self::FAILURE;
         }
 
@@ -140,7 +146,7 @@ class ModuleSeedCommand extends Command
         ]);
 
         if ($exitCode === 0) {
-            $this->line("   ✅ Seeder completed successfully");
+            $this->line('   ✅ Seeder completed successfully');
         }
 
         return $exitCode;
@@ -173,8 +179,7 @@ class ModuleSeedCommand extends Command
                     $this->error("   ❌ Seeder '{$className}' failed");
                     $success = false;
                 }
-
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->error("   ❌ Error running seeder '{$className}': " . $e->getMessage());
                 $success = false;
             }

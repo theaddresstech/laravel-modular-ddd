@@ -8,6 +8,8 @@ use Modules\{{ module }}\Application\Commands\Create{{ name }}\Create{{ name }}C
 use Modules\{{ module }}\Application\Commands\Create{{ name }}\Create{{ name }}Handler;
 use Modules\{{ module }}\Application\Commands\Update{{ name }}\Update{{ name }}Command;
 use Modules\{{ module }}\Application\Commands\Update{{ name }}\Update{{ name }}Handler;
+use Modules\{{ module }}\Application\Commands\Delete{{ name }}\Delete{{ name }}Command;
+use Modules\{{ module }}\Application\Commands\Delete{{ name }}\Delete{{ name }}Handler;
 use Modules\{{ module }}\Application\Queries\Get{{ name }}\Get{{ name }}Query;
 use Modules\{{ module }}\Application\Queries\Get{{ name }}\Get{{ name }}Handler;
 use Modules\{{ module }}\Application\Queries\List{{ name }}s\List{{ name }}sQuery;
@@ -25,9 +27,16 @@ class {{ name }}Controller extends Controller
     public function __construct(
         private Create{{ name }}Handler $create{{ name }}Handler,
         private Update{{ name }}Handler $update{{ name }}Handler,
+        private Delete{{ name }}Handler $delete{{ name }}Handler,
         private Get{{ name }}Handler $get{{ name }}Handler,
         private List{{ name }}sHandler $list{{ name }}sHandler
-    ) {}
+    ) {
+        $this->middleware('auth:sanctum')->except(['index', 'show']);
+        $this->middleware('module.permission:{{ moduleKebab }}.{{ nameKebab }}.view')->only(['index', 'show']);
+        $this->middleware('module.permission:{{ moduleKebab }}.{{ nameKebab }}.create')->only(['store']);
+        $this->middleware('module.permission:{{ moduleKebab }}.{{ nameKebab }}.update')->only(['update']);
+        $this->middleware('module.permission:{{ moduleKebab }}.{{ nameKebab }}.delete')->only(['destroy']);
+    }
 
     public function index(Request $request): JsonResponse
     {
@@ -63,42 +72,66 @@ class {{ name }}Controller extends Controller
 
     public function store(Create{{ name }}Request $request): JsonResponse
     {
-        $command = new Create{{ name }}Command(
-            name: $request->validated('name'),
-            description: $request->validated('description')
-        );
+        try {
+            $command = new Create{{ name }}Command(
+                name: $request->validated('name'),
+                description: $request->validated('description')
+            );
 
-        ${{ nameSnake }}Id = $this->create{{ name }}Handler->handle($command);
+            ${{ nameSnake }} = $this->create{{ name }}Handler->handle($command);
 
-        return response()->json([
-            'message' => '{{ name }} created successfully',
-            'id' => ${{ nameSnake }}Id
-        ], Response::HTTP_CREATED);
+            return response()->json([
+                'message' => '{{ name }} created successfully',
+                'data' => new {{ name }}Resource(${{ nameSnake }})
+            ], Response::HTTP_CREATED);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to create {{ name }}',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
     public function update(Update{{ name }}Request $request, string $id): JsonResponse
     {
-        $command = new Update{{ name }}Command(
-            id: $id,
-            name: $request->validated('name'),
-            description: $request->validated('description')
-        );
+        try {
+            $command = new Update{{ name }}Command(
+                id: $id,
+                name: $request->validated('name'),
+                description: $request->validated('description')
+            );
 
-        $this->update{{ name }}Handler->handle($command);
+            ${{ nameSnake }} = $this->update{{ name }}Handler->handle($command);
 
-        return response()->json([
-            'message' => '{{ name }} updated successfully'
-        ], Response::HTTP_OK);
+            return response()->json([
+                'message' => '{{ name }} updated successfully',
+                'data' => new {{ name }}Resource(${{ nameSnake }})
+            ], Response::HTTP_OK);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to update {{ name }}',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
     public function destroy(string $id): JsonResponse
     {
-        // Implement delete logic here
-        // $command = new Delete{{ name }}Command($id);
-        // $this->delete{{ name }}Handler->handle($command);
+        try {
+            $command = new Delete{{ name }}Command($id);
+            $this->delete{{ name }}Handler->handle($command);
 
-        return response()->json([
-            'message' => '{{ name }} deleted successfully'
-        ], Response::HTTP_OK);
+            return response()->json([
+                'message' => '{{ name }} deleted successfully'
+            ], Response::HTTP_OK);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to delete {{ name }}',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 }

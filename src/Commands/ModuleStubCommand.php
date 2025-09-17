@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Commands;
 
-use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Str;
+use TaiCrm\LaravelModularDdd\Contracts\ModuleManagerInterface;
 
 class ModuleStubCommand extends Command
 {
@@ -16,13 +17,12 @@ class ModuleStubCommand extends Command
                             {name : Name of the class to generate}
                             {module : Target module name}
                             {--force : Overwrite existing files}';
-
     protected $description = 'Generate DDD components for a module';
 
     public function __construct(
         private ModuleManagerInterface $moduleManager,
         private Filesystem $files,
-        private string $stubPath
+        private string $stubPath,
     ) {
         parent::__construct();
     }
@@ -38,6 +38,7 @@ class ModuleStubCommand extends Command
 
             if (!$module) {
                 $this->error("Module '{$moduleName}' not found");
+
                 return self::FAILURE;
             }
 
@@ -57,13 +58,13 @@ class ModuleStubCommand extends Command
                 }
 
                 return self::SUCCESS;
-            } else {
-                $this->error("❌ Failed to create {$type}: {$result['error']}");
-                return self::FAILURE;
             }
+            $this->error("❌ Failed to create {$type}: {$result['error']}");
 
-        } catch (\Exception $e) {
-            $this->error("❌ Generation failed: " . $e->getMessage());
+            return self::FAILURE;
+        } catch (Exception $e) {
+            $this->error('❌ Generation failed: ' . $e->getMessage());
+
             return self::FAILURE;
         }
     }
@@ -71,13 +72,13 @@ class ModuleStubCommand extends Command
     private function generateStub(string $type, string $name, $module): array
     {
         $generators = [
-            'model' => fn() => $this->generateModel($name, $module),
-            'controller' => fn() => $this->generateController($name, $module),
-            'service' => fn() => $this->generateService($name, $module),
-            'repository' => fn() => $this->generateRepository($name, $module),
-            'event' => fn() => $this->generateEvent($name, $module),
-            'command' => fn() => $this->generateCommand($name, $module),
-            'query' => fn() => $this->generateQuery($name, $module),
+            'model' => fn () => $this->generateModel($name, $module),
+            'controller' => fn () => $this->generateController($name, $module),
+            'service' => fn () => $this->generateService($name, $module),
+            'repository' => fn () => $this->generateRepository($name, $module),
+            'event' => fn () => $this->generateEvent($name, $module),
+            'command' => fn () => $this->generateCommand($name, $module),
+            'query' => fn () => $this->generateQuery($name, $module),
         ];
 
         if (!isset($generators[$type])) {
@@ -115,7 +116,7 @@ class ModuleStubCommand extends Command
             'next_steps' => [
                 "Create the corresponding value object: php artisan module:stub value-object {$className}Id {$module->name}",
                 "Create the repository interface: php artisan module:stub repository {$className} {$module->name}",
-                "Add the model properties and business logic",
+                'Add the model properties and business logic',
             ],
         ];
     }
@@ -178,9 +179,9 @@ class ModuleStubCommand extends Command
             'type' => 'Domain Service',
             'path' => $path,
             'next_steps' => [
-                "Implement the service logic",
+                'Implement the service logic',
                 "Register the service in the module's service provider",
-                "Write unit tests for the service",
+                'Write unit tests for the service',
             ],
         ];
     }
@@ -194,7 +195,6 @@ class ModuleStubCommand extends Command
         if ($this->files->exists($path) && !$this->option('force')) {
             return ['success' => false, 'error' => 'Repository interface already exists. Use --force to overwrite.'];
         }
-
 
         $content = $this->processStub('repository-interface.stub', [
             'NAMESPACE' => "Modules\\{$module->name}",
@@ -215,7 +215,7 @@ class ModuleStubCommand extends Command
             'next_steps' => [
                 "Create the Eloquent implementation: php artisan module:stub eloquent-repository {$name} {$module->name}",
                 "Register the binding in the module's service provider",
-                "Implement the repository methods",
+                'Implement the repository methods',
             ],
         ];
     }
@@ -244,9 +244,9 @@ class ModuleStubCommand extends Command
             'type' => 'Domain Event',
             'path' => $path,
             'next_steps' => [
-                "Implement the event payload",
-                "Create event listeners if needed",
-                "Trigger the event in your aggregate root or domain service",
+                'Implement the event payload',
+                'Create event listeners if needed',
+                'Trigger the event in your aggregate root or domain service',
             ],
         ];
     }
@@ -286,9 +286,9 @@ class ModuleStubCommand extends Command
             'type' => 'Command + Handler',
             'path' => dirname($commandPath),
             'next_steps' => [
-                "Implement the command properties and validation",
-                "Implement the handler logic",
-                "Register the command handler in your command bus",
+                'Implement the command properties and validation',
+                'Implement the handler logic',
+                'Register the command handler in your command bus',
             ],
         ];
     }
@@ -328,9 +328,9 @@ class ModuleStubCommand extends Command
             'type' => 'Query + Handler',
             'path' => dirname($queryPath),
             'next_steps' => [
-                "Implement the query parameters and validation",
-                "Implement the query handler logic",
-                "Register the query handler in your query bus",
+                'Implement the query parameters and validation',
+                'Implement the query handler logic',
+                'Register the query handler in your query bus',
             ],
         ];
     }
@@ -348,7 +348,7 @@ class ModuleStubCommand extends Command
 
         // Process replacements in a specific order to avoid conflicts
         foreach ($replacements as $placeholder => $value) {
-            $searchPattern = '{{'.$placeholder.'}}';
+            $searchPattern = '{{' . $placeholder . '}}';
             $content = str_replace($searchPattern, $value, $content);
         }
 
@@ -363,7 +363,7 @@ class ModuleStubCommand extends Command
     private function ensureDirectoryExists(string $directory): void
     {
         if (!$this->files->exists($directory)) {
-            $this->files->makeDirectory($directory, 0755, true);
+            $this->files->makeDirectory($directory, 0o755, true);
         }
     }
 }

@@ -6,11 +6,16 @@ namespace TaiCrm\LaravelModularDdd\Foundation;
 
 abstract class Entity
 {
+    public function __toString(): string
+    {
+        return static::class . ':' . ($this->getId() ?? 'null');
+    }
+
     abstract public function getId();
 
-    public function equals(Entity $other): bool
+    public function equals(self $other): bool
     {
-        if (get_class($this) !== get_class($other)) {
+        if (static::class !== $other::class) {
             return false;
         }
 
@@ -31,10 +36,5 @@ abstract class Entity
         }
 
         return $id1 === $id2;
-    }
-
-    public function __toString(): string
-    {
-        return static::class . ':' . ($this->getId() ?? 'null');
     }
 }

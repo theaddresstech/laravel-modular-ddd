@@ -2,12 +2,13 @@
 
 declare(strict_types=1);
 
-namespace TaiCrm\LaravelModularDdd\Communication;
+namespace TaiCrm\LaravelModularDdd\Foundation;
 
-use TaiCrm\LaravelModularDdd\Foundation\Contracts\DomainEventInterface;
+use Exception;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Collection;
 use Psr\Log\LoggerInterface;
+use TaiCrm\LaravelModularDdd\Foundation\Contracts\DomainEventInterface;
 
 class EventBus
 {
@@ -15,14 +16,14 @@ class EventBus
 
     public function __construct(
         private Dispatcher $dispatcher,
-        private LoggerInterface $logger
+        private LoggerInterface $logger,
     ) {
         $this->handlers = collect();
     }
 
     public function dispatch(DomainEventInterface $event): void
     {
-        $this->logger->info("Dispatching event: " . $event->getEventType(), [
+        $this->logger->info('Dispatching event: ' . $event->getEventType(), [
             'event_id' => $event->getEventId(),
             'event_type' => $event->getEventType(),
             'payload' => $event->getPayload(),
@@ -34,9 +35,8 @@ class EventBus
 
             // Also dispatch to registered handlers
             $this->dispatchToHandlers($event);
-
-        } catch (\Exception $e) {
-            $this->logger->error("Error dispatching event: " . $e->getMessage(), [
+        } catch (Exception $e) {
+            $this->logger->error('Error dispatching event: ' . $e->getMessage(), [
                 'event_id' => $event->getEventId(),
                 'event_type' => $event->getEventType(),
                 'exception' => $e,
@@ -70,11 +70,12 @@ class EventBus
 
         if ($handler === null) {
             $this->handlers->forget($eventType);
+
             return;
         }
 
         $handlers = $this->handlers->get($eventType);
-        $this->handlers->put($eventType, $handlers->reject(fn($h) => $h === $handler));
+        $this->handlers->put($eventType, $handlers->reject(static fn ($h) => $h === $handler));
     }
 
     public function getSubscribers(string $eventType): Collection
@@ -100,11 +101,11 @@ class EventBus
         foreach ($handlers as $handler) {
             try {
                 $handler($event);
-            } catch (\Exception $e) {
-                $this->logger->error("Error in event handler: " . $e->getMessage(), [
+            } catch (Exception $e) {
+                $this->logger->error('Error in event handler: ' . $e->getMessage(), [
                     'event_id' => $event->getEventId(),
                     'event_type' => $eventType,
-                    'handler' => is_object($handler) ? get_class($handler) : 'closure',
+                    'handler' => is_object($handler) ? $handler::class : 'closure',
                     'exception' => $e,
                 ]);
 

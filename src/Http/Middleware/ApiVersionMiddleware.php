@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace TaiCrm\LaravelModularDdd\Http\Middleware;
 
 use Closure;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Config;
@@ -15,10 +16,10 @@ use TaiCrm\LaravelModularDdd\Http\VersionNegotiator;
 class ApiVersionMiddleware
 {
     public function __construct(
-        private VersionNegotiator $versionNegotiator
+        private VersionNegotiator $versionNegotiator,
     ) {}
 
-    public function handle(Request $request, Closure $next, string $module = null): SymfonyResponse
+    public function handle(Request $request, Closure $next, ?string $module = null): SymfonyResponse
     {
         // Skip version negotiation for non-API routes
         if (!$this->isApiRoute($request)) {
@@ -42,7 +43,6 @@ class ApiVersionMiddleware
             $this->addDeprecationWarnings($response, $version);
 
             return $response;
-
         } catch (UnsupportedApiVersionException $e) {
             return $this->createVersionErrorResponse($e, $request);
         }
@@ -80,7 +80,7 @@ class ApiVersionMiddleware
             if ($module) {
                 $response->headers->set('X-API-Module', $module);
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Module not available in container (e.g., during testing)
         }
 
@@ -132,10 +132,10 @@ class ApiVersionMiddleware
 
         try {
             return response()->json($error, 406, $headers);
-        } catch (\Exception $ex) {
+        } catch (Exception $ex) {
             // Fallback for unit tests where response() helper is not available
             return new Response(json_encode($error), 406, array_merge($headers, [
-                'Content-Type' => 'application/json'
+                'Content-Type' => 'application/json',
             ]));
         }
     }

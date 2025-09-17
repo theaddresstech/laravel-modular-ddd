@@ -40,7 +40,8 @@
         "symfony/finder": "^7.0",
         "ramsey/uuid": "^4.7",
         "league/flysystem": "^3.0",
-        "nesbot/carbon": "^3.0"
+        "nesbot/carbon": "^3.0",
+        "spatie/laravel-permission": "^6.0"
     },
     "require-dev": {
         "phpunit/phpunit": "^10.0",

@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Communication;
 
-use TaiCrm\LaravelModularDdd\Communication\Contracts\ServiceRegistryInterface;
+use Exception;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\Collection;
 use Psr\Log\LoggerInterface;
+use TaiCrm\LaravelModularDdd\Communication\Contracts\ServiceRegistryInterface;
 
 class ServiceRegistry implements ServiceRegistryInterface
 {
@@ -15,7 +16,7 @@ class ServiceRegistry implements ServiceRegistryInterface
 
     public function __construct(
         private Container $container,
-        private LoggerInterface $logger
+        private LoggerInterface $logger,
     ) {
         $this->services = collect();
     }
@@ -55,6 +56,7 @@ class ServiceRegistry implements ServiceRegistryInterface
                 'requested_module' => $module,
                 'actual_module' => $service['module'],
             ]);
+
             return;
         }
 
@@ -76,7 +78,7 @@ class ServiceRegistry implements ServiceRegistryInterface
 
         try {
             return $this->container->make($serviceName);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error("Failed to resolve service: {$serviceName}", [
                 'service' => $serviceName,
                 'exception' => $e,
@@ -94,39 +96,37 @@ class ServiceRegistry implements ServiceRegistryInterface
     public function getImplementation(string $serviceName): ?string
     {
         $service = $this->services->get($serviceName);
+
         return $service['implementation'] ?? null;
     }
 
     public function getModule(string $serviceName): ?string
     {
         $service = $this->services->get($serviceName);
+
         return $service['module'] ?? null;
     }
 
     public function getServices(): Collection
     {
-        return $this->services->map(function (array $service, string $name) {
-            return [
-                'name' => $name,
-                'implementation' => $service['implementation'],
-                'module' => $service['module'],
-                'registered_at' => $service['registered_at'],
-            ];
-        });
+        return $this->services->map(static fn (array $service, string $name) => [
+            'name' => $name,
+            'implementation' => $service['implementation'],
+            'module' => $service['module'],
+            'registered_at' => $service['registered_at'],
+        ]);
     }
 
     public function getServicesByModule(string $module): Collection
     {
         return $this->services
-            ->filter(fn(array $service) => $service['module'] === $module)
-            ->map(function (array $service, string $name) {
-                return [
-                    'name' => $name,
-                    'implementation' => $service['implementation'],
-                    'module' => $service['module'],
-                    'registered_at' => $service['registered_at'],
-                ];
-            });
+            ->filter(static fn (array $service) => $service['module'] === $module)
+            ->map(static fn (array $service, string $name) => [
+                'name' => $name,
+                'implementation' => $service['implementation'],
+                'module' => $service['module'],
+                'registered_at' => $service['registered_at'],
+            ]);
     }
 
     public function clearModule(string $module): void
@@ -134,7 +134,7 @@ class ServiceRegistry implements ServiceRegistryInterface
         $this->logger->info("Clearing services for module: {$module}");
 
         $servicesToRemove = $this->services
-            ->filter(fn(array $service) => $service['module'] === $module)
+            ->filter(static fn (array $service) => $service['module'] === $module)
             ->keys();
 
         foreach ($servicesToRemove as $serviceName) {
@@ -146,7 +146,7 @@ class ServiceRegistry implements ServiceRegistryInterface
 
     public function clear(): void
     {
-        $this->logger->info("Clearing all registered services");
+        $this->logger->info('Clearing all registered services');
         $this->services = collect();
     }
 }

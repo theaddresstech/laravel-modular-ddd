@@ -4,31 +4,33 @@ declare(strict_types=1);
 
 namespace Modules\{{ module }}\Presentation\Http\Resources;
 
-use Modules\{{ module }}\Application\DTOs\{{ name }}DTO;
+use Modules\{{ module }}\Domain\Models\{{ name }};
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class {{ name }}Resource extends JsonResource
 {
-    public function __construct({{ name }}DTO ${{ nameSnake }})
+    public function __construct({{ name }} ${{ nameSnake }})
     {
         parent::__construct(${{ nameSnake }});
     }
 
     public function toArray(Request $request): array
     {
-        /** @var {{ name }}DTO ${{ nameSnake }} */
+        /** @var {{ name }} ${{ nameSnake }} */
         ${{ nameSnake }} = $this->resource;
 
         return [
-            'id' => ${{ nameSnake }}->id,
-            'name' => ${{ nameSnake }}->name,
-            'created_at' => ${{ nameSnake }}->createdAt,
-            'updated_at' => ${{ nameSnake }}->updatedAt,
+            'id' => ${{ nameSnake }}->getId()->toString(),
+            'name' => ${{ nameSnake }}->getName(),
+            'description' => ${{ nameSnake }}->getDescription(),
+            'status' => ${{ nameSnake }}->getStatus(),
+            'created_at' => ${{ nameSnake }}->getCreatedAt()->format('Y-m-d\TH:i:s.u\Z'),
+            'updated_at' => ${{ nameSnake }}->getUpdatedAt()?->format('Y-m-d\TH:i:s.u\Z'),
             'links' => [
-                'self' => route('api.{{ module_snake }}.{{ nameSnake }}s.show', ['{{ nameSnake }}' => ${{ nameSnake }}->id]),
-                'edit' => route('api.{{ module_snake }}.{{ nameSnake }}s.update', ['{{ nameSnake }}' => ${{ nameSnake }}->id]),
-                'delete' => route('api.{{ module_snake }}.{{ nameSnake }}s.destroy', ['{{ nameSnake }}' => ${{ nameSnake }}->id]),
+                'self' => route('api.{{ module_snake }}.{{ nameSnake }}s.show', ['{{ nameSnake }}' => ${{ nameSnake }}->getId()->toString()]),
+                'edit' => route('api.{{ module_snake }}.{{ nameSnake }}s.update', ['{{ nameSnake }}' => ${{ nameSnake }}->getId()->toString()]),
+                'delete' => route('api.{{ module_snake }}.{{ nameSnake }}s.destroy', ['{{ nameSnake }}' => ${{ nameSnake }}->getId()->toString()]),
             ],
         ];
     }

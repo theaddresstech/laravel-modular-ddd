@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Commands;
 
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Str;
@@ -16,13 +17,12 @@ class ModuleMakeListenerCommand extends Command
                             {--event= : The event this listener handles}
                             {--queued : Make the listener queued}
                             {--force : Overwrite existing listener}';
-
     protected $description = 'Create a new event listener for a module';
 
     public function __construct(
         private Filesystem $files,
         private string $modulesPath,
-        private string $stubPath
+        private string $stubPath,
     ) {
         parent::__construct();
     }
@@ -38,6 +38,7 @@ class ModuleMakeListenerCommand extends Command
 
         if (!$this->files->exists($modulePath)) {
             $this->error("Module '{$moduleName}' does not exist. Create it first using module:make");
+
             return self::FAILURE;
         }
 
@@ -45,6 +46,7 @@ class ModuleMakeListenerCommand extends Command
 
         if ($this->files->exists($listenerPath) && !$this->option('force')) {
             $this->error("Listener '{$listenerName}' already exists in module '{$moduleName}'. Use --force to overwrite.");
+
             return self::FAILURE;
         }
 
@@ -54,9 +56,9 @@ class ModuleMakeListenerCommand extends Command
             $this->displayNextSteps($moduleName, $listenerName, $eventName);
 
             return self::SUCCESS;
+        } catch (Exception $e) {
+            $this->error('❌ Failed to create listener: ' . $e->getMessage());
 
-        } catch (\Exception $e) {
-            $this->error("❌ Failed to create listener: " . $e->getMessage());
             return self::FAILURE;
         }
     }
@@ -67,6 +69,7 @@ class ModuleMakeListenerCommand extends Command
 
         if (!$this->files->exists($stubPath)) {
             $this->createListenerFromTemplate($listenerPath, $moduleName, $listenerName, $eventName, $isQueued);
+
             return;
         }
 
@@ -79,7 +82,7 @@ class ModuleMakeListenerCommand extends Command
 
         $listenerDir = dirname($listenerPath);
         if (!$this->files->exists($listenerDir)) {
-            $this->files->makeDirectory($listenerDir, 0755, true);
+            $this->files->makeDirectory($listenerDir, 0o755, true);
         }
 
         $this->files->put($listenerPath, $content);
@@ -89,7 +92,7 @@ class ModuleMakeListenerCommand extends Command
     {
         $namespace = "Modules\\{$moduleName}\\Application\\Listeners";
         $eventClass = $eventName ? "\\Modules\\{$moduleName}\\Domain\\Events\\{$eventName}" : 'TaiCrm\\LaravelModularDdd\\Foundation\\Contracts\\DomainEventInterface';
-        $eventParam = $eventName ? $eventName : 'DomainEventInterface';
+        $eventParam = $eventName ?: 'DomainEventInterface';
         $eventVariable = $eventName ? Str::camel($eventName) : 'event';
 
         $implements = '';
@@ -110,9 +113,9 @@ namespace {$namespace};
 use Psr\\Log\\LoggerInterface;
 
 final class {$listenerName}{$implements}
-{" . ($isQueued ? "
+{" . ($isQueued ? '
     use InteractsWithQueue;
-" : "") . "
+' : '') . "
     public function __construct(
         private LoggerInterface \$logger
     ) {}
@@ -149,7 +152,7 @@ final class {$listenerName}{$implements}
 
         $listenerDir = dirname($listenerPath);
         if (!$this->files->exists($listenerDir)) {
-            $this->files->makeDirectory($listenerDir, 0755, true);
+            $this->files->makeDirectory($listenerDir, 0o755, true);
         }
 
         $this->files->put($listenerPath, $content);
@@ -170,9 +173,9 @@ final class {$listenerName}{$implements}
     private function displayNextSteps(string $moduleName, string $listenerName, ?string $eventName): void
     {
         $this->newLine();
-        $this->line("📋 <comment>Next steps:</comment>");
+        $this->line('📋 <comment>Next steps:</comment>');
         $this->line("1. Implement the event handling logic in: modules/{$moduleName}/Application/Listeners/{$listenerName}.php");
-        $this->line("2. Register the listener in your service provider:");
+        $this->line('2. Register the listener in your service provider:');
 
         if ($eventName) {
             $this->line("   <info>Event::listen('{$eventName}', {$listenerName}::class);</info>");
@@ -180,7 +183,7 @@ final class {$listenerName}{$implements}
             $this->line("   <info>Event::listen('YourEvent', {$listenerName}::class);</info>");
         }
 
-        $this->line("3. Test the listener by dispatching the event");
+        $this->line('3. Test the listener by dispatching the event');
         $this->newLine();
     }
 }

@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Tests\Unit;
 
+use Exception;
+use Illuminate\Contracts\Container\Container;
+use Mockery;
+use Psr\Log\LoggerInterface;
+use stdClass;
 use TaiCrm\LaravelModularDdd\Communication\ServiceRegistry;
 use TaiCrm\LaravelModularDdd\Tests\TestCase;
-use Illuminate\Contracts\Container\Container;
-use Psr\Log\LoggerInterface;
-use Mockery;
 
 class ServiceRegistryTest extends TestCase
 {
@@ -26,7 +28,7 @@ class ServiceRegistryTest extends TestCase
         $this->serviceRegistry = new ServiceRegistry($this->mockContainer, $this->mockLogger);
     }
 
-    public function test_can_register_service(): void
+    public function testCanRegisterService(): void
     {
         $this->mockLogger->shouldReceive('info')->once();
         $this->mockContainer->shouldReceive('bound')->andReturn(false);
@@ -35,13 +37,13 @@ class ServiceRegistryTest extends TestCase
         $this->serviceRegistry->register('TestService', 'TestImplementation', 'TestModule');
 
         $this->assertTrue($this->serviceRegistry->exists('TestService'));
-        $this->assertEquals('TestImplementation', $this->serviceRegistry->getImplementation('TestService'));
-        $this->assertEquals('TestModule', $this->serviceRegistry->getModule('TestService'));
+        $this->assertSame('TestImplementation', $this->serviceRegistry->getImplementation('TestService'));
+        $this->assertSame('TestModule', $this->serviceRegistry->getModule('TestService'));
     }
 
-    public function test_can_resolve_registered_service(): void
+    public function testCanResolveRegisteredService(): void
     {
-        $mockService = new \stdClass();
+        $mockService = new stdClass();
 
         $this->mockLogger->shouldReceive('info')->once();
         $this->mockContainer->shouldReceive('bound')->andReturn(false);
@@ -55,14 +57,14 @@ class ServiceRegistryTest extends TestCase
         $this->assertSame($mockService, $resolved);
     }
 
-    public function test_returns_null_for_unregistered_service(): void
+    public function testReturnsNullForUnregisteredService(): void
     {
         $resolved = $this->serviceRegistry->resolve('NonexistentService');
 
         $this->assertNull($resolved);
     }
 
-    public function test_can_unregister_service(): void
+    public function testCanUnregisterService(): void
     {
         $this->mockLogger->shouldReceive('info')->twice();
         $this->mockContainer->shouldReceive('bound')->andReturn(false);
@@ -75,7 +77,7 @@ class ServiceRegistryTest extends TestCase
         $this->assertFalse($this->serviceRegistry->exists('TestService'));
     }
 
-    public function test_cannot_unregister_service_from_different_module(): void
+    public function testCannotUnregisterServiceFromDifferentModule(): void
     {
         $this->mockLogger->shouldReceive('info')->once();
         $this->mockLogger->shouldReceive('warning')->once();
@@ -90,7 +92,7 @@ class ServiceRegistryTest extends TestCase
         $this->assertTrue($this->serviceRegistry->exists('TestService'));
     }
 
-    public function test_can_get_services_by_module(): void
+    public function testCanGetServicesByModule(): void
     {
         $this->mockLogger->shouldReceive('info')->times(3);
         $this->mockContainer->shouldReceive('bound')->andReturn(false);
@@ -107,7 +109,7 @@ class ServiceRegistryTest extends TestCase
         $this->assertCount(1, $moduleBServices);
     }
 
-    public function test_can_clear_module_services(): void
+    public function testCanClearModuleServices(): void
     {
         $this->mockLogger->shouldReceive('info')->times(4); // 2 registrations + 2 for clearing
         $this->mockContainer->shouldReceive('bound')->andReturn(false);
@@ -125,7 +127,7 @@ class ServiceRegistryTest extends TestCase
         $this->assertFalse($this->serviceRegistry->exists('Service2'));
     }
 
-    public function test_can_clear_all_services(): void
+    public function testCanClearAllServices(): void
     {
         $this->mockLogger->shouldReceive('info')->times(3);
         $this->mockContainer->shouldReceive('bound')->andReturn(false);
@@ -143,13 +145,13 @@ class ServiceRegistryTest extends TestCase
         $this->assertFalse($this->serviceRegistry->exists('Service2'));
     }
 
-    public function test_handles_resolution_errors_gracefully(): void
+    public function testHandlesResolutionErrorsGracefully(): void
     {
         $this->mockLogger->shouldReceive('info')->once();
         $this->mockLogger->shouldReceive('error')->once();
         $this->mockContainer->shouldReceive('bound')->andReturn(false);
         $this->mockContainer->shouldReceive('bind')->once();
-        $this->mockContainer->shouldReceive('make')->andThrow(new \Exception('Resolution failed'));
+        $this->mockContainer->shouldReceive('make')->andThrow(new Exception('Resolution failed'));
 
         $this->serviceRegistry->register('TestService', 'TestImplementation', 'TestModule');
 

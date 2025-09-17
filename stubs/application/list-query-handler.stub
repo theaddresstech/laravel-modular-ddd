@@ -1,0 +1,54 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\{{ module }}\Application\Queries\List{{ name }}s;
+
+use Modules\{{ module }}\Domain\Repositories\{{ name }}RepositoryInterface;
+use Illuminate\Support\Collection;
+use Psr\Log\LoggerInterface;
+
+readonly class List{{ name }}sHandler
+{
+    public function __construct(
+        private {{ name }}RepositoryInterface ${{ nameSnake }}Repository,
+        private LoggerInterface $logger
+    ) {}
+
+    public function handle(List{{ name }}sQuery $query): Collection
+    {
+        try {
+            $this->logger->debug('Handling List{{ name }}sQuery', [
+                'query_type' => get_class($query),
+                'query_data' => $query->toArray()
+            ]);
+
+            ${{ nameSnake }}s = $this->{{ nameSnake }}Repository->findWithFilters(
+                $query->getFilters(),
+                $query->getSorting(),
+                $query->getLimit(),
+                $query->getOffset()
+            );
+
+            $this->logger->debug('List{{ name }}sQuery results found', [
+                'count' => ${{ nameSnake }}s->count(),
+                'filters' => $query->getFilters(),
+                'sorting' => $query->getSorting(),
+                'limit' => $query->getLimit(),
+                'offset' => $query->getOffset(),
+            ]);
+
+            return ${{ nameSnake }}s;
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to handle List{{ name }}sQuery', [
+                'query_type' => get_class($query),
+                'query_data' => $query->toArray(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            throw $e;
+        }
+    }
+}

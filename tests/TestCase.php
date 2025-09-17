@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace TaiCrm\LaravelModularDdd\Tests;
 
-use TaiCrm\LaravelModularDdd\ModularDddServiceProvider;
-use Orchestra\Testbench\TestCase as BaseTestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Orchestra\Testbench\TestCase as BaseTestCase;
+use TaiCrm\LaravelModularDdd\ModularDddServiceProvider;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -17,6 +17,12 @@ abstract class TestCase extends BaseTestCase
         parent::setUp();
 
         $this->setUpTestEnvironment();
+    }
+
+    protected function tearDown(): void
+    {
+        $this->cleanupTestFiles();
+        parent::tearDown();
     }
 
     protected function getPackageProviders($app): array
@@ -35,9 +41,9 @@ abstract class TestCase extends BaseTestCase
 
         $app['config']->set('database.default', 'testing');
         $app['config']->set('database.connections.testing', [
-            'driver'   => 'sqlite',
+            'driver' => 'sqlite',
             'database' => ':memory:',
-            'prefix'   => '',
+            'prefix' => '',
         ]);
     }
 
@@ -45,12 +51,6 @@ abstract class TestCase extends BaseTestCase
     {
         $this->createTestDirectories();
         $this->cleanupTestFiles();
-    }
-
-    protected function tearDown(): void
-    {
-        $this->cleanupTestFiles();
-        parent::tearDown();
     }
 
     protected function getTestModulesPath(): string
@@ -72,7 +72,7 @@ abstract class TestCase extends BaseTestCase
 
         foreach ($directories as $directory) {
             if (!is_dir($directory)) {
-                mkdir($directory, 0755, true);
+                mkdir($directory, 0o755, true);
             }
         }
     }
@@ -127,7 +127,7 @@ abstract class TestCase extends BaseTestCase
         ];
 
         foreach ($directories as $directory) {
-            mkdir($modulePath . '/' . $directory, 0755, true);
+            mkdir($modulePath . '/' . $directory, 0o755, true);
         }
 
         // Create manifest
@@ -147,7 +147,7 @@ abstract class TestCase extends BaseTestCase
 
         file_put_contents(
             $modulePath . '/manifest.json',
-            json_encode($manifest, JSON_PRETTY_PRINT)
+            json_encode($manifest, JSON_PRETTY_PRINT),
         );
 
         return $modulePath;
