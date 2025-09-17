@@ -20,7 +20,7 @@ class ModuleMakeModelCommand extends Command
                             {--all : Create migration, factory, resource, and controller}
                             {--force : Overwrite existing files}';
 
-    protected $description = 'Create a new Eloquent model in a module with optional related files';
+    protected $description = 'Create a new Eloquent model in a module with repository (auto) and optional related files';
 
     public function __construct(
         private Filesystem $files,
@@ -47,6 +47,9 @@ class ModuleMakeModelCommand extends Command
             // Create the Eloquent model
             $this->createModel($moduleName, $modelName, $modulePath);
 
+            // Always create repository (essential for DDD)
+            $this->createRepository($moduleName, $modelName, $modulePath);
+
             // Create related files based on options
             if ($this->option('all') || $this->option('migration')) {
                 $this->createMigration($moduleName, $modelName);
@@ -64,7 +67,7 @@ class ModuleMakeModelCommand extends Command
                 $this->createController($moduleName, $modelName);
             }
 
-            $this->info("✅ Model '{$modelName}' created successfully in module '{$moduleName}'!");
+            $this->info("✅ Model '{$modelName}' with repository created successfully in module '{$moduleName}'!");
 
             return self::SUCCESS;
 
@@ -87,6 +90,25 @@ class ModuleMakeModelCommand extends Command
         $this->createFileFromStub('eloquent-model.stub', $modelPath, $replacements);
 
         $this->line("   ✅ Model: Infrastructure/Persistence/Eloquent/Models/{$modelName}.php");
+    }
+
+    private function createRepository(string $moduleName, string $modelName, string $modulePath): void
+    {
+        // Create repository interface
+        $interfacePath = $modulePath . '/Domain/Repositories/' . $modelName . 'RepositoryInterface.php';
+        if (!$this->files->exists($interfacePath) || $this->option('force')) {
+            $replacements = $this->getReplacements($moduleName, $modelName);
+            $this->createFileFromStub('repository-interface.stub', $interfacePath, $replacements);
+            $this->line("   ✅ Repository Interface: Domain/Repositories/{$modelName}RepositoryInterface.php");
+        }
+
+        // Create eloquent repository implementation
+        $repositoryPath = $modulePath . '/Infrastructure/Persistence/Eloquent/Repositories/Eloquent' . $modelName . 'Repository.php';
+        if (!$this->files->exists($repositoryPath) || $this->option('force')) {
+            $replacements = $this->getReplacements($moduleName, $modelName);
+            $this->createFileFromStub('eloquent-repository.stub', $repositoryPath, $replacements);
+            $this->line("   ✅ Repository Implementation: Infrastructure/Persistence/Eloquent/Repositories/Eloquent{$modelName}Repository.php");
+        }
     }
 
     private function createMigration(string $moduleName, string $modelName): void
