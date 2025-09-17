@@ -77,7 +77,7 @@ php artisan module:make UserModule --aggregate=User
 php artisan module:make UserModule --aggregate=User --no-migration
 
 # Generate complete REST API for the module
-php artisan module:make-api UserModule User --auth --validation --swagger
+php artisan module:make-api UserModule User --auth --validation --swagger --comprehensive --examples
 
 # Install and enable the module
 php artisan module:install UserModule
@@ -194,7 +194,17 @@ php artisan module:make-query UserModule GetUser --aggregate=User --cacheable
 #### Complete API Scaffolding
 ```bash
 # Generate complete REST API with all components and versioning
-php artisan module:make-api {Module} {Resource} [--auth] [--validation] [--swagger] [--version={v1|v2}] [--all-versions]
+php artisan module:make-api {Module} {Resource} [--auth] [--validation] [--swagger] [--api-version={v1|v2}] [--all-versions] [--examples] [--comprehensive] [--guard={api|web}]
+
+# Option explanations:
+# --auth              : Add authentication middleware to routes
+# --validation        : Generate request validation classes
+# --swagger           : Generate Swagger/OpenAPI documentation
+# --api-version=v2    : Generate for specific API version
+# --all-versions      : Generate for all configured API versions
+# --examples          : Include usage examples in documentation
+# --comprehensive     : Generate detailed validation rules and examples
+# --guard=api         : Specify authentication guard (default: api)
 
 # Generate individual API components
 php artisan module:make-controller {Module} {Controller} [--api] [--resource={Model}] [--middleware={Name}]
@@ -203,9 +213,9 @@ php artisan module:make-resource {Module} {Resource} [--collection] [--model={Na
 php artisan module:make-middleware {Module} {Middleware} [--auth] [--rate-limit] [--cors]
 
 # Examples:
-php artisan module:make-api UserModule User --auth --validation --swagger
-php artisan module:make-api UserModule User --auth --validation --swagger --version=v2
-php artisan module:make-api UserModule User --auth --validation --swagger --all-versions
+php artisan module:make-api UserModule User --auth --validation --swagger --comprehensive --examples
+php artisan module:make-api UserModule User --auth --validation --swagger --api-version=v2 --guard=api
+php artisan module:make-api UserModule User --auth --validation --swagger --all-versions --comprehensive
 php artisan module:make-controller UserModule UserController --api --resource=User
 php artisan module:make-request UserModule CreateUserRequest --validation
 php artisan module:make-resource UserModule UserResource --model=User
@@ -287,10 +297,10 @@ curl -H "Accept: application/vnd.api+json;version=2" http://localhost/api/users 
 #### API Version Generation
 ```bash
 # Generate API for specific version
-php artisan module:make-api UserModule User --version=v2 --auth --validation --swagger
+php artisan module:make-api UserModule User --api-version=v2 --auth --validation --swagger --comprehensive
 
 # Generate API for all supported versions
-php artisan module:make-api UserModule User --all-versions --auth --validation --swagger
+php artisan module:make-api UserModule User --all-versions --auth --validation --swagger --comprehensive --examples
 
 # The above commands will create:
 # - Http/Controllers/Api/v1/UserController.php
@@ -786,8 +796,8 @@ php artisan module:stub {ComponentType} {Name} {ModuleName}
 # 1. Create a complete e-commerce product module with migration
 php artisan module:make ProductModule --aggregate=Product
 
-# 2. Generate complete API with authentication
-php artisan module:make-api ProductModule Product --auth --validation --swagger
+# 2. Generate complete API with authentication and comprehensive documentation
+php artisan module:make-api ProductModule Product --auth --validation --swagger --comprehensive --examples
 
 # 3. Create additional domain components
 php artisan module:make-event ProductModule ProductCreated --aggregate=Product
