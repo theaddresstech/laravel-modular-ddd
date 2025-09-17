@@ -402,11 +402,17 @@ class ModularDddServiceProvider extends ServiceProvider
 
     private function loadModule($module): void
     {
-        // Load module service provider if it exists
-        $providerClass = "Modules\\{$module->name}\\Providers\\{$module->name}ServiceProvider";
+        // Try multiple naming patterns for service providers
+        $providerPatterns = [
+            "Modules\\{$module->name}\\Providers\\{$module->name}ModuleServiceProvider",
+            "Modules\\{$module->name}\\Providers\\{$module->name}ServiceProvider",
+        ];
 
-        if (class_exists($providerClass)) {
-            $this->app->register($providerClass);
+        foreach ($providerPatterns as $providerClass) {
+            if (class_exists($providerClass)) {
+                $this->app->register($providerClass);
+                break; // Only register the first one found
+            }
         }
 
         // Load module routes
