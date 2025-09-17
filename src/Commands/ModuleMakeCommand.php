@@ -15,7 +15,8 @@ class ModuleMakeCommand extends Command
                             {--aggregate= : The main aggregate name}
                             {--author= : Module author}
                             {--description= : Module description}
-                            {--force : Overwrite existing module}';
+                            {--force : Overwrite existing module}
+                            {--no-migration : Skip migration generation}';
 
     protected $description = 'Create a new DDD module with complete structure';
 
@@ -43,6 +44,11 @@ class ModuleMakeCommand extends Command
             $this->createModuleStructure($moduleName, $modulePath);
             $this->createManifest($moduleName, $modulePath);
             $this->createStubFiles($moduleName, $modulePath);
+
+            // Auto-generate migration unless explicitly disabled
+            if (!$this->option('no-migration')) {
+                $this->generateMigration($moduleName);
+            }
 
             $this->info("✅ Module '{$moduleName}' created successfully!");
             $this->displayNextSteps($moduleName);
@@ -315,14 +321,29 @@ class ModuleMakeCommand extends Command
         $this->line("3. Customize the auto-generated event listeners:");
         $this->line("   - Application/Listeners/{$aggregateStudly}CreatedListener.php");
         $this->line("   - Application/Listeners/{$aggregateStudly}NameChangedListener.php");
-        $this->line("4. Create your database migrations: <info>php artisan make:migration create_{$moduleName}_table --path=modules/{$moduleName}/Database/Migrations</info>");
+        $this->line("4. Review and customize the auto-generated migration: modules/{$moduleName}/Database/Migrations/");
         $this->line("5. Install the module: <info>php artisan module:install {$moduleName}</info>");
         $this->line("6. Enable the module: <info>php artisan module:enable {$moduleName}</info>");
         $this->newLine();
         $this->line("🎉 <info>Auto-generated components:</info>");
         $this->line("   ✅ Domain Events: {$aggregateStudly}Created, {$aggregateStudly}NameChanged");
         $this->line("   ✅ Event Listeners: Automatically wired and ready for customization");
+        $this->line("   ✅ Database Migration: Basic table structure with UUID primary key");
         $this->line("   ✅ Complete DDD structure with timestamps and event handling");
         $this->newLine();
+    }
+
+    private function generateMigration(string $moduleName): void
+    {
+        $aggregate = $this->option('aggregate') ?? $moduleName;
+        $tableName = Str::snake(Str::plural($aggregate));
+
+        $this->info("🗄️  Generating migration for {$tableName} table...");
+
+        $this->call('module:make-migration', [
+            'module' => $moduleName,
+            'name' => "create_{$tableName}_table",
+            '--create' => $tableName
+        ]);
     }
 }
