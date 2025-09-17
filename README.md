@@ -19,7 +19,7 @@ A comprehensive Laravel package for implementing modular Domain-Driven Design ar
 - **🛠️ API Scaffolding**: Complete REST API generation with authentication, validation, and Swagger documentation
 - **🔄 Enterprise API Versioning**: Multi-strategy version negotiation with backward compatibility and deprecation management
 - **🎯 Domain Events System**: Event sourcing support with automatic event discovery and listener generation
-- **🗄️ Database Migration Generation**: Module-specific migration creation with table creation and modification support
+- **🗄️ Automatic Migration Generation**: Auto-creates migrations when generating modules with smart table naming and structure
 - **✅ Validation Rule Generation**: Custom validation rule scaffolding with proper module namespace organization
 - **🧪 Automated Testing**: Intelligent test generation for unit, feature, and integration tests with factory support
 
@@ -70,8 +70,11 @@ php artisan migrate
 ### 1. Create Your First Module
 
 ```bash
-# Generate a complete module with DDD structure
+# Generate a complete module with DDD structure + migration
 php artisan module:make UserModule --aggregate=User
+
+# Or create module without migration
+php artisan module:make UserModule --aggregate=User --no-migration
 
 # Generate complete REST API for the module
 php artisan module:make-api UserModule User --auth --validation --swagger
@@ -146,8 +149,8 @@ php artisan module:security UserModule
 # List all modules with detailed status
 php artisan module:list
 
-# Create new module with full DDD structure
-php artisan module:make {ModuleName} [--aggregate={AggregateName}]
+# Create new module with full DDD structure + migration
+php artisan module:make {ModuleName} [--aggregate={AggregateName}] [--no-migration]
 
 # Install module and resolve dependencies
 php artisan module:install {ModuleName}
@@ -243,7 +246,8 @@ php artisan module:make-policy UserModule UserApiPolicy --model=User --resource 
 
 #### Database Components
 ```bash
-# Create database migrations
+# Migrations are auto-generated with module creation
+# For additional migrations, use:
 php artisan module:make-migration {Module} {MigrationName} [--create={table}] [--table={table}]
 
 # Examples:
@@ -672,6 +676,44 @@ php artisan module:permission grant --user=john@example.com --module=UserModule 
 php artisan module:permission matrix --user=admin@example.com --export=admin-permissions.json
 ```
 
+### 🗄️ Automatic Migration Generation
+
+The package automatically generates database migrations when creating modules, following smart naming conventions and providing a solid foundation that you can customize.
+
+#### Default Behavior (Automatic Migration)
+```bash
+# Creates module + migration automatically
+php artisan module:make OrderModule --aggregate=Order
+# ✅ Creates: modules/OrderModule/Database/Migrations/xxxx_create_orders_table.php
+```
+
+#### Opt-out (No Migration)
+```bash
+# Creates module only, skips migration
+php artisan module:make OrderModule --aggregate=Order --no-migration
+# ✅ Creates: Complete module structure without migration
+```
+
+#### Generated Migration Structure
+```php
+Schema::create('orders', function (Blueprint $table) {
+    $table->uuid('id')->primary();
+    $table->string('name');
+    $table->text('description')->nullable();
+    $table->timestamps();
+
+    // Smart indexes for performance
+    $table->index(['created_at']);
+    $table->index(['name']);
+});
+```
+
+#### Manual Migration Creation
+```bash
+# Create additional migrations manually
+php artisan module:make-migration {Module} {MigrationName} [--create={table}] [--table={table}]
+```
+
 ### 🗄️ Database Operations
 
 ```bash
@@ -741,7 +783,7 @@ php artisan module:stub {ComponentType} {Name} {ModuleName}
 ### Basic Module Creation Workflow
 
 ```bash
-# 1. Create a complete e-commerce product module
+# 1. Create a complete e-commerce product module with migration
 php artisan module:make ProductModule --aggregate=Product
 
 # 2. Generate complete API with authentication
