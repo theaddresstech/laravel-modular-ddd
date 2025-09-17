@@ -12,7 +12,7 @@ use Illuminate\Console\Command;
 
 class ModuleInstallCommand extends Command
 {
-    protected $signature = 'module:install {name : The name of the module to install} {--force : Force installation even if dependencies are missing} {--yes : Answer yes to all prompts} {--no-interaction : Do not ask any interactive questions}';
+    protected $signature = 'module:install {name : The name of the module to install} {--force : Force installation even if dependencies are missing} {--yes : Answer yes to all prompts}';
 
     protected $description = 'Install a module';
 
@@ -39,7 +39,7 @@ class ModuleInstallCommand extends Command
             if ($moduleInfo) {
                 $this->displayModuleInfo($moduleInfo);
 
-                if (!$this->option('force') && !$this->option('yes') && !$this->option('no-interaction') && !$this->confirmInstallation($moduleInfo)) {
+                if (!$this->option('force') && !$this->option('yes') && !$this->input->getOption('no-interaction') && !$this->confirmInstallation($moduleInfo)) {
                     $this->info('Installation cancelled.');
                     return self::SUCCESS;
                 }
@@ -56,7 +56,7 @@ class ModuleInstallCommand extends Command
             if ($success) {
                 $this->info("✅ Module '{$moduleName}' installed successfully.");
 
-                $shouldEnable = $this->option('yes') || $this->option('no-interaction') || $this->confirm("Would you like to enable the module now?", true);
+                $shouldEnable = $this->option('yes') || $this->input->getOption('no-interaction') || $this->confirm("Would you like to enable the module now?", true);
                 if ($shouldEnable) {
                     return $this->call('module:enable', ['name' => $moduleName]);
                 }
@@ -118,7 +118,7 @@ class ModuleInstallCommand extends Command
         } catch (DependencyException $e) {
             $this->warn("⚠️  " . $e->getMessage());
 
-            if (!$this->option('yes') && !$this->option('no-interaction') && !$this->confirm('Do you want to continue anyway?', false)) {
+            if (!$this->option('yes') && !$this->input->getOption('no-interaction') && !$this->confirm('Do you want to continue anyway?', false)) {
                 throw $e;
             }
         }

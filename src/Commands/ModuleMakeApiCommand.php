@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 
 class ModuleMakeApiCommand extends Command
 {
-    protected $signature = 'module:make-api {module} {resource} {--auth} {--validation} {--swagger=1} {--api-version=} {--all-versions} {--examples} {--comprehensive} {--guard=api} {--yes : Answer yes to all prompts} {--no-interaction : Do not ask any interactive questions}';
+    protected $signature = 'module:make-api {module} {resource} {--auth} {--validation} {--swagger=1} {--api-version=} {--all-versions} {--examples} {--comprehensive} {--guard=api} {--yes : Answer yes to all prompts}';
     protected $description = 'Generate complete REST API scaffolding for a module resource with comprehensive Swagger documentation';
 
     public function handle(): int
@@ -44,7 +44,7 @@ class ModuleMakeApiCommand extends Command
             $this->line("  2. Using --guard=web to use the web guard");
             $this->line("  3. Omitting --auth to generate routes without authentication");
 
-            if (!$this->option('yes') && !$this->option('no-interaction') && !$this->confirm("Continue anyway? Routes will include auth:{$authGuard} middleware.")) {
+            if (!$this->option('yes') && !$this->input->getOption('no-interaction') && !$this->confirm("Continue anyway? Routes will include auth:{$authGuard} middleware.")) {
                 return 1;
             }
         }
