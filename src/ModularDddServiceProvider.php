@@ -14,6 +14,7 @@ use TaiCrm\LaravelModularDdd\ModuleManager\ModuleRegistry;
 use TaiCrm\LaravelModularDdd\Commands\ModuleListCommand;
 use TaiCrm\LaravelModularDdd\Commands\ModuleInstallCommand;
 use TaiCrm\LaravelModularDdd\Commands\ModuleMakeCommand;
+use TaiCrm\LaravelModularDdd\Commands\ModuleMakeModelCommand;
 use TaiCrm\LaravelModularDdd\Commands\ModuleMakeMigrationCommand;
 use TaiCrm\LaravelModularDdd\Commands\ModuleMakeRuleCommand;
 use TaiCrm\LaravelModularDdd\Communication\Contracts\ServiceRegistryInterface;
@@ -256,6 +257,7 @@ class ModularDddServiceProvider extends ServiceProvider
                 ModuleListCommand::class,
                 ModuleInstallCommand::class,
                 ModuleMakeCommand::class,
+                ModuleMakeModelCommand::class,
                 \TaiCrm\LaravelModularDdd\Commands\ModuleEnableCommand::class,
                 \TaiCrm\LaravelModularDdd\Commands\ModuleDisableCommand::class,
                 \TaiCrm\LaravelModularDdd\Commands\ModuleRemoveCommand::class,
@@ -299,6 +301,14 @@ class ModularDddServiceProvider extends ServiceProvider
                 ->give(config('modular-ddd.modules_path', base_path('modules')));
 
             $this->app->when(ModuleMakeCommand::class)
+                ->needs('$stubPath')
+                ->give(__DIR__ . '/../stubs');
+
+            $this->app->when(ModuleMakeModelCommand::class)
+                ->needs('$modulesPath')
+                ->give(config('modular-ddd.modules_path', base_path('modules')));
+
+            $this->app->when(ModuleMakeModelCommand::class)
                 ->needs('$stubPath')
                 ->give(__DIR__ . '/../stubs');
 

@@ -6,31 +6,21 @@ namespace {{NAMESPACE}};
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class {{AGGREGATE}} extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUuids;
 
-    protected $table = '{{AGGREGATE_SNAKE}}s';
+    protected $table = '{{TABLE_NAME}}';
 
     protected $fillable = [
-        'id',
-        'name',
-        // Add other fillable attributes
+        // Add your fillable attributes here
     ];
 
     protected $casts = [
-        'id' => 'string',
-        // Add other attribute casts
+        // Add your attribute casts here
     ];
 
-    /**
-     * Indicates if the model's ID is auto-incrementing.
-     */
-    public $incrementing = false;
-
-    /**
-     * The data type of the auto-incrementing ID.
-     */
-    protected $keyType = 'string';
+    // Add your relationships and methods here
 }
